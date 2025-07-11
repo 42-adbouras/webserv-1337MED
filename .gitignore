@@ -1,0 +1,12 @@
+*
+
+!*.cpp
+!*.hpp
+!*.tpp
+
+!webserv/
+!sources/
+!includes/
+!Makefile
+!README.md
+!.gitignore
