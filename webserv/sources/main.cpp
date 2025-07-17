@@ -6,13 +6,14 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/07/11 15:21:33 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/07/17 17:48:32 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
 
 #define PORT 9909
+
 
 int	main( void )
 {
@@ -22,13 +23,13 @@ int	main( void )
 		std::cerr << "Failed to oprn a socket" << std::endl; return(1);
 	}
 	std::cout << "Socket ID: " << sockFD << " is opened" << std::endl;
-
+	
 	// serv Conf
 	struct sockaddr_in	servAdrr;
 	servAdrr.sin_family = AF_INET;
 	servAdrr.sin_addr.s_addr = INADDR_ANY;
 	servAdrr.sin_port = htons(PORT);
-
+	
 	// bind
 	if (bind(sockFD, (sockaddr *)&servAdrr, sizeof(sockaddr)) < 0) {
 		std::cerr << "Failed to bind socket ID: " << sockFD << std::endl;
@@ -42,7 +43,30 @@ int	main( void )
 		close(sockFD); return (1);
 	}
 	std::cout << "Server listening on port: " << PORT << std::endl;
-	// connect(sockFD, &servAdrr, sizeof(servAdrr));
+
+	fd_set	fr, fw, fe;
+	int nMaxFd = sockFD;
+	struct timeval tv;
+	
+	while (true)
+	{
+		tv.tv_sec = 4; tv.tv_usec = 0;
+		FD_ZERO(&fr); FD_ZERO(&fw); FD_ZERO(&fe);
+		FD_SET(sockFD, &fr);
+	
+		std::cout << "Waiting for connections..." << std::endl;
+		int activity = select(nMaxFd + 1, &fr, &fw, &fe, &tv);
+		
+		if (activity < 0) {
+			std::cout << "select() failed" << std::endl;
+			return (1);
+		} else if (activity == 0) {
+			std::cout << "No activity on port: " << PORT << std::endl;
+		} else {
+			std::cout << "Activity detected on [" << activity << "] fd" << std::endl;
+		}
+		sleep(2);
+	}
 	close (sockFD);
 	return (0);
 }
