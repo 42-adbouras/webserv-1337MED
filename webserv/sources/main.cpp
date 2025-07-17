@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/07/17 17:48:32 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/07/17 18:11:31 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,8 +22,20 @@ int	main( void )
 	if (sockFD < 0) {
 		std::cerr << "Failed to oprn a socket" << std::endl; return(1);
 	}
-	std::cout << "Socket ID: " << sockFD << " is opened" << std::endl;
-	
+	std::cout << "Socket ID [" << sockFD << "] is opened" << std::endl;
+
+	// setting nb-I/O
+	int flag = fcntl(sockFD, F_GETFL, 0);
+	if (flag == -1) {
+		std::cout << "fcntl() Failed to get socket flags" << std::endl;
+		close (sockFD); return (1);
+	}
+	if (fcntl(sockFD, F_SETFL, flag | O_NONBLOCK) == -1) {
+		std::cout << "Failed to set socket non-blocking" << std::endl;
+		close(sockFD); return (1);
+	}
+	std::cout << "Socket ID [" << sockFD << "] set to non-blocking mode" << std::endl;
+
 	// serv Conf
 	struct sockaddr_in	servAdrr;
 	servAdrr.sin_family = AF_INET;
