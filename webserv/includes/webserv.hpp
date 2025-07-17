@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:43 by adbouras          #+#    #+#             */
-/*   Updated: 2025/07/11 14:55:35 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/07/17 17:58:54 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,3 +16,4 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <fcntl.h>
