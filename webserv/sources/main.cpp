@@ -6,14 +6,13 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/07/17 18:11:31 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/07/18 19:21:33 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
 
 #define PORT 9909
-
 
 int	main( void )
 {
@@ -41,7 +40,14 @@ int	main( void )
 	servAdrr.sin_family = AF_INET;
 	servAdrr.sin_addr.s_addr = INADDR_ANY;
 	servAdrr.sin_port = htons(PORT);
-	
+
+	int optVal = 1;
+	if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal)) < 0) {
+		std::cout << "Failed to set SO_REUSEADDR" << std::endl;
+		close(sockFD); return (1);
+	}
+	std::cout << "SO_REUSEADDR enabled" << std::endl;
+
 	// bind
 	if (bind(sockFD, (sockaddr *)&servAdrr, sizeof(sockaddr)) < 0) {
 		std::cerr << "Failed to bind socket ID: " << sockFD << std::endl;
