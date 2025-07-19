@@ -6,13 +6,36 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/07/18 19:21:33 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/07/19 12:28:20 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
 
 #define PORT 9909
+
+void	processRequest( const int& sockFD, const fd_set& fr )
+{
+	if (FD_ISSET(sockFD, &fr)) {
+		std::cout << "Server socket has incoming connection!" << std::endl;
+		
+		struct sockaddr_in clientAddr;
+		socklen_t clientLen = sizeof(clientAddr); 
+		int clientFD = accept(sockFD, (sockaddr *)&clientAddr, &clientLen);
+		if (clientFD >= 0) {
+			std::cout << "clientFD: [" << clientFD << "] is connected" << std::endl;
+			char buf[1024] = {0};
+			recv(clientFD, buf, 1024, 0);
+			std::cout << "Received: " << buf << std::endl;
+
+			std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 14\r\n\r\nHello, World!\n";
+			send(clientFD, response.c_str(), response.length(), 0);
+			close(clientFD);
+		}
+	} else {
+		std::cerr << "Accept failed" << std::endl;
+	}
+}
 
 int	main( void )
 {
@@ -49,7 +72,7 @@ int	main( void )
 	std::cout << "SO_REUSEADDR enabled" << std::endl;
 
 	// bind
-	if (bind(sockFD, (sockaddr *)&servAdrr, sizeof(sockaddr)) < 0) {
+	if (bind(sockFD, (sockaddr *)&servAdrr, sizeof(servAdrr)) < 0) {
 		std::cerr << "Failed to bind socket ID: " << sockFD << std::endl;
 		close(sockFD); return (1);
 	}
@@ -82,6 +105,7 @@ int	main( void )
 			std::cout << "No activity on port: " << PORT << std::endl;
 		} else {
 			std::cout << "Activity detected on [" << activity << "] fd" << std::endl;
+			processRequest(sockFD, fr);
 		}
 		sleep(2);
 	}
