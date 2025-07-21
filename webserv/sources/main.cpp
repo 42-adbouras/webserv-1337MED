@@ -6,13 +6,13 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/07/19 12:28:20 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/07/21 15:41:16 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
 
-#define PORT 9909
+#define PORT 8080
 
 void	processRequest( const int& sockFD, const fd_set& fr )
 {
@@ -23,10 +23,12 @@ void	processRequest( const int& sockFD, const fd_set& fr )
 		socklen_t clientLen = sizeof(clientAddr); 
 		int clientFD = accept(sockFD, (sockaddr *)&clientAddr, &clientLen);
 		if (clientFD >= 0) {
+			std::cout << "\n__________________________________" << std::endl;
 			std::cout << "clientFD: [" << clientFD << "] is connected" << std::endl;
 			char buf[1024] = {0};
 			recv(clientFD, buf, 1024, 0);
 			std::cout << "Received: " << buf << std::endl;
+			std::cout << "__________________________________\n" << std::endl;
 
 			std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 14\r\n\r\nHello, World!\n";
 			send(clientFD, response.c_str(), response.length(), 0);
