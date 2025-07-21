@@ -11,31 +11,50 @@
 /* ************************************************************************** */
 
 #include "webserv.hpp"
+#include <cerrno>
 
 #define PORT 8080
 
-void	processRequest( const int& sockFD, const fd_set& fr )
-{
-	if (FD_ISSET(sockFD, &fr)) {
-		std::cout << "Server socket has incoming connection!" << std::endl;
-		
-		struct sockaddr_in clientAddr;
-		socklen_t clientLen = sizeof(clientAddr); 
-		int clientFD = accept(sockFD, (sockaddr *)&clientAddr, &clientLen);
-		if (clientFD >= 0) {
-			std::cout << "\n__________________________________" << std::endl;
-			std::cout << "clientFD: [" << clientFD << "] is connected" << std::endl;
-			char buf[1024] = {0};
-			recv(clientFD, buf, 1024, 0);
-			std::cout << "Received: " << buf << std::endl;
-			std::cout << "__________________________________\n" << std::endl;
+std::vector<int> clients;
 
-			std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 14\r\n\r\nHello, World!\n";
-			send(clientFD, response.c_str(), response.length(), 0);
-			close(clientFD);
-		}
+void	processRequest( const int& sockFD )
+{
+	struct sockaddr_in clientAddr;
+	socklen_t clientLen = sizeof(clientAddr);
+	int clientFD = accept(sockFD, (sockaddr *)&clientAddr, &clientLen);
+
+	if (clientFD >= 0) {
+		int flag = fcntl(clientFD, F_GETFL, 0);
+		fcntl( clientFD, F_SETFL, flag | O_NONBLOCK);
+
+		clients.push_back(clientFD);
+		std::cout << "\n__________________________________" << std::endl;
+		std::cout << "New client [" << clientFD << "] connected" << std::endl;
+		std::cout << "Total clients: " << clients.size() << std::endl;
+		std::cout << "__________________________________\n" << std::endl;
 	} else {
 		std::cerr << "Accept failed" << std::endl;
+	}
+}
+
+void handleClient( int clientFD )
+{
+	char buf[1024] = {0};
+	int bytesRead = recv(clientFD, buf, sizeof(buf) - 1, 0);
+
+	if (bytesRead > 0) {
+		std::cout << "Client [" << clientFD << "] sent: " << buf << std::endl;
+		std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 14\r\nConnection: keep-alive\r\n\r\nHello, World!\n";
+		send(clientFD, response.c_str(), response.length(), 0);
+	} else if (bytesRead == 0) {
+		std::cout << "Client [" << clientFD << "] disconnected" << std::endl;
+		close(clientFD);
+		clients.erase(std::remove(clients.begin(), clients.end(), clientFD), clients.end());
+		std::cout << "Total clients: " << clients.size() << std::endl;
+	} else if (bytesRead < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+		std::cerr << "Error reading from client [" << clientFD << "]" << std::endl;
+		close(clientFD);
+		clients.erase(std::remove(clients.begin(), clients.end(), clientFD), clients.end());
 	}
 }
 
@@ -88,28 +107,44 @@ int	main( void )
 	std::cout << "Server listening on port: " << PORT << std::endl;
 
 	fd_set	fr, fw, fe;
-	int nMaxFd = sockFD;
 	struct timeval tv;
 	
 	while (true)
 	{
 		tv.tv_sec = 4; tv.tv_usec = 0;
 		FD_ZERO(&fr); FD_ZERO(&fw); FD_ZERO(&fe);
+		
 		FD_SET(sockFD, &fr);
-	
-		std::cout << "Waiting for connections..." << std::endl;
-		int activity = select(nMaxFd + 1, &fr, &fw, &fe, &tv);
+		int maxFD = sockFD;
+
+		for (size_t i = 0; i < clients.size(); ++i) {
+			FD_SET(clients[i], &fr);
+			if (clients[i] > maxFD)
+				maxFD = clients[i];
+		}
+
+		std::cout << "Waiting for activity on " << (clients.size() + 1) << std::endl;
+		int activity = select(maxFD + 1, &fr, &fw, &fe, &tv);
 		
 		if (activity < 0) {
 			std::cout << "select() failed" << std::endl;
-			return (1);
+			break ;
 		} else if (activity == 0) {
 			std::cout << "No activity on port: " << PORT << std::endl;
 		} else {
-			std::cout << "Activity detected on [" << activity << "] fd" << std::endl;
-			processRequest(sockFD, fr);
+			if (FD_ISSET(sockFD, &fr))
+				processRequest(sockFD);
+
+			for (size_t i = 0; i < clients.size(); ++i) {
+				if (FD_ISSET(clients[i], &fr)) {
+					handleClient( clients[i]);
+				}
+			}
 		}
-		sleep(2);
+		// sleep(2);
+	}
+	for (size_t i = 0; i < clients.size(); ++i) {
+		close(clients[i]);
 	}
 	close (sockFD);
 	return (0);
