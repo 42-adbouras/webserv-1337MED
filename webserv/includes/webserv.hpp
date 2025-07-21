@@ -18,11 +18,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#include <vector>
+#include <algorithm>
 
 class Webserv
 {
 private:
-	int		_sockFD;
+	int					_sockFD;
+	std::vector<int>	_clientFDs;
+
 public:
 	Webserv( void );
 	Webserv( const Webserv& right );
