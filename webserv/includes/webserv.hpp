@@ -20,6 +20,8 @@
 #include <fcntl.h>
 #include <vector>
 #include <algorithm>
+#include <cstring>
+#include <poll.h>
 
 class Webserv
 {
