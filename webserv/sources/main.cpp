@@ -16,46 +16,7 @@
 #define MAX_CLIENTS 100
 #define BUFFER_SIZE 4096
 
-std::string response =  "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 28\r\n\r\n<h1>Hello from Webserv!</h1>";
-
-// void	processRequest( const int& serverFD )
-// {
-// 	struct sockaddr_in clientAddr;
-// 	socklen_t clientLen = sizeof(clientAddr);
-// 	int clientFD = accept(serverFD, (sockaddr *)&clientAddr, &clientLen);
-
-// 	if (clientFD >= 0) {
-// 		int flag = fcntl(clientFD, F_GETFL, 0);
-// 		fcntl( clientFD, F_SETFL, flag | O_NONBLOCK);
-
-// 		clients.push_back(clientFD);
-// 		std::cout << "\n__________________________________" << std::endl;
-// 		std::cout << "New client [" << clientFD << "] connected" << std::endl;
-// 		std::cout << "__________________________________\n" << std::endl;
-// 	} else {
-// 		std::cerr << "Accept failed" << std::endl;
-// 	}
-// }
-
-// void handleClient( int clientFD )
-// {
-// 	char buf[1024] = {0};
-// 	int bytesRead = recv(clientFD, buf, sizeof(buf) - 1, 0);
-
-// 	if (bytesRead > 0) {
-// 		std::cout << "Client [" << clientFD << "] sent: " << buf << std::endl;
-// 		std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 14\r\nConnection: keep-alive\r\n\r\nHello, World!\n";
-// 		send(clientFD, response.c_str(), response.length(), 0);
-// 	} else if (bytesRead == 0) {
-// 		std::cout << "Client [" << clientFD << "] disconnected" << std::endl;
-// 		close(clientFD);
-// 		clients.erase(std::remove(clients.begin(), clients.end(), clientFD), clients.end());
-// 	} else if (bytesRead < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-// 		std::cerr << "Error reading from client [" << clientFD << "]" << std::endl;
-// 		close(clientFD);
-// 		clients.erase(std::remove(clients.begin(), clients.end(), clientFD), clients.end());
-// 	}
-// }
+std::string response =  "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 31\r\n\r\n<h1>Hello from Webserv!</h1>";
 
 int	main( void )
 {
@@ -89,7 +50,7 @@ int	main( void )
 	std::cout << "Binding success socket ID: " << serverFD << std::endl;
 
 	// listen
-	if (listen(serverFD, 5) < 0) {
+	if (listen(serverFD, SOMAXCONN) < 0) {
 		std::cerr << "Failed to listen socket ID: " << serverFD << std::endl;
 		close(serverFD); return (1);
 	}
@@ -100,6 +61,7 @@ int	main( void )
 	std::cout << "Socket ID [" << serverFD << "] set to non-blocking mode" << std::endl;
 
 	std::vector<pollfd>	fds;
+	std::map<int, str>	clientBuf;
 
 	pollfd serverPollFD;
 	serverPollFD.fd = serverFD;
@@ -111,7 +73,7 @@ int	main( void )
 
 	while (true)
 	{
-		std::cout << "Waiting for activity. On PORT [" << PORT << "]" << std::endl;
+		std::cout << "Waiting for activity. On PORT [" << PORT << "]. Number of clients: " << fds.size() - 1 << std::endl;
 
 		int activity = poll(fds.data(), fds.size(), 4000);
 		
@@ -143,12 +105,18 @@ int	main( void )
 						std::cout << "Client disconnected: FD [" << clientFD << "]" << std::endl;
 						close(clientFD);
 						fds.erase(fds.begin() + i);
+						clientBuf.erase(clientFD);
 						--i;
 						continue ;
 					}
 					buf[bytes] = '\0';
-					std::cout << "Received: " << buf << std::endl; 
-					send(clientFD, response.c_str(), response.size(), 0);
+					clientBuf[clientFD] += buf;
+
+					if (clientBuf[clientFD].find("\r\n\r\n") != std::string::npos) {
+						std::cout << "Request received from client [" << clientFD << "]:\n" << clientBuf[clientFD] << std::endl;
+						send(clientFD, response.c_str(), response.size(), 0);
+						clientBuf[clientFD].clear();
+					}
 				}
 			}
 		}
