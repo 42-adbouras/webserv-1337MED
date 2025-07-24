@@ -22,6 +22,11 @@
 #include <algorithm>
 #include <cstring>
 #include <poll.h>
+#include <map>
+#include <sstream>
+#include <fstream>
+
+typedef std::string str;
 
 class Webserv
 {

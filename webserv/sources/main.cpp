@@ -15,8 +15,55 @@
 #define PORT 8080
 #define MAX_CLIENTS 100
 #define BUFFER_SIZE 4096
+#define ROOT "./www"
 
-std::string response =  "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 31\r\n\r\n<h1>Hello from Webserv!</h1>";
+// std::string response =  "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 31\r\n\r\n<h1>Hello from Webserv!</h1>";
+
+int	setNonBlocking( int fd )
+{
+	return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
+}
+
+str	intToString( size_t v )
+{
+	std::ostringstream oss;
+	oss << v; return (oss.str());
+}
+
+str	getContentType( const str& path )
+{
+	if (path.find(".html") != str::npos) return ("text/html");
+	if (path.find(".css") != std::string::npos) return ("text/css");
+	if (path.find(".js") != std::string::npos) return ("application/javascript");
+	if (path.find(".png") != std::string::npos) return ("image/png");
+	if (path.find(".jpg") != std::string::npos || path.find(".jpeg") != std::string::npos) return ("image/jpeg");
+	return ("text/plain");
+}
+
+str	serveFile( const str& path )
+{
+	std::ifstream	file(path.c_str());
+	if (!file.is_open()) {
+		str notFound = "<h1>404 Not Found</h1>";
+		return ("HTTP/1.1 404 Not Found\r\n"
+				"Content-Type: text/html\r\n"
+				"Content-Length: " + intToString(notFound.size()) + "\r\n"
+				"Connection: keep-alive\r\n\r\n" + notFound);
+	}
+
+	std::ostringstream	content;
+	content << file.rdbuf();
+	str	body = content.str();
+	str	contentType = getContentType(path);
+
+	std::ostringstream	response;
+	response << "HTTP/1.1 200 OK\r\n"
+			 << "Content-Type: " << contentType << "\r\n"
+			 << "Content-Length: " << body.size() << "\r\n"
+			 << "Connection: keep-alive\r\n\r\n"
+			 << body;
+	return (response.str());
+}
 
 int	main( void )
 {
@@ -57,7 +104,7 @@ int	main( void )
 	std::cout << "Server listening on port: " << PORT << std::endl;
 
 	// setting nb-I/O
-	fcntl(serverFD, F_SETFL, fcntl(serverFD, F_GETFL) | O_NONBLOCK);
+	setNonBlocking(serverFD);
 	std::cout << "Socket ID [" << serverFD << "] set to non-blocking mode" << std::endl;
 
 	std::vector<pollfd>	fds;
@@ -89,12 +136,13 @@ int	main( void )
 					// accept client
 					int clientFD = accept(serverFD, NULL, NULL);
 					if (clientFD >= 0) {
-						fcntl(clientFD, F_SETFL, fcntl(clientFD, F_GETFL) | O_NONBLOCK);
+						setNonBlocking(clientFD);
 						pollfd clientPollFD;
 						clientPollFD.fd = clientFD;
 						clientPollFD.events = POLLIN;
 						clientPollFD.revents = 0;
 						fds.push_back(clientPollFD);
+						clientBuf[clientFD] = "";
 						std::cout << "New client connected: FD [" << clientFD << "]" << std::endl;
 					}
 				} else {
@@ -113,8 +161,34 @@ int	main( void )
 					clientBuf[clientFD] += buf;
 
 					if (clientBuf[clientFD].find("\r\n\r\n") != std::string::npos) {
-						std::cout << "Request received from client [" << clientFD << "]:\n" << clientBuf[clientFD] << std::endl;
-						send(clientFD, response.c_str(), response.size(), 0);
+						str& request = clientBuf[clientFD];
+						std::istringstream reqStream(request);
+						str method, path, version;
+						reqStream >> method >> path >> version;
+
+						size_t queryPos = path.find("?");
+						if ( queryPos != str::npos)
+							path = path.substr(0, queryPos);
+
+						std::cout << "Request from client [" << clientFD << "]: " << method << " " << path << std::endl;
+
+						str response;
+						if (method == "GET") {
+							str fullPath = str(ROOT) + path;
+							std::cout << "Looking for file at: " << fullPath << std::endl;
+							if (!fullPath.empty() && fullPath[fullPath.size() - 1] == '/')
+								fullPath += "index.html";
+							std::cout << "Final path: " << fullPath << std::endl;
+							response = serveFile(fullPath);
+							send(clientFD, response.c_str(), response.size(), 0);
+						} else {
+							str notAllowed ="<h1>405 Method Not Allowed</h1>";
+							response = "HTTP/1.1 405 Method Not Allowed\r\n"
+								"Content-Type: text/html\r\n"
+								"Content-Length: " + intToString(notAllowed.size()) + "\r\n"
+								"Connection: keep-alive\r\n\r\n" + notAllowed;
+							send(clientFD, response.c_str(), response.size(), 0);
+						}
 						clientBuf[clientFD].clear();
 					}
 				}
