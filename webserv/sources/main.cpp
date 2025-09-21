@@ -6,14 +6,14 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/16 19:33:05 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/21 17:10:51 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
-#include "Lexer.hpp"
-#include "TypeDefs.hpp"
-#include <vector>
+#include "../includes/Server.hpp" // IWYU pragma: keep
+#include "../includes/Lexer.hpp"
+#include "../includes/TypeDefs.hpp"
+#include <vector> // IWYU pragma: keep
 
 #define PORT 8080
 #define ROOT "www"
@@ -40,16 +40,53 @@ void	printTokens( const TokensVector& tokens )
 	}
 }
 
+bool	validFile( const str& path )
+{
+	if (path.size() < 5)
+		return (false);
+	const str	ext = path.substr(path.size() - 5);
+	return (ext == ".conf");
+}
+
+str		readConfig( const str& path )
+{
+	if (path.empty())
+		throw std::invalid_argument("[InvalidConfigPathException]");
+	if (!validFile(path))
+		throw std::invalid_argument("[InvalidConfigFileException]");
+
+	std::ifstream	in(path.c_str());
+	if (!in.is_open())
+		throw std::runtime_error("[FailedToOpenFileException]");
+
+	std::ostringstream	oss;
+	oss << in.rdbuf();
+
+	if (!in && in.eof())
+		throw std::runtime_error("[ErrorReadingFileExeption]");
+
+	return ( oss.str());
+}
+
 int	main( int ac, char** av )
 {
-	(void) ac;
-	std::ifstream	confStream(av[1]);
-	std::ostringstream out;
-	out << confStream.rdbuf();
+	if (ac < 2) {
+		std::cerr << "Usage: ./webserv <config.conf>" << std::endl;
+		return (1);
+	} try {
+		str				cfg = readConfig(av[1]);
+		Lexer			lex(cfg);
+		TokensVector	tokens = lex.tokenize();
+		printTokens(tokens);
+		
+	} catch (std::exception& e) {
+		std::cerr << e.what() << std::endl;
+		return (1);
+	}
+	// std::ifstream	confStream(av[1]);
+	// std::ostringstream out;
+	// out << confStream.rdbuf();
 
-	Lexer			lex(out.str());
-	TokensVector tokens = lex.tokenize();
-	printTokens(tokens);
 	// Server	server(PORT, ROOT);
 
 	// if (!server.init())

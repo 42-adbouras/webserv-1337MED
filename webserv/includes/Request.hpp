@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <sstream>
+#include <sstream> // IWYU pragma: keep
 
 typedef std::string str;
 

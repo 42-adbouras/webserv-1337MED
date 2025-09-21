@@ -2,8 +2,8 @@
 
 #include <string>
 #include <map>
-#include <fstream>
-#include <sstream>
+#include <fstream> // IWYU pragma: keep
+#include <sstream> // IWYU pragma: keep
 
 typedef std::string str;
 
