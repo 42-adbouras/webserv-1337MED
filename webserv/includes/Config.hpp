@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/21 18:28:02 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/21 18:46:01 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@
 #include "Server.hpp"
 #include "TypeDefs.hpp"
 #include <cstddef>
-#include <future>
 #include <map>
 #include <set>
 
@@ -91,7 +90,9 @@ private:
 	ServerEntry		parseServerBlock( void );
 	Location		parseLocationBlock ( void );
 
-	void			parseServerDir( ServerEntry& serv);
+	void			parseServerDir( ServerEntry& serv );
 	void			parseLocationDir (Location& loc );
-	void			parseListen( ServerEntry );
+
+	void			parseListen( ServerEntry& serv );
+	void			parsePort( ServerEntry& serv );
 };
