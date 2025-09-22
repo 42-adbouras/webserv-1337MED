@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/22 17:08:37 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/22 20:01:55 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,12 +14,13 @@
 
 
 ParsingError::ParsingError( const str& msg, int line, int col )
-: _msg(msg)
-, _line(line)
-, _col(col)
+	: _msg(msg)
+	, _line(line)
+	, _col(col)
 {
 	std::ostringstream	oss;
-	oss << "ConfigParser::" << _msg << " [" << _line << ":" << _col << "]";
+
+	oss << "ConfigParser::[" << _line << ":" << _col << "]:" << _msg;
 	_what = oss.str();
 }
 
@@ -128,13 +129,16 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 	if (cur._token == "listen") {
 		std::cout << "found Listen" << std::endl;
 		fetchListen(serv); // TODO
-	} else if (cur._token == "port") {
-		std::cout << "found Port" << std::endl; 
-		// fetchPort(serv);
-	} else if (cur._token == "server_name") {
-		std::cout << "found Server nAme" << std::endl; 
-		// fetchServerName(serv._serverName, cur._line, cur._col);
+		expect(T_SEMI, "Expected ';' After host:port");
+	}
+	else if (cur._token == "server_name") {
+		std::cout << "found Server nAme:" << std::endl; 
+		fetchServerName(serv);
 		expect(T_SEMI, "Expected ';' After server_name");
+	} else if (cur._token == "root") {
+		std::cout << "found ROOT: " << std::endl;
+		fetchPath(serv);
+		expect(T_SEMI, "Expected ';' root");
 	} else {
 		throw ParsingError("UnknownServerDirective [" + cur._token + "]", cur._line, cur._col);
 	}
@@ -142,7 +146,7 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 
 void	validatePort( int port, int line, int col )
 {
-	if (port < 1 || port > 65535)
+	if (port < PORT_MIN || port > PORT_MAX)
 		throw ParsingError("PortOutOfRange", line, col);
 }
 
@@ -161,7 +165,6 @@ void	ConfigParser::fetchListen( ServerEntry& serv )
 {
 	(void) serv;
 	Token	cur = current();
-	std::cout << "current: " << cur._token << std::endl;
 
 	if (cur._type != T_STR && cur._type != T_NUM)
 		throw ParsingError("ExpectedListenValue", cur._line, cur._col);
@@ -184,6 +187,31 @@ void	ConfigParser::fetchListen( ServerEntry& serv )
 		int portVal = std::atoi(port.c_str());
 		validatePort(portVal, cur._line, cur._col);
 		serv._listen.push_back(std::make_pair(host, portVal));
+		std::cout << "\t host: " << host << std::endl;
+		std::cout << "\t port: " << portVal << std::endl;
 	}
-	expect(T_SEMI, "Expected ';' AfterListen");
+}
+
+void	ConfigParser::fetchServerName( ServerEntry& serv )
+{
+	
+	Token	cur = current();
+
+	if (!accept(T_STR))
+		throw ParsingError("ExpectedNameIn server_name", cur._line, cur._col);
+	std::cout << "\t " << cur._token << std::endl;
+	serv._serverName = cur._token;
+}
+
+void	ConfigParser::fetchPath( ServerEntry& serv )
+{
+	Token	cur = current();
+	
+	if (!accept(T_STR))
+		throw ParsingError("ExpectedPath", cur._line, cur._col);
+	// ++_index;
+	str	path = cur._token;
+	std::cout << "\t " << path << std::endl;
+	// sanitize later
+	serv._root = path;
 }
