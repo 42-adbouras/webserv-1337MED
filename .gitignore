@@ -3,10 +3,17 @@
 !*.cpp
 !*.hpp
 !*.tpp
+!*.html
+!*.conf
 
 !webserv/
 !sources/
+!parser/
 !includes/
+!configs/
+!www/
 !Makefile
 !README.md
 !.gitignore
+
+test.cpp
