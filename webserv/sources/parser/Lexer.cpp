@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:29:56 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/21 18:29:54 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/22 16:38:17 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,7 +78,7 @@ void	Lexer::skip( void )
 TokensVector	Lexer::tokenize( void )
 {
 	TokensVector	tokens;
-
+	
 	while (true)
 	{
 		skip();
@@ -104,18 +104,25 @@ TokensVector	Lexer::tokenize( void )
 	return (tokens);
 }
 
+
 Token	Lexer::stringToken( void )
 {
-	int	tLine= this->_line, tcol = this->_col;
-	str	out;
+	int		tLine = this->_line, tcol = this->_col;
+	str		out;
+	bool	isNum = true;
 
 	while (!eof())
 	{
-		char	c = peek();
+		unsigned char	c = peek();
 		if (std::isspace(c) || c == '{' || c == '}' || c == ';' || c == '#')
 			break ;
+
+		if (!std::isdigit(c))
+			isNum = false;
 		out.push_back(get());
 	}
 	Token	token = makeToken(T_STR, out, tLine, tcol);
+	if (!out.empty() && isNum)
+		token._type = T_NUM;
 	return (token);
 }

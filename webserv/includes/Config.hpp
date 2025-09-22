@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/21 18:46:01 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/22 16:49:20 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <map>
 #include <set>
+#include <exception>
 
 struct CGIEntry
 {
@@ -44,7 +45,7 @@ struct Location
 
 struct ServerEntry
 {
-	str					_listen;
+	std::vector< std::pair<str, int> >	_listen;
 	stack_t				_serverName;
 	str					_root;
 	str					_index;
@@ -58,13 +59,18 @@ struct ServerEntry
 	std::vector<Location>	_locations;
 };
 
-class ParsingErrer
+class ParsingError : public std::exception
 {
-public:
+private:
 	str		_msg;
-	int		_col;
 	int		_line;
-	ParsingErrer( const str& msg, int line, int col );
+	int		_col;
+	str		_what;
+
+public:
+	ParsingError( const str& msg, int line, int col );
+	virtual ~ParsingError() throw();
+	const char*	what() const throw();
 };
 
 struct Data
@@ -83,7 +89,7 @@ public:
 	Data			parseTokens( void );
 
 private:
-	const Token&	current( void );
+	const Token&	current( void ) const;
 	bool			accept( TokenType t );
 	bool			expect( TokenType t, const str& err );
 
@@ -93,6 +99,6 @@ private:
 	void			parseServerDir( ServerEntry& serv );
 	void			parseLocationDir (Location& loc );
 
-	void			parseListen( ServerEntry& serv );
-	void			parsePort( ServerEntry& serv );
+	void			fetchListen( ServerEntry& serv );
+	void			fetchPort( ServerEntry& serv );
 };
