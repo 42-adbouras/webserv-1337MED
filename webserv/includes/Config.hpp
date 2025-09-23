@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/22 19:01:46 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/23 16:56:10 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,16 +46,16 @@ struct Location
 struct ServerEntry
 {
 	std::vector< std::pair<str, int> >	_listen;
-	str					_serverName;
-	str					_root;
-	str					_index;
-	std::map<int, str>	_errorPages;
-	int					_maxBodySize;
-	str					_uploadStore;
-	std::set<str>		_allowedMethosd;
-	bool				_autoIndexSet;
-	bool				_autoIndex;
-	CGIEntry			_cgi;
+	str						_serverName;
+	str						_root;
+	std::vector<str>		_index;
+	std::map<int, str>		_errorPages;
+	size_t					_maxBodySize;
+	str						_uploadStore;
+	std::set<str>			_allowedMethosd;
+	bool					_autoIndexSet;
+	bool					_autoIndex;
+	CGIEntry				_cgi;
 	std::vector<Location>	_locations;
 };
 
@@ -103,4 +103,8 @@ private:
 	// void			fetchPort( ServerEntry& serv );
 	void			fetchServerName( ServerEntry& serv );
 	void			fetchPath( ServerEntry& serv );
+	void			fetchPathList( ServerEntry& serv );
+	void			fetchAutoIndex( ServerEntry& serv );
+	void			fetchBodySize( ServerEntry& serv );
+	void			fetchErrorPages( ServerEntry& serv );
 };
