@@ -45,7 +45,7 @@ struct Location
 struct ServerEntry
 {
 	str					_listen;
-	stack_t				_serverName;
+	str				_serverName;
 	str					_root;
 	str					_index;
 	std::map<int, str>	_errorPages;
