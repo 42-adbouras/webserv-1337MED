@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/22 20:01:55 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/23 19:43:00 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -139,6 +139,22 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 		std::cout << "found ROOT: " << std::endl;
 		fetchPath(serv);
 		expect(T_SEMI, "Expected ';' root");
+	} else if (cur._token == "index") {
+		std::cout << "found INDEX: " << std::endl;
+		fetchPathList(serv);
+		expect(T_SEMI, "Expected ';' after index");
+	} else if (cur._token == "autoindex") {
+		std::cout << "found AUTOINDEX: " << std::endl;
+		fetchAutoIndex(serv);
+		expect(T_SEMI, "Expected ';' after autoindex");
+	} else if (cur._token == "client_max_body_size") {
+		std::cout << "found MAXBODYSIZE: " << std::endl;
+		fetchBodySize(serv);
+		expect(T_SEMI, "Expected ';' after client_max_body_size");
+	} else if (cur._token == "error_page") {
+		std::cout << "found ERROR_CODE: " << std::endl;
+		fetchErrorPages(serv);
+		expect(T_SEMI, "Expected ';' after error_page");
 	} else {
 		throw ParsingError("UnknownServerDirective [" + cur._token + "]", cur._line, cur._col);
 	}
@@ -160,7 +176,6 @@ bool	isNum( const str& s )
 	} return (true);
 }
 
-
 void	ConfigParser::fetchListen( ServerEntry& serv )
 {
 	(void) serv;
@@ -178,7 +193,9 @@ void	ConfigParser::fetchListen( ServerEntry& serv )
 			ParsingError("ListenMustBeNumericOr host:port", cur._line, cur._col);
 		int port = std::atoi(val.c_str());
 		validatePort(port, cur._line, cur._col);
-		serv._listen.push_back(std::make_pair(str(""), port));
+		serv._listen.push_back(std::make_pair(str("0.0.0.0"), port));
+		std::cout << "\t host: " << "0.0.0.0" << std::endl;
+		std::cout << "\t port: " << port << std::endl;
 	} else {
 		str host = val.substr(0, colon);
 		str port = val.substr(colon + 1);
@@ -214,4 +231,93 @@ void	ConfigParser::fetchPath( ServerEntry& serv )
 	std::cout << "\t " << path << std::endl;
 	// sanitize later
 	serv._root = path;
+}
+
+void	ConfigParser::fetchPathList( ServerEntry& serv )
+{
+	while (current()._type != T_SEMI) {
+		Token cur = current();
+		str	path = current()._token;
+		// sanitize later
+		std::cout << "\t " << path << std::endl;
+		serv._index.push_back(path);
+		++_index;
+	}
+}
+
+void	ConfigParser::fetchAutoIndex( ServerEntry& serv )
+{
+	(void) serv;
+	Token	cur = current();
+
+	if (!accept(T_STR))
+		throw ParsingError("ExpectedPath on/off After autoindix", current()._line, current()._col);
+	serv._autoIndexSet = true;
+	if (cur._token == "on" || cur._token == "true")
+		serv._autoIndex = true;
+	else if (cur._token == "off" || cur._token == "false")
+		serv._autoIndex = false;
+	else
+		throw ParsingError("InvalidBooleanUse <on/off/true/false>", cur._line, cur._col);
+	std::cout << "\t " << cur._token << std::endl;
+	
+}
+
+void	ConfigParser::fetchBodySize( ServerEntry& serv )
+{
+	(void)serv;
+	Token	cur = current();
+	std::cout << "\t " << cur._token << std::endl;
+
+	if (!accept(T_STR))
+		throw ParsingError("ExpectedSize", cur._line, cur._col);
+
+	str	size  = cur._token;
+	size_t	i = 0;
+	while (i < size.size() && std::isdigit(size[i]))
+		++i;
+
+	if (!i) throw ParsingError("InvalideSize", cur._line, cur._col);
+
+	str	nums = size.substr(0, i);
+	str	unit = size.substr(i);
+
+	size_t num = std::atol(nums.c_str());
+	if (unit.empty() || unit.size() != 1)
+		throw ParsingError("InvalidSizeUnit", cur._line, cur._col);
+	char target = std::tolower(unit[0]);
+	unsigned long mult;
+	if (target == 'k')		mult = M_KILO;
+	else if (target == 'm')	mult = M_MEGA;
+	else if (target == 'g') mult = M_GEGA;
+	else
+		throw ParsingError("InvalidSizeUnit", cur._line, cur._col);
+	
+	size_t maxSize = std::numeric_limits<size_t>::max();
+	if (num > maxSize / mult)
+		throw ParsingError("SizeOverflow", cur._line, cur._col);
+	serv._maxBodySize = num * mult;
+	std::cout << "\t result: " << serv._maxBodySize << std::endl;
+}
+
+void	ConfigParser::fetchErrorPages( ServerEntry& serv )
+{
+	(void) serv;
+	Token	cur = current();
+
+	std::cout << "\t " << cur._token << std::endl;
+	if (!accept(T_NUM))
+		throw ParsingError("ExpectedErrorNumber", cur._line, cur._col);
+
+	str	strCode = cur._token;
+	if (strCode.size() != 3)
+		throw ParsingError("InvalidErrorNumber", cur._line, cur._col);
+
+	cur = current();
+	if (!accept(T_STR))
+		throw ParsingError("ExpectedPath", cur._line, cur._col);
+
+	int code = std::atoi(strCode.c_str());
+	serv._errorPages[code] = cur._token;
+	std::cout << "\t " << code << " : " << cur._token << std::endl;
 }
