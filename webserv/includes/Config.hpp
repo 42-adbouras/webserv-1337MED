@@ -46,19 +46,7 @@ struct Location
 
 struct ServerEntry
 {
-<<<<<<< HEAD
-	str					_listen;
-	str				_serverName;
-	str					_root;
-	str					_index;
-	std::map<int, str>	_errorPages;
-	int					_maxBodySize;
-	str					_uploadStore;
-	std::set<str>		_allowedMethosd;
-	bool				_autoIndexSet;
-	bool				_autoIndex;
-	CGIEntry			_cgi;
-=======
+
 	std::vector< std::pair<str, int> >	_listen;
 	str						_serverName;
 	str						_root;
@@ -69,7 +57,6 @@ struct ServerEntry
 	bool					_autoIndexSet;
 	bool					_autoIndex;
 	CGIEntry				_cgi;
->>>>>>> adbouras
 	std::vector<Location>	_locations;
 };
 
