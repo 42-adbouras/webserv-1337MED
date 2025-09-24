@@ -6,13 +6,14 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/21 17:10:51 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/22 16:39:08 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/Server.hpp" // IWYU pragma: keep
 #include "../includes/Lexer.hpp"
 #include "../includes/TypeDefs.hpp"
+#include "../includes/Config.hpp"
 #include <vector> // IWYU pragma: keep
 
 #define PORT 8080
@@ -26,6 +27,7 @@ const char*	tokenTypeName( TokenType t )
 	case T_RBRACE:	return ("T_RBRACE");
 	case T_SEMI:	return ("T_SEMI");
 	case T_STR:		return ("T_STR");
+	case T_NUM:		return ("T_NUM");
 	default:		return ("T_UNK");
 	}
 }
@@ -77,7 +79,9 @@ int	main( int ac, char** av )
 		str				cfg = readConfig(av[1]);
 		Lexer			lex(cfg);
 		TokensVector	tokens = lex.tokenize();
-		printTokens(tokens);
+		// printTokens(tokens);
+		ConfigParser	p(tokens);
+		p.parseTokens();
 		
 	} catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
