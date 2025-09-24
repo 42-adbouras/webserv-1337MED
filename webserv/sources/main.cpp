@@ -14,6 +14,8 @@
 #include "../includes/Lexer.hpp"
 #include "../includes/TypeDefs.hpp"
 #include "../includes/Config.hpp"
+#include <fstream>
+#include <sstream>
 #include <vector> // IWYU pragma: keep
 
 #define PORT 8080
@@ -81,7 +83,9 @@ int	main( int ac, char** av )
 		TokensVector	tokens = lex.tokenize();
 		// printTokens(tokens);
 		ConfigParser	p(tokens);
-		p.parseTokens();
+		Data	data = p.parseTokens();
+		// Server	server(data);
+
 		
 	} catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;

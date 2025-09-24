@@ -12,7 +12,7 @@
 
 #include "../../includes/Config.hpp"
 #include <exception>
-#include <locale>
+#include <sstream>
 
 
 ParsingError::ParsingError( const str& msg, int line, int col )
@@ -34,7 +34,7 @@ const char*	ParsingError::what() const throw()
 }
 
 ConfigParser::ConfigParser( const TokensVector& tokens )
-	: _tokens(tokens) {}
+	: _tokens(tokens), _index(0) {}
 
 const Token&	ConfigParser::current( void ) const
 {
