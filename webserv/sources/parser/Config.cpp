@@ -6,11 +6,13 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/23 19:43:00 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/24 13:37:49 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/Config.hpp"
+#include <exception>
+#include <locale>
 
 
 ParsingError::ParsingError( const str& msg, int line, int col )
@@ -115,7 +117,7 @@ Location	ConfigParser::parseLocationBlock ( void )
 	while (!accept(T_RBRACE)) {
 		if (!(current()._type == T_STR))
 			throw ParsingError("ExpectedLocationDirective", current()._line, current()._col);
-		// parseLocationDir(loc); // TODO
+		parseLocationDir(loc); // TODO
 	}
 	return (loc);
 }
@@ -137,28 +139,87 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 		expect(T_SEMI, "Expected ';' After server_name");
 	} else if (cur._token == "root") {
 		std::cout << "found ROOT: " << std::endl;
-		fetchPath(serv);
+		fetchPath(serv._root);
 		expect(T_SEMI, "Expected ';' root");
 	} else if (cur._token == "index") {
 		std::cout << "found INDEX: " << std::endl;
-		fetchPathList(serv);
+		fetchPathList(serv._index);
 		expect(T_SEMI, "Expected ';' after index");
 	} else if (cur._token == "autoindex") {
 		std::cout << "found AUTOINDEX: " << std::endl;
-		fetchAutoIndex(serv);
+		serv._autoIndex = fetchAutoIndex();
+		serv._autoIndexSet = true;
 		expect(T_SEMI, "Expected ';' after autoindex");
 	} else if (cur._token == "client_max_body_size") {
 		std::cout << "found MAXBODYSIZE: " << std::endl;
-		fetchBodySize(serv);
+		fetchBodySize(serv._maxBodySize);
 		expect(T_SEMI, "Expected ';' after client_max_body_size");
 	} else if (cur._token == "error_page") {
 		std::cout << "found ERROR_CODE: " << std::endl;
-		fetchErrorPages(serv);
+		fetchErrorPages(serv._errorPages);
 		expect(T_SEMI, "Expected ';' after error_page");
+	} else if (cur._token == "cgi") {
+		std::cout << "found CGI: " << std::endl;
+		fetchCGI(serv._cgi);
+		expect(T_SEMI, "Expected ';' after cgi");
 	} else {
 		throw ParsingError("UnknownServerDirective [" + cur._token + "]", cur._line, cur._col);
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void	ConfigParser::parseLocationDir ( Location& loc )
+{
+	(void) loc;
+	Token cur = current();
+
+	++_index;
+	if (cur._token == "root") {
+		std::cout << "found ROOT: " << std::endl;
+		fetchPath(loc._path);
+		expect(T_SEMI, "Expected ';' root");
+	} else if (cur._token == "index") {
+		std::cout << "found INDEX: " << std::endl; 
+		fetchPathList(loc._index);
+		expect(T_SEMI, "Expected ';' after index");
+	} else if (cur._token == "error_page") {
+		std::cout << "found ERROR_PAGE: " << std::endl;
+		fetchErrorPages(loc._errorPages);
+		expect(T_SEMI, "Expected ';' after error_page");
+	} else if (cur._token == "client_max_body_size") {
+		std::cout << "found MAX_BODY_SIZE: " << std::endl;
+		fetchBodySize(loc._maxBodySize);
+		expect(T_SEMI, "Expected ';' after client_max_body_size");
+	} else if (cur._token == "upload_store") {
+		std::cout << "found UPLOAD_STORE: " << std::endl; 
+		fetchPath(loc._uploadStore);
+		expect(T_SEMI, "Expected ';' after upload_store");
+	} else if (cur._token == "allowed_methods") {
+		std::cout << "found ALLOWED_METHODS: " << std::endl;
+		fetchMethods(loc._allowedMethods);
+		expect(T_SEMI, "Expected ';' allowed_methods");
+	} else if (cur._token == "autoindex") {
+		std::cout << "found AUTOINDEX: " << std::endl;
+		loc._autoIndex = fetchAutoIndex();
+		loc._autoIndexSet = true;
+		expect(T_SEMI, "Expected ';' after autoindex");
+	} else if (cur._token == "redirect") {
+		std::cout << "found REDIRECT: " << std::endl;
+		fetchRedirect(loc);
+		expect(T_SEMI, "Expected ';' after redirect");
+	} else if (cur._token == "cgi") {
+		std::cout << "found CGI: " << std::endl;
+		fetchCGI(loc._cgi);
+		expect(T_SEMI, "Expected ';' after cgi");
+	} else {
+		throw ParsingError("UnknownLocationDirective [" + cur._token + "]", cur._line, cur._col);
+	}
+}
+
 
 void	validatePort( int port, int line, int col )
 {
@@ -172,7 +233,7 @@ bool	isNum( const str& s )
 		return (false);
 	for (size_t i = 0; i < s.size(); ++i) {
 		if (!std::isdigit((static_cast<unsigned char>(s[i]))))
-			return (false);
+		return (false);
 	} return (true);
 }
 
@@ -220,52 +281,49 @@ void	ConfigParser::fetchServerName( ServerEntry& serv )
 	serv._serverName = cur._token;
 }
 
-void	ConfigParser::fetchPath( ServerEntry& serv )
+void	ConfigParser::fetchPath( str& path )
 {
 	Token	cur = current();
 	
 	if (!accept(T_STR))
 		throw ParsingError("ExpectedPath", cur._line, cur._col);
 	// ++_index;
-	str	path = cur._token;
+	path = cur._token;
 	std::cout << "\t " << path << std::endl;
 	// sanitize later
-	serv._root = path;
 }
 
-void	ConfigParser::fetchPathList( ServerEntry& serv )
+void	ConfigParser::fetchPathList( std::vector<str>& list )
 {
 	while (current()._type != T_SEMI) {
 		Token cur = current();
-		str	path = current()._token;
+		str	path = cur._token;
 		// sanitize later
 		std::cout << "\t " << path << std::endl;
-		serv._index.push_back(path);
+		list.push_back(path);
 		++_index;
 	}
 }
 
-void	ConfigParser::fetchAutoIndex( ServerEntry& serv )
+bool	ConfigParser::fetchAutoIndex( void )
 {
-	(void) serv;
 	Token	cur = current();
+	bool	value;
 
 	if (!accept(T_STR))
 		throw ParsingError("ExpectedPath on/off After autoindix", current()._line, current()._col);
-	serv._autoIndexSet = true;
 	if (cur._token == "on" || cur._token == "true")
-		serv._autoIndex = true;
+		value = true;
 	else if (cur._token == "off" || cur._token == "false")
-		serv._autoIndex = false;
+		value = false;
 	else
 		throw ParsingError("InvalidBooleanUse <on/off/true/false>", cur._line, cur._col);
 	std::cout << "\t " << cur._token << std::endl;
-	
+	return (value);
 }
 
-void	ConfigParser::fetchBodySize( ServerEntry& serv )
+void	ConfigParser::fetchBodySize( size_t& bodySize )
 {
-	(void)serv;
 	Token	cur = current();
 	std::cout << "\t " << cur._token << std::endl;
 
@@ -296,16 +354,14 @@ void	ConfigParser::fetchBodySize( ServerEntry& serv )
 	size_t maxSize = std::numeric_limits<size_t>::max();
 	if (num > maxSize / mult)
 		throw ParsingError("SizeOverflow", cur._line, cur._col);
-	serv._maxBodySize = num * mult;
-	std::cout << "\t result: " << serv._maxBodySize << std::endl;
+	bodySize = num * mult;
+	std::cout << "\t result: " << bodySize << std::endl;
 }
 
-void	ConfigParser::fetchErrorPages( ServerEntry& serv )
+void	ConfigParser::fetchErrorPages( std::map<int, str>& errors )
 {
-	(void) serv;
 	Token	cur = current();
 
-	std::cout << "\t " << cur._token << std::endl;
 	if (!accept(T_NUM))
 		throw ParsingError("ExpectedErrorNumber", cur._line, cur._col);
 
@@ -318,6 +374,67 @@ void	ConfigParser::fetchErrorPages( ServerEntry& serv )
 		throw ParsingError("ExpectedPath", cur._line, cur._col);
 
 	int code = std::atoi(strCode.c_str());
-	serv._errorPages[code] = cur._token;
+	errors[code] = cur._token;
 	std::cout << "\t " << code << " : " << cur._token << std::endl;
+}
+
+void	ConfigParser::fetchCGI( CGIEntry& cgi )
+{
+	Token	cur = current();
+	if (!accept(T_STR))
+		throw ParsingError("ExpectedExtention", cur._line, cur._col);
+		
+	str	ext = cur._token;
+	if (ext.size() < 2 || ext[0] != '.')
+		throw ParsingError("InvalidExtention", cur._line, cur._col);
+
+	cur = current();
+	if (!accept(T_STR))
+		throw ParsingError("ExpectedInterpreter", cur._line, cur._col);
+	str inter = cur._token;
+	cgi._extention = ext;
+	cgi._interpreter = inter;
+	std::cout << "\t " << ext << " : " << inter << std::endl;
+}
+
+void	ConfigParser::fetchMethods( std::set<str>& methods )
+{
+	const char* allowed[] = {"GET", "POST", "DELETE", NULL};
+	
+	while (current()._type == T_STR) {
+		str	method = current()._token;
+		++_index;
+		bool ok = false;
+		for (int i = 0; allowed[i]; ++i)
+			if (method == allowed[i]) {
+				ok = true;
+				break ;
+			}
+		if (!ok)
+			throw ParsingError("InvalidMethods", current()._line, current()._col);
+		methods.insert(method);
+	}
+	if (methods.empty()) throw ParsingError("ExpectedMethod", current()._line, current()._col);
+	for (std::set<str>::const_iterator it = methods.begin(); it != methods.end(); ++it)
+		std::cout << "\t " << *it << std::endl;
+}
+
+void	ConfigParser::fetchRedirect( Location& loc )
+{
+	Token	cur = current();
+
+	if (!accept(T_NUM))
+		throw ParsingError("ExpectedRedirectCode", cur._line, cur._col);
+		
+	if (cur._token.size() != 3 || cur._token[0] != '3')
+		throw ParsingError("InvalideRedirectCode", cur._line, cur._col);
+
+	std::cout << "\t code: " << cur._token << std::endl;
+	loc._redirCode = std::atoi(cur._token.c_str());
+	cur = current();
+	if (!accept(T_STR))
+		throw ParsingError("ExpectedRedirectPath", cur._line, cur._col);
+	std::cout << "\t path: " << cur._token << std::endl;
+	loc._redirTarget = cur._token;
+	loc._redirSet = true;
 }

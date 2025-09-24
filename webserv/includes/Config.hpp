@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/23 16:56:10 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/09/24 12:12:59 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,8 +29,9 @@ struct CGIEntry
 struct Location
 {
 	str					_path;
+	std::vector<str>	_index;
 	std::map<int, str>	_errorPages;
-	long				_maxBodySize;
+	size_t				_maxBodySize;
 	str					_uploadStore;
 	std::set<str>		_allowedMethods;
 
@@ -52,7 +53,6 @@ struct ServerEntry
 	std::map<int, str>		_errorPages;
 	size_t					_maxBodySize;
 	str						_uploadStore;
-	std::set<str>			_allowedMethosd;
 	bool					_autoIndexSet;
 	bool					_autoIndex;
 	CGIEntry				_cgi;
@@ -102,9 +102,12 @@ private:
 	void			fetchListen( ServerEntry& serv );
 	// void			fetchPort( ServerEntry& serv );
 	void			fetchServerName( ServerEntry& serv );
-	void			fetchPath( ServerEntry& serv );
-	void			fetchPathList( ServerEntry& serv );
-	void			fetchAutoIndex( ServerEntry& serv );
-	void			fetchBodySize( ServerEntry& serv );
-	void			fetchErrorPages( ServerEntry& serv );
+	void			fetchPath( str& path );
+	void			fetchPathList( std::vector<str>& list );
+	bool			fetchAutoIndex( void );
+	void			fetchBodySize( size_t& size );
+	void			fetchErrorPages( std::map<int, str>& errors );
+	void			fetchCGI( CGIEntry& cgi );
+	void			fetchMethods( std::set<str>& methods );
+	void			fetchRedirect( Location& loc );
 };
