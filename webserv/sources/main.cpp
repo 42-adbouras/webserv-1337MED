@@ -14,6 +14,7 @@
 #include "../includes/Lexer.hpp"
 #include "../includes/TypeDefs.hpp"
 #include "../includes/Config.hpp"
+#include "../includes/SocketManager.hpp"
 #include <fstream>
 #include <sstream>
 #include <vector> // IWYU pragma: keep
@@ -83,7 +84,9 @@ int	main( int ac, char** av )
 		TokensVector	tokens = lex.tokenize();
 		// printTokens(tokens);
 		ConfigParser	p(tokens);
-		Data	data = p.parseTokens();
+		Data	config = p.parseTokens();
+		SocketManager	socketManager(config);
+		socketManager.initSockets();
 		// Server	server(data);
 
 		

@@ -15,6 +15,8 @@
 #include <vector>
 #include "Config.hpp"
 #include "ServerExcept.hpp"
+#include "ServerUtils.hpp"
+
 #include <fcntl.h>
 // typedef Data;
 // #include <cstring>
@@ -28,10 +30,10 @@ class Server
 {
 	private:
 		std::vector<int>	_pollFd;
-		Data				*_data;
+		Data				*_config;
 	public:
 		Server(Data data);
 		static int	setNonBlocking(int sockFd);
-		void		initListenSocket(void);
+		void		initListenSockets(void);
 		~Server();
 };
