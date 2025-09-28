@@ -10,11 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/Server.hpp" // IWYU pragma: keep
+#include "../includes/serverHeader/Server.hpp" // IWYU pragma: keep
 #include "../includes/Lexer.hpp"
 #include "../includes/TypeDefs.hpp"
 #include "../includes/Config.hpp"
-#include "../includes/SocketManager.hpp"
+#include "../includes/serverHeader/SocketManager.hpp"
 #include <fstream>
 #include <sstream>
 #include <vector> // IWYU pragma: keep

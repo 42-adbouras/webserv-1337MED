@@ -1,4 +1,4 @@
-#include "../includes/Server.hpp"
+#include "../includes/serverHeader/Server.hpp"
 
 Server::Server(Data config) {
     _config = &config;
