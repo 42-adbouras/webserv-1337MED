@@ -27,7 +27,7 @@ SRC		=	$(shell find sources  -name '*.cpp')
 
 NCLD	=	$(shell find includes -name '*.hpp')
 
-HEADERS	=	-I ./includes
+HEADERS	=	-I ./includes -I ./includes/serverHeader
 
 OBJ_DIR =	objects/
 
