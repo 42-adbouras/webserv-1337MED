@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/24 12:12:59 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/01 13:47:14 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,10 @@ struct Location
 
 struct ServerEntry
 {
-	std::vector< std::pair<str, int> >	_listen;
+	str						_listen;
+	bool					_listenSet;
+	std::set<int>			_port;
+	std::set<str>			_portStr;
 	str						_serverName;
 	str						_root;
 	std::vector<str>		_index;
@@ -100,7 +103,7 @@ private:
 	void			parseLocationDir (Location& loc );
 
 	void			fetchListen( ServerEntry& serv );
-	// void			fetchPort( ServerEntry& serv );
+	void			fetchPortList( ServerEntry& serv );
 	void			fetchServerName( ServerEntry& serv );
 	void			fetchPath( str& path );
 	void			fetchPathList( std::vector<str>& list );
