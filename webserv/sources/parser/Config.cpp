@@ -6,14 +6,11 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/24 13:37:49 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/01 16:19:41 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/Config.hpp"
-#include <exception>
-#include <sstream>
-
 
 ParsingError::ParsingError( const str& msg, int line, int col )
 	: _msg(msg)
@@ -130,10 +127,12 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 
 	if (cur._token == "listen") {
 		std::cout << "found Listen" << std::endl;
-		fetchListen(serv); // TODO
-		expect(T_SEMI, "Expected ';' After host:port");
-	}
-	else if (cur._token == "server_name") {
+		fetchListen(serv);
+		expect(T_SEMI, "Expected ';' AfterHostValue");
+	} else if (cur._token == "port") {
+		fetchPortList(serv);
+		expect(T_SEMI, "Expected ';' AfterPortList");
+	} else if (cur._token == "server_name") {
 		std::cout << "found Server nAme:" << std::endl; 
 		fetchServerName(serv);
 		expect(T_SEMI, "Expected ';' After server_name");
@@ -221,10 +220,11 @@ void	ConfigParser::parseLocationDir ( Location& loc )
 }
 
 
-void	validatePort( int port, int line, int col )
+bool	validatePort( int port, int line, int col )
 {
 	if (port < PORT_MIN || port > PORT_MAX)
 		throw ParsingError("PortOutOfRange", line, col);
+	return (true);
 }
 
 bool	isNum( const str& s )
@@ -233,8 +233,42 @@ bool	isNum( const str& s )
 		return (false);
 	for (size_t i = 0; i < s.size(); ++i) {
 		if (!std::isdigit((static_cast<unsigned char>(s[i]))))
-		return (false);
+			return (false);
 	} return (true);
+}
+
+bool	validHost( str& host )
+{
+	if (host == "0.0.0.0" || host == "localhost")
+		return (true);
+
+	if (host.empty())
+		return (false);
+
+	size_t	i = 0, size = host.size();
+	int		octet = 0;
+
+	while (i < size) {
+		int val = 0;
+		int digits = 0;
+
+		while (i < size && std::isdigit(host[i])) {
+			val = val * 10 + (host[i] - '0');
+			if (++digits > 3)
+				return (false);
+			++i;
+		}
+		if (digits == 0 || val > 255)
+			return (false);
+
+		++octet;
+		if (octet == 4)
+			return (i == size);
+		if (i >= size || host[i] != '.')
+			return (false);
+		++i;
+	}
+	return (false);
 }
 
 void	ConfigParser::fetchListen( ServerEntry& serv )
@@ -242,32 +276,61 @@ void	ConfigParser::fetchListen( ServerEntry& serv )
 	(void) serv;
 	Token	cur = current();
 
-	if (cur._type != T_STR && cur._type != T_NUM)
+	if (!accept(T_STR))
 		throw ParsingError("ExpectedListenValue", cur._line, cur._col);
 
-	str	val = cur._token;
-	++_index;
+	if (!validHost(cur._token))
+		throw ParsingError("InvalidListenValue", cur._line, cur._col);
 
-	size_t colon = val.find(':');
-	if (colon == str::npos) {
-		if (!isNum(val))
-			ParsingError("ListenMustBeNumericOr host:port", cur._line, cur._col);
-		int port = std::atoi(val.c_str());
-		validatePort(port, cur._line, cur._col);
-		serv._listen.push_back(std::make_pair(str("0.0.0.0"), port));
-		std::cout << "\t host: " << "0.0.0.0" << std::endl;
-		std::cout << "\t port: " << port << std::endl;
+	if (!serv._listenSet) {
+		serv._listen = cur._token;
+		serv._listenSet = true;
 	} else {
-		str host = val.substr(0, colon);
-		str port = val.substr(colon + 1);
-		if (!isNum(port))
-			throw ParsingError("ListenMustBeNumericOr host:port", cur._line, cur._col);
-		int portVal = std::atoi(port.c_str());
-		validatePort(portVal, cur._line, cur._col);
-		serv._listen.push_back(std::make_pair(host, portVal));
-		std::cout << "\t host: " << host << std::endl;
-		std::cout << "\t port: " << portVal << std::endl;
+		std::cout << "[WARNING]: ListenAlreadySetTo::" << serv._listen << std::endl;
 	}
+	// if (cur._type != T_STR && cur._type != T_NUM)
+	// 	throw ParsingError("ExpectedListenValue", cur._line, cur._col);
+
+	// str	val = cur._token;
+	// ++_index;
+
+	// size_t colon = val.find(':');
+	// if (colon == str::npos) {
+	// 	if (!isNum(val))
+	// 		ParsingError("ListenMustBeNumericOr host:port", cur._line, cur._col);
+	// 	int port = std::atoi(val.c_str());
+	// 	validatePort(port, cur._line, cur._col);
+	// 	serv._listen.push_back(std::make_pair(str("0.0.0.0"), port));
+	// 	std::cout << "\t host: " << "0.0.0.0" << std::endl;
+	// 	std::cout << "\t port: " << port << std::endl;
+	// } else {
+	// 	str host = val.substr(0, colon);
+	// 	str port = val.substr(colon + 1);
+	// 	if (!isNum(port))
+	// 		throw ParsingError("ListenMustBeNumericOr host:port", cur._line, cur._col);
+	// 	int portVal = std::atoi(port.c_str());
+	// 	validatePort(portVal, cur._line, cur._col);
+	// 	serv._listen.push_back(std::make_pair(host, portVal));
+	// 	std::cout << "\t host: " << host << std::endl;
+	// 	std::cout << "\t port: " << portVal << std::endl;
+	// }
+}
+
+void	ConfigParser::fetchPortList( ServerEntry& serv )
+{
+	(void) serv;
+	Token cur = current();
+	while (cur._type == T_NUM) {
+		std::cout << "Current: " << cur._token << std::endl;
+		int port = std::atoi(cur._token.c_str());
+		if (validatePort(port, cur._line, cur._col)) {
+			serv._port.insert(port);
+			serv._portStr.insert(cur._token);
+		}
+		++_index;
+		cur = current();
+	}
+	std::cout << cur._token << std::endl;
 }
 
 void	ConfigParser::fetchServerName( ServerEntry& serv )
