@@ -19,6 +19,7 @@
 #include <map>
 #include <set>
 #include <exception>
+#include <sstream>
 
 struct CGIEntry
 {
@@ -47,7 +48,10 @@ struct Location
 struct ServerEntry
 {
 
-	std::vector< std::pair<str, int> >	_listen;
+	str						_listen;
+	bool					_listenSet;
+	std::set<int>			_port;
+	std::set<str>			_portStr;
 	str						_serverName;
 	str						_root;
 	std::vector<str>		_index;
@@ -101,7 +105,7 @@ private:
 	void			parseLocationDir (Location& loc );
 
 	void			fetchListen( ServerEntry& serv );
-	// void			fetchPort( ServerEntry& serv );
+	void			fetchPortList( ServerEntry& serv );
 	void			fetchServerName( ServerEntry& serv );
 	void			fetchPath( str& path );
 	void			fetchPathList( std::vector<str>& list );
