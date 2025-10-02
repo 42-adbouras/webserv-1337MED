@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/21 18:46:01 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/02 11:39:26 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,9 @@
 #include "TypeDefs.hpp"
 #include <cstddef>
 #include <map>
+#include <sstream>
 #include <set>
+#include <exception>
 
 struct CGIEntry
 {
@@ -28,8 +30,9 @@ struct CGIEntry
 struct Location
 {
 	str					_path;
+	std::vector<str>	_index;
 	std::map<int, str>	_errorPages;
-	long				_maxBodySize;
+	size_t				_maxBodySize;
 	str					_uploadStore;
 	std::set<str>		_allowedMethods;
 
@@ -40,31 +43,40 @@ struct Location
 	int					_redirCode;
 	str					_redirTarget;
 	CGIEntry			_cgi;
+	Location( void );
 };
 
 struct ServerEntry
 {
-	str					_listen;
-	str				_serverName;
-	str					_root;
-	str					_index;
-	std::map<int, str>	_errorPages;
-	int					_maxBodySize;
-	str					_uploadStore;
-	std::set<str>		_allowedMethosd;
-	bool				_autoIndexSet;
-	bool				_autoIndex;
-	CGIEntry			_cgi;
+	str						_listen;
+	bool					_listenSet;
+	std::set<int>			_port;
+	std::set<str>			_portStr;
+	str						_serverName;
+	str						_root;
+	std::vector<str>		_index;
+	std::map<int, str>		_errorPages;
+	size_t					_maxBodySize;
+	str						_uploadStore;
+	// bool					_autoIndexSet;
+	// bool					_autoIndex;
+	CGIEntry				_cgi;
 	std::vector<Location>	_locations;
+	ServerEntry( void );
 };
 
-class ParsingErrer
+class ParsingError : public std::exception
 {
-public:
+private:
 	str		_msg;
-	int		_col;
 	int		_line;
-	ParsingErrer( const str& msg, int line, int col );
+	int		_col;
+	str		_what;
+
+public:
+	ParsingError( const str& msg, int line, int col );
+	virtual ~ParsingError() throw();
+	const char*	what() const throw();
 };
 
 struct Data
@@ -83,7 +95,7 @@ public:
 	Data			parseTokens( void );
 
 private:
-	const Token&	current( void );
+	const Token&	current( void ) const;
 	bool			accept( TokenType t );
 	bool			expect( TokenType t, const str& err );
 
@@ -93,6 +105,20 @@ private:
 	void			parseServerDir( ServerEntry& serv );
 	void			parseLocationDir (Location& loc );
 
-	void			parseListen( ServerEntry& serv );
-	void			parsePort( ServerEntry& serv );
+	void			fetchListen( ServerEntry& serv );
+	void			fetchPortList( ServerEntry& serv );
+	void			fetchServerName( ServerEntry& serv );
+	void			fetchPath( str& path );
+	void			fetchPathList( std::vector<str>& list );
+	bool			fetchAutoIndex( void );
+	void			fetchBodySize( size_t& size );
+	void			fetchErrorPages( std::map<int, str>& errors );
+	void			fetchCGI( CGIEntry& cgi );
+	void			fetchMethods( std::set<str>& methods );
+	void			fetchRedirect( Location& loc );
 };
+
+bool	startsWith( const str& path, const str& start );
+bool	validatePort( int port, int line, int col );
+bool	isNum( const str& s );
+bool	validHost( str& host );
