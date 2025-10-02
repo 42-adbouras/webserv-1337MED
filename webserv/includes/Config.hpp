@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/01 13:47:14 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/02 11:39:26 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@ struct Location
 	int					_redirCode;
 	str					_redirTarget;
 	CGIEntry			_cgi;
+	Location( void );
 };
 
 struct ServerEntry
@@ -56,10 +57,11 @@ struct ServerEntry
 	std::map<int, str>		_errorPages;
 	size_t					_maxBodySize;
 	str						_uploadStore;
-	bool					_autoIndexSet;
-	bool					_autoIndex;
+	// bool					_autoIndexSet;
+	// bool					_autoIndex;
 	CGIEntry				_cgi;
 	std::vector<Location>	_locations;
+	ServerEntry( void );
 };
 
 class ParsingError : public std::exception
@@ -114,3 +116,8 @@ private:
 	void			fetchMethods( std::set<str>& methods );
 	void			fetchRedirect( Location& loc );
 };
+
+bool	startsWith( const str& path, const str& start );
+bool	validatePort( int port, int line, int col );
+bool	isNum( const str& s );
+bool	validHost( str& host );
