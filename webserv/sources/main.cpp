@@ -87,10 +87,12 @@ int	main( int ac, char** av )
 		Data	config = p.parseTokens();
 		SocketManager	socketManager(config);
 		socketManager.initSockets();
+		socketManager.listenPorts();
 		// Server	server(data);
 
 		
 	} catch (std::exception& e) {
+		// std::cerr << "Server " << std::endl;
 		std::cerr << e.what() << std::endl;
 		return (1);
 	}
