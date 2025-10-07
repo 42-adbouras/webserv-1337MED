@@ -3,23 +3,24 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
+/*   By: abmahfou <abmahfou@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/02 11:39:26 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/05 12:12:30 by abmahfou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include "Lexer.hpp"
-#include "Server.hpp"
+// #include "Server.hpp"
 #include "TypeDefs.hpp"
 #include <cstddef>
 #include <map>
 #include <sstream>
 #include <set>
 #include <exception>
+#include <iostream>
 
 struct CGIEntry
 {
