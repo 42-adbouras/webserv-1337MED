@@ -9,6 +9,8 @@
 !webserv/
 !sources/
 !parser/
+!request/
+!response/
 !includes/
 !configs/
 !www/
