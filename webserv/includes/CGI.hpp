@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/08 11:46:46 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/08 11:47:41 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/08 15:52:27 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,10 @@
 
 #include "TypeDefs.hpp"
 #include "Response.hpp"
-#include <iostream>
+// #include <iostream>
 #include <poll.h>
 #include <unistd.h>
-#include <signal.h>
+// #include <signal.h>
 
 struct CGIOutput
 {
