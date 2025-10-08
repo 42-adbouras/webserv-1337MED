@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/02 11:38:58 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/02 15:49:26 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,8 @@ bool	ConfigParser::expect( TokenType type, const str& err )
 {
 	if (accept(type))
 		return (true);
-	throw ParsingError(err, current()._line, current()._col);
+	Token	cur = current();
+	throw ParsingError(err, cur._line, cur._col);
 }
 
 Data	ConfigParser::parseTokens( void )
