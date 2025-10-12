@@ -11,6 +11,7 @@
 !parser/
 !request/
 !response/
+!errors/
 !includes/
 !configs/
 !www/
