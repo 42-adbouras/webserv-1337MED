@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TypeDefs.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
+/*   By: abmahfou <abmahfou@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/23 15:25:10 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/11 11:04:08 by abmahfou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #define PORT_MIN 1
 #define PORT_MAX 65535
@@ -26,3 +27,4 @@ struct Token;
 
 typedef std::string			str;
 typedef std::vector<Token>	TokensVector;
+typedef std::stringstream	sstream;
