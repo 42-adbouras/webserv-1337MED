@@ -64,11 +64,13 @@ int main(int argc, char **argv) {
         std::cout << buffer << std::endl;
 
 		Request request;
-		request.parseReqline(buffer);
+		if (!request.parseReqline(buffer))
+			std::cerr << "400 Bad Request" << std::endl;
 		std::cout << "Method: [" << request.getMethod() << "]";
 		std::cout << " Target: [" << request.getreqTarget() << "]";
 		std::cout << " Version: [" << request.getVersion() << "]" << std::endl;
-
+		request.initHeaders( buffer );
+		request.initBody( buffer );
 
         // std::string requestTarget(buffer);
         // requestTarget = requestTarget.substr(0, requestTarget.find_first_of('\r')); // expand Request line
