@@ -77,3 +77,20 @@ void Response::setStatus( int code ) {
 /* void Response::addHeaders( const str& key, const str& value ) {
 	
 } */
+
+void Response::setBody( const str& bodyData ) {
+	_body = bodyData;
+	_contentLength = _body.length();
+}
+
+str Response::generate( void ) const {
+	sstream ss;
+	ss << _statusCode;
+
+	str HTTPresponse = _version + " " + ss.str() + " " + _statusText + BREAK_LINE;
+	HTTPresponse += "Host: localohost:8080\r\n";
+	HTTPresponse += "Content-Type: text/html\r\n";
+	HTTPresponse += BREAK_LINE + _body;
+
+	return HTTPresponse;
+}

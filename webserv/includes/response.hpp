@@ -3,7 +3,10 @@
 
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
+#include "./request.hpp"
 #include <unordered_map>
+
+#define BREAK_LINE "\r\n"
 
 class Response {
 private:
@@ -26,8 +29,8 @@ public:
 
 	void setStatus( int code );
 	void addHeaders( const str& key, const str& value );
-	void setBody( const str& bodyData, int length );
-	str& generate( void ) const;
+	void setBody( const str& bodyData );
+	str generate( void ) const;
 };
 
 #endif
