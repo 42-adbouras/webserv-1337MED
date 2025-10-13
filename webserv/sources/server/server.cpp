@@ -9,6 +9,7 @@
 #include <string.h>
 #include <netdb.h>
 #include "../../includes/request.hpp"
+#include "../../includes/response.hpp"
 
 int main(int argc, char **argv) {
 	(void)argc;
@@ -64,11 +65,18 @@ int main(int argc, char **argv) {
         std::cout << buffer << std::endl;
 
 		Request request;
-		if (!request.parseReqline(buffer))
-			std::cerr << "400 Bad Request" << std::endl;
-		std::cout << "Method: [" << request.getMethod() << "]";
-		std::cout << " Target: [" << request.getreqTarget() << "]";
-		std::cout << " Version: [" << request.getVersion() << "]" << std::endl;
+		Response response;
+		
+		if (!request.parseReqline(buffer)) {
+			response.setStatus(400);
+			response.setBody("Hello World!");
+			str content = response.generate();
+			std::cout << content;
+			send(client_socket, content.c_str(), content.length(), 0);
+		}
+		// std::cout << "Method: [" << request.getMethod() << "]";
+		// std::cout << " Target: [" << request.getreqTarget() << "]";
+		// std::cout << " Version: [" << request.getVersion() << "]" << std::endl;
 		request.initHeaders( buffer );
 		request.initBody( buffer );
 
