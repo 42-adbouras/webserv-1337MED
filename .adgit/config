@@ -1,0 +1,21 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+	precomposeunicode = true
+[submodule]
+	active = .
+[remote "origin"]
+	url = git@github.com:42-adbouras/webserv-1337MED.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main
+[branch "adbouras"]
+	remote = origin
+	merge = refs/heads/adbouras
+[branch "mait-taj"]
+	remote = origin
+	merge = refs/heads/mait-taj

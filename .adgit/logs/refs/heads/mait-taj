@@ -1,0 +1,15 @@
+0000000000000000000000000000000000000000 995321b059094de72853a9170c04767e43a01de8 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1758533592 +0100	branch: Created from refs/remotes/origin/mait-taj
+995321b059094de72853a9170c04767e43a01de8 30c314a999e37474eedbaa36d466ef70c42bb4b4 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1758533672 +0100	commit (merge): setup
+30c314a999e37474eedbaa36d466ef70c42bb4b4 3fed2a439077a63a5a890c8ec748d3616d7c3401 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1758626778 +0100	commit: setup-2
+3fed2a439077a63a5a890c8ec748d3616d7c3401 e568b8db0a6dc1af01593098c36e6f0b167ff44d MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1758722615 +0100	commit (merge): merge 2
+e568b8db0a6dc1af01593098c36e6f0b167ff44d 16d55ec856d7feb168322d8393f4a968d5077f6f MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1758736375 +0100	commit: Server: init socket to non-blocking
+16d55ec856d7feb168322d8393f4a968d5077f6f 35ddd3ec58ea48493101bd7d41df4d3fd0636caf MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1758886863 +0100	commit: Server: init socketManager
+35ddd3ec58ea48493101bd7d41df4d3fd0636caf 397cb7b2fc2ee32a09b8bf0f4dca5b361f6ace22 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1759071212 +0100	commit: server: set getaddrinfo
+397cb7b2fc2ee32a09b8bf0f4dca5b361f6ace22 df5e8906a4fea94d24d6acc1e99599942a75aaa0 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1759332156 +0100	commit: server: set getaddrinfo 2
+df5e8906a4fea94d24d6acc1e99599942a75aaa0 54530a7107f226c86f77afbdc7649f97ccbd0c3f MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1759401823 +0100	commit: server: crate socket 1
+54530a7107f226c86f77afbdc7649f97ccbd0c3f ef68ffd986734337b62eee4d884b81ec4c93b2d7 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1759402260 +0100	commit: socket 3
+ef68ffd986734337b62eee4d884b81ec4c93b2d7 8ae0a7b4a90b02d433ecf2a8cdc8759f2f7554b1 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1759402341 +0100	commit: socket 4
+8ae0a7b4a90b02d433ecf2a8cdc8759f2f7554b1 d93f05764c70dd26ca28aae6bace972bb6f04527 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1759402691 +0100	commit: Base structure
+d93f05764c70dd26ca28aae6bace972bb6f04527 33bbcabd6e11076f9bcd306b3ea87a7b0627caef MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1759579128 +0100	commit: Server: listening on sockets for incomming connection
+33bbcabd6e11076f9bcd306b3ea87a7b0627caef 954b856346ac42a5208c61805f1ed9e45c544a02 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1760043222 +0100	commit: server: poll & accept incoming connection
+954b856346ac42a5208c61805f1ed9e45c544a02 311c7c9255937efca4c8724304f1e22026226801 MOHAMED AIT TAJANTE <mhdjant607@gmail.com> 1760451965 +0100	commit: server: server class, addClients
