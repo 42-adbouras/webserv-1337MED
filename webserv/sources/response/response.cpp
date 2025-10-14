@@ -85,11 +85,14 @@ void Response::setBody( const str& bodyData ) {
 
 str Response::generate( void ) const {
 	sstream ss;
+	sstream s;
 	ss << _statusCode;
 
 	str HTTPresponse = _version + " " + ss.str() + " " + _statusText + BREAK_LINE;
 	HTTPresponse += "Host: localohost:8080\r\n";
 	HTTPresponse += "Content-Type: text/html\r\n";
+	s << _contentLength;
+	HTTPresponse += "Content-Length: " + s.str() + BREAK_LINE;
 	HTTPresponse += BREAK_LINE + _body;
 
 	return HTTPresponse;
