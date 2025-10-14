@@ -14,7 +14,7 @@ Request::~Request() { }
 const str& Request::getMethod( void ) const { return _method; }
 const str& Request::getreqTarget( void ) const { return _Uri; }
 const str& Request::getVersion( void ) const { return _version; }
-const std::map<str, str>& Request::getQueryParams( void ) const { return _queryParams; }
+const std::unordered_map<str, str>& Request::getQueryParams( void ) const { return _queryParams; }
 const std::map<str, str>& Request::getHeaders( void ) const { return _headers; }
 const str& Request::getBody( void ) const { return _body; }
 const str& Request::getPath( void ) const { return _path; }
@@ -41,7 +41,7 @@ bool Request::parse_query_params( const str& path ) {
 	str query = path.substr(pos + 1);
 
 	str param;
-	std::istringstream iss(query);
+	sstream iss(query);
 	while( std::getline(iss, param, '&')) {
 		str::size_type eq_pos = param.find('=');
 		if (eq_pos != str::npos) {

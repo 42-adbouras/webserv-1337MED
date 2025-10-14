@@ -4,6 +4,7 @@
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
 #include <map>
+#include <unordered_map>
 
 class Request {
 private:
@@ -12,7 +13,7 @@ private:
 	str _path;
 	str _version;
 	str _body;
-	std::map<str, str> _queryParams;
+	std::unordered_map<str, str> _queryParams;
 	std::map<str, str> _headers;
 
 	static const char* valid_methods[];
@@ -27,7 +28,7 @@ public:
 	const str& getMethod( void ) const;
 	const str& getreqTarget( void ) const;
 	const str& getVersion( void ) const;
-	const std::map<str, str>& getQueryParams( void ) const;
+	const std::unordered_map<str, str>& getQueryParams( void ) const;
 	const std::map<str, str>& getHeaders( void ) const;
 	const str& getBody( void ) const;
 	const str& getPath( void ) const;
