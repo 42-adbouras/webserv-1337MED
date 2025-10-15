@@ -4,7 +4,6 @@
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
 #include "./request.hpp"
-#include <unordered_map>
 
 #define BREAK_LINE "\r\n"
 
@@ -15,7 +14,7 @@ private:
 	str _version;
 	str _body;
 	int _contentLength;
-	std::unordered_map<str, str> _headers;
+	std::map<str, str> _headers;
 public:
 	Response( void );
 	~Response();
@@ -25,7 +24,7 @@ public:
 	const str& getVersion( void ) const;
 	const str& getBody( void ) const;
 	const int& getContentLength( void ) const;
-	const std::unordered_map<str, str>& getHeaders( void ) const;
+	const std::map<str, str>& getHeaders( void ) const;
 
 	void setStatus( int code );
 	void addHeaders( const str& key, const str& value );
