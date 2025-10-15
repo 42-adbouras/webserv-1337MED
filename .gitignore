@@ -1,19 +1,5 @@
-*
+# Ignore unecessary folders and files
 
-!*.cpp
-!*.hpp
-!*.tpp
-!*.html
-!*.conf
+.vscode/
+*.o
 
-!webserv/
-!sources/
-!parser/
-!includes/
-!configs/
-!www/
-!Makefile
-!README.md
-!.gitignore
-
-test.cpp
