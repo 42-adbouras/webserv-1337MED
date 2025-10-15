@@ -1,4 +1,5 @@
 #include "../../includes/request.hpp"
+#include "../../includes/response.hpp"
 
 Request::Request( void )
 	: _method()
@@ -14,7 +15,7 @@ Request::~Request() { }
 const str& Request::getMethod( void ) const { return _method; }
 const str& Request::getreqTarget( void ) const { return _Uri; }
 const str& Request::getVersion( void ) const { return _version; }
-const std::unordered_map<str, str>& Request::getQueryParams( void ) const { return _queryParams; }
+const std::map<str, str>& Request::getQueryParams( void ) const { return _queryParams; }
 const std::map<str, str>& Request::getHeaders( void ) const { return _headers; }
 const str& Request::getBody( void ) const { return _body; }
 const str& Request::getPath( void ) const { return _path; }
@@ -48,24 +49,36 @@ bool Request::parse_query_params( const str& path ) {
 			str key = param.substr(0, eq_pos);
 			str value = param.substr(eq_pos + 1);
 			_queryParams[key] = value;
-		}
+		} else
+			return false;
 	}
 	return true;
 }
 
-bool Request::parseReqline( const char* input ) {
+bool Request::parseReqline( const char* input, Response& response ) {
 	str raw = str(input);
 
 	sstream stream(raw);
-	if(!(stream >> _method >> _Uri >> _version))
+	if(!(stream >> _method >> _Uri >> _version)) {
+		response.setStatus(400);
 		return false;
-	if(!is_valid_method( _method ))
+	}
+	if(!is_valid_method( _method )) {
+		response.setStatus(501);
 		return false;
-	if(_version != "HTTP/1.1")
+	}
+	if(_version != "HTTP/1.1") {
+		response.setStatus(400);
 		return false;
-	if(!parse_query_params( _Uri ) || !UriAllowedChars( _Uri )
-		|| _Uri.length() > 2048)
+	}
+	if (_Uri.length() > 2048) {
+		response.setStatus(414);
 		return false;
+	}
+	if(!parse_query_params( _Uri ) || !UriAllowedChars( _Uri )) {
+		response.setStatus(400);
+		return false;
+	}
 
 	return true;
 }
@@ -84,8 +97,8 @@ void Request::initHeaders( const char* input ) {
 	std::getline(stream, line);
 
 	while(std::getline(stream, line)) {
-		if (!line.empty() && line.back() == '\r')
-			line.pop_back();
+		if (!line.empty() && line[line.size() - 1] == '\r')
+			line.erase(line.size() - 1);
 		
 		str::size_type colon_pos = line.find(':');
 		if (colon_pos != str::npos) {
@@ -102,4 +115,37 @@ void Request::initBody( const char* input ) {
 
 	if (pos != str::npos)
 		_body = raw.substr(pos + 4);
+}
+
+
+void requestHandler( const char* buffer, int socket ) {
+	Request request;
+	Response response;
+
+	if (!request.parseReqline( buffer, response )) {
+		response.setBody("Error !");
+		response.addHeaders("Host", "localhost:8080");
+		response.addHeaders("Content-Type", "text/html");
+		response.addHeaders("Contenet-Length", "7");
+	} else {
+		std::ifstream file("./www/index.html");
+		if (!file.is_open())
+			response.setStatus(404);
+		else {
+			response.setStatus(200);
+			sstream buff;
+			buff << file.rdbuf();
+			str content = buff.str();
+			response.setBody(content);
+			response.addHeaders("Host", "localhost:8080");
+			response.addHeaders("Content-Type", "text/html");
+			response.addHeaders("Contenet-Length", "230");
+		}
+	}
+
+	request.initHeaders( buffer );
+	request.initBody( buffer );
+	str content = response.generate();
+
+	send(socket, content.c_str(), content.length(), 0);
 }
