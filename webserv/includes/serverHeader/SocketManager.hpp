@@ -3,6 +3,9 @@
 #include <iostream>
 #include <netdb.h>
 #include <poll.h>
+#include <cstring>
+#include <cerrno>
+
 // #include <utility>
 #include "../Config.hpp"
 
@@ -20,7 +23,7 @@ class   SocketManager {
         void    initSockets(void);
         void    listenPorts(void) ;
         void    acceptIncomingConn(void);
-        std::vector<ServerEntry>&    retrieveServerBlock(size_t index);
+        // std::vector<ServerEntry>&    retrieveServerBlock(size_t index);
         // ----- Utils -----
         // static struct sockaddr_in  getSockaddr(void);
         static int  setNonBlocking(int fd);

@@ -9,5 +9,5 @@ class   ServerExcept : public std::exception {
         int _errno;
     public:
         ServerExcept(int err);
-        const char* what() const _NOEXCEPT;
+        const char* what() const throw();
 };

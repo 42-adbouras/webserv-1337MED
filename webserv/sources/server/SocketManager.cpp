@@ -15,7 +15,7 @@ void    SocketManager::initSockets(void) {
     struct  addrinfo    hints, *results;
     int status, optVal;
 
-    std::memset(&hints, 0, sizeof(hints));
+    ::memset(&hints, 0, sizeof(hints));
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -78,23 +78,15 @@ void    SocketManager::listenPorts(void) {
 
 void    SocketManager::acceptIncomingConn(void) {
     int 	totalEvent;
-    size_t  count;
     int 	clientFd;
-
-    struct sockaddr_in  *temp1 = (struct sockaddr_in*)_listenSocks[0].second;
-    std::cout << "addres0-> " << temp1->sin_addr.s_addr << "port: " << ntohs(temp1->sin_port) << std::endl;
-    struct sockaddr_in  *temp2 = (struct sockaddr_in*)_listenSocks[1].second;
-    std::cout << "addres1-> " << temp2->sin_addr.s_addr << std::endl;
-    struct sockaddr_in  *temp3 = (struct sockaddr_in*)_listenSocks[2].second;
-    std::cout << "addres2-> " << temp3->sin_addr.s_addr << std::endl;
 
     std::vector<struct pollfd>  _pollfd(_listenSocks.size());
     std::cout << _pollfd.size() << std::endl;
-    //set all listen socket to accept POLL_IN events
+    //set all listen socket to accept POLLIN events
     for (size_t i = 0; i < _listenSocks.size(); i++)
     {
         _pollfd[i].fd = _listenSocks[i].first; // fill "struct pollfd" with listen socket FDs
-        _pollfd[i].events = POLL_IN;
+        _pollfd[i].events = POLLIN;
     }
     while (true)
     {
@@ -105,9 +97,8 @@ void    SocketManager::acceptIncomingConn(void) {
         }
         std::cout << totalEvent << " <<<<<<< event occured ! >>>>>>>" << std::endl;
 		// check listen sockets for incomming Clients
-        count = _listenSocks.size();
         for (size_t	i = 0; i < _listenSocks.size(); i++) {
-            if (_pollfd[i].revents == POLL_IN)
+            if (_pollfd[i].revents == POLLIN)
             {
                 if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
                 {
@@ -120,14 +111,6 @@ void    SocketManager::acceptIncomingConn(void) {
 			}
     	}
 	}
-}
-
-std::vector<ServerEntry>&	SocketManager::retrieveServerBlock(size_t index) {
-	struct sockaddr_in	*addr = (struct sockaddr_in*)_listenSocks[index].second;
-    (void)addr;
-	// int	port = ntohl(addr->sin_port);
-	// int	address = addr->sin_addr.s_addr;
-    return _config->_servers;
 }
 
 //------ utils ------

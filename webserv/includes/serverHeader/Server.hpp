@@ -15,10 +15,10 @@ struct Data;
 class Server
 {
 	private:
-        std::vector<std::pair<int, struct ServerEntry> >    _clientSocks;
+        std::vector<int>    _clientSocks;
 	public:
 		Server();
-		// void	addClients(int clientFd);
+		void	addClients(int clientFd);
 		~Server();
 	
 
