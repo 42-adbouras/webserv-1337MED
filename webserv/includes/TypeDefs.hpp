@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <fstream>
 
 #define PORT_MIN 1
 #define PORT_MAX 65535

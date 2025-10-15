@@ -3,8 +3,15 @@
 
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
+#include <sys/socket.h>
 #include <map>
-#include <unordered_map>
+
+class Response;
+
+struct StatusEntry {
+	int code;
+	str message;
+};
 
 class Request {
 private:
@@ -13,7 +20,7 @@ private:
 	str _path;
 	str _version;
 	str _body;
-	std::unordered_map<str, str> _queryParams;
+	std::map<str, str> _queryParams;
 	std::map<str, str> _headers;
 
 	static const char* valid_methods[];
@@ -28,16 +35,17 @@ public:
 	const str& getMethod( void ) const;
 	const str& getreqTarget( void ) const;
 	const str& getVersion( void ) const;
-	const std::unordered_map<str, str>& getQueryParams( void ) const;
+	const std::map<str, str>& getQueryParams( void ) const;
 	const std::map<str, str>& getHeaders( void ) const;
 	const str& getBody( void ) const;
 	const str& getPath( void ) const;
 
-	bool parseReqline( const char* input );
+	bool parseReqline( const char* input, Response& response );
 	void initHeaders( const char* input );
 	void initBody( const char* input );
 };
 
 bool UriAllowedChars( str& uri );
+void requestHandler( const char* buffer, int socket );
 
 #endif

@@ -64,21 +64,7 @@ int main(int argc, char **argv) {
 		std::cout << std::endl;
         std::cout << buffer << std::endl;
 
-		Request request;
-		Response response;
-		
-		if (!request.parseReqline(buffer)) {
-			response.setStatus(400);
-			response.setBody("Hello World!");
-			str content = response.generate();
-			std::cout << content;
-			send(client_socket, content.c_str(), content.length(), 0);
-		}
-		// std::cout << "Method: [" << request.getMethod() << "]";
-		// std::cout << " Target: [" << request.getreqTarget() << "]";
-		// std::cout << " Version: [" << request.getVersion() << "]" << std::endl;
-		request.initHeaders( buffer );
-		request.initBody( buffer );
+		requestHandler( buffer, client_socket );
 
         // std::string requestTarget(buffer);
         // requestTarget = requestTarget.substr(0, requestTarget.find_first_of('\r')); // expand Request line

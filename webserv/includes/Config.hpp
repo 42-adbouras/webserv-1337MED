@@ -21,6 +21,8 @@
 #include <set>
 #include <exception>
 #include <iostream>
+#include <stdlib.h>
+#include <limits>
 
 struct CGIEntry
 {
