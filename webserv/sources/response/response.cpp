@@ -15,68 +15,46 @@ const str& Response::getStatusText( void ) const { return _statusText; }
 const str& Response::getVersion( void ) const { return _version; }
 const str& Response::getBody( void ) const { return _body; }
 const int& Response::getContentLength( void ) const { return _contentLength; }
-const std::unordered_map<str, str>& Response::getHeaders( void ) const { return _headers; }
+const std::map<str, str>& Response::getHeaders( void ) const { return _headers; }
+
+static const StatusEntry StatusEntries[] = {
+	{200, "OK"},
+	{201, "Created"},
+	{204, "No Content"},
+	{301, "Moved Permanently"},
+	{400, "Bad Request"},
+	{403, "Forbidden"},
+	{404, "Not Found"},
+	{405, "Method Not Allowed"},
+	{409, "Conflict"},
+	{413, "Content Too Large"},
+	{414, "URI Too Long"},
+	{500, "Internal Server Error"},
+	{501, "Not Implemented"}
+};
+
+static const std::map<int, str>& getStatusMap() {
+	static std::map<int, str> StatusMap;
+	if (StatusMap.empty()) {
+		for (size_t i=0; i<sizeof(StatusEntries)/sizeof(StatusEntry); ++i)
+			StatusMap[StatusEntries[i].code] = StatusEntries[i].message;
+	}
+	return StatusMap;
+}
+
+std::map<int, str> statusMap = getStatusMap();
 
 void Response::setStatus( int code ) {
-	switch (code) {
-		case 200:
-			_statusCode = 200;
-			_statusText = "OK";
-			break;
-		case 201:
-			_statusCode = 201;
-			_statusText = "Created";
-			break;
-		case 204:
-			_statusCode = 204;
-			_statusText = "No Content";
-			break;
-		case 301:
-			_statusCode = 301;
-			_statusText = "Moved Permanently";
-			break;
-		case 400:
-			_statusCode = 400;
-			_statusText = "Bad Request";
-			break;
-		case 403:
-			_statusCode = 403;
-			_statusText = "Forbidden";
-			break;
-		case 404:
-			_statusCode = 404;
-			_statusText = "Not Found";
-			break;
-		case 405:
-			_statusCode = 405;
-			_statusText = "Method Not Allowd";
-			break;
-		case 409:
-			_statusCode = 409;
-			_statusText = "Conflict";
-			break;
-		case 413:
-			_statusCode = 413;
-			_statusText = "Content Too Large";
-			break;
-		case 414:
-			_statusCode = 414;
-			_statusText = "URI Too Long";
-			break;
-		case 500:
-			_statusCode = 500;
-			_statusText = "Internal Server Error";
-			break;
-		case 501:
-			_statusCode = 501;
-			_statusText = "Not Implemented";
-			break;
+	std::map<int, str>::const_iterator it = statusMap.find(code);
+	if ( it != statusMap.end() ) {
+		_statusCode = code;
+		_statusText = it->second;
 	}
 }
 
-/* void Response::addHeaders( const str& key, const str& value ) {
-	
-} */
+void Response::addHeaders( const str& key, const str& value ) {
+	_headers[key] = value;	
+}
 
 void Response::setBody( const str& bodyData ) {
 	_body = bodyData;
@@ -85,14 +63,14 @@ void Response::setBody( const str& bodyData ) {
 
 str Response::generate( void ) const {
 	sstream ss;
-	sstream s;
 	ss << _statusCode;
 
 	str HTTPresponse = _version + " " + ss.str() + " " + _statusText + BREAK_LINE;
-	HTTPresponse += "Host: localohost:8080\r\n";
-	HTTPresponse += "Content-Type: text/html\r\n";
-	s << _contentLength;
-	HTTPresponse += "Content-Length: " + s.str() + BREAK_LINE;
+	std::map<str, str>::const_iterator it = _headers.begin();
+	while( it != _headers.end() ) {
+		HTTPresponse += it->first + ": " + it->second + BREAK_LINE;
+		++it; 
+	}
 	HTTPresponse += BREAK_LINE + _body;
 
 	return HTTPresponse;
