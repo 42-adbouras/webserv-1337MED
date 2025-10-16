@@ -79,6 +79,7 @@ void    SocketManager::listenPorts(void) {
 void    SocketManager::acceptIncomingConn(void) {
     int 	totalEvent;
     int 	clientFd;
+    Server  server;
 
     std::vector<struct pollfd>  _pollfd(_listenSocks.size());
     std::cout << _pollfd.size() << std::endl;
@@ -105,11 +106,26 @@ void    SocketManager::acceptIncomingConn(void) {
                     closeSockets(_listenSocks);
                     throw std::runtime_error(strerror(errno));
                 }
-                
-                // addClients(clientFd, &clientAddr);
-                std::cout << "after client added?" << std::endl;
+                server.addClients(clientFd, _pollfd);
+                std::cout << "<<< client added! >>>" << std::endl;
 			}
     	}
+        // check requests from clients
+        for (size_t i = _listenSocks.size() - 1; i < _pollfd.size(); i++)
+        {
+            if ( _pollfd[i].revents == POLLIN ) {
+
+                // here we go for parse http request.
+                std::cout << "request accepted from user " << _pollfd[i].fd << std::endl;
+            }
+            if ( _pollfd[i].revents == POLLOUT )
+            {
+                // build response for that user.
+                std::cout << "response for user " << _pollfd[i].fd << " has been generated with success!" << std::endl;
+                server.handleDisconnect(i, _pollfd);
+                // exit(1);
+            }
+        }
 	}
 }
 
