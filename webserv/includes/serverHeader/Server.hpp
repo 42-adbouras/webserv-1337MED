@@ -6,25 +6,24 @@
 #include <poll.h>
 #include <iostream>
 #include <vector>
+#include <cstring>
+#include <cerrno>
 #include "../Config.hpp"
 #include "ServerExcept.hpp"
-
+#include  "Client.hpp"
 #include <fcntl.h>
 
 struct Data;
 
-enum	status {
-	DISCONNECT,
-	ALIVE
-};
-
 class Server
 {
 	private:
-        std::vector<int>    _clientSocks;
+        std::vector<Client>    _client;
 	public:
 		Server();
-		void	addClients(int clientFd, std::vector<struct pollfd> &_pollfd);
+		void	request(int clfd);
+		void	response(int clfd);
+		void	addClients(Client client, std::vector<struct pollfd> &_pollfd);
 		// bool	statOfUser(int clFd) const;
 		void	handleDisconnect(int index, std::vector<struct pollfd>& _pollfd);
 		~Server();

@@ -88,7 +88,7 @@ int	main( int ac, char** av )
 		SocketManager	socketManager(config);
 		socketManager.initSockets();
 		socketManager.listenPorts();
-		socketManager.acceptIncomingConn();
+		socketManager.runCoreLoop();
 		// Server	server(data);
 
 		

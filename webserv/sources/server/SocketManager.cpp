@@ -76,19 +76,39 @@ void    SocketManager::listenPorts(void) {
     }
 }
 
-void    SocketManager::acceptIncomingConn(void) {
-    int 	totalEvent;
-    int 	clientFd;
-    Server  server;
-
-    std::vector<struct pollfd>  _pollfd(_listenSocks.size());
-    std::cout << _pollfd.size() << std::endl;
-    //set all listen socket to accept POLLIN events
+void    socketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
     for (size_t i = 0; i < _listenSocks.size(); i++)
     {
         _pollfd[i].fd = _listenSocks[i].first; // fill "struct pollfd" with listen socket FDs
         _pollfd[i].events = POLLIN;
     }
+}
+
+bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd ) {
+    int 	clientFd;
+
+    for (size_t	i = 0; i < _listenSocks.size(); i++) 
+    {
+        if (_pollfd[i].revents == POLLIN)
+        {
+            if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
+            {
+                closeSockets(_listenSocks);
+                throw std::runtime_error(strerror(errno));
+            }
+            server.addClients(Client(clientFd), _pollfd);
+            std::cout << "<<< client added! >>>" << std::endl;
+        }
+    }
+    return true;
+}
+
+void    SocketManager::runCoreLoop(void) {
+    int 	totalEvent;
+    Server  server;
+    std::vector<struct pollfd>  _pollfd(_listenSocks.size());
+    //set all listen socket to accept POLLIN events
+    setListenEvent(_pollfd);
     while (true)
     {
         if ((totalEvent = poll(_pollfd.data(), _pollfd.size(), -1)) == -1)
@@ -96,34 +116,25 @@ void    SocketManager::acceptIncomingConn(void) {
             closeSockets(_listenSocks);
             throw   std::runtime_error(strerror(errno));
         }
-        std::cout << totalEvent << " <<<<<<< event occured ! >>>>>>>" << std::endl;
+        // std::cout << "-->" << totalEvent << " <<<<<<< event occured ! >>>>>>>" << std::endl;
 		// check listen sockets for incomming Clients
-        for (size_t	i = 0; i < _listenSocks.size(); i++) {
-            if (_pollfd[i].revents == POLLIN)
-            {
-                if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
-                {
-                    closeSockets(_listenSocks);
-                    throw std::runtime_error(strerror(errno));
-                }
-                server.addClients(clientFd, _pollfd);
-                std::cout << "<<< client added! >>>" << std::endl;
-			}
-    	}
+        checkForNewClients(_pollfd);
         // check requests from clients
-        for (size_t i = _listenSocks.size() - 1; i < _pollfd.size(); i++)
+        for (size_t i = _listenSocks.size(); i < _pollfd.size(); i++)
         {
-            if ( _pollfd[i].revents == POLLIN ) {
+            if ( _pollfd[i].revents & (POLLIN | POLLOUT) ) {
 
                 // here we go for parse http request.
                 std::cout << "request accepted from user " << _pollfd[i].fd << std::endl;
-            }
-            if ( _pollfd[i].revents == POLLOUT )
-            {
-                // build response for that user.
+                server.request(_pollfd[i].fd);
                 std::cout << "response for user " << _pollfd[i].fd << " has been generated with success!" << std::endl;
+                server.response(_pollfd[i].fd);
                 server.handleDisconnect(i, _pollfd);
-                // exit(1);
+                std::cout << "sockets that exist " << std::endl;
+                for (size_t k = 0; k < _pollfd.size(); k++)
+                {
+                    std::cout << _pollfd[k].fd << std::endl;
+                }
             }
         }
 	}

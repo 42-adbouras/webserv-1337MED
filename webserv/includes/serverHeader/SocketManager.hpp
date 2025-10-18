@@ -22,7 +22,9 @@ class   SocketManager {
         SocketManager(Data& config);
         void    initSockets(void);
         void    listenPorts(void) ;
-        void    acceptIncomingConn(void);
+        void    runCoreLoop(void);
+        void    setListenEvent(std::vector<struct pollfd>& _pollfd);
+        bool    checkForNewClients( std::vector<struct pollfd>& _pollfd );
         // std::vector<ServerEntry>&    retrieveServerBlock(size_t index);
         // ----- Utils -----
         // static struct sockaddr_in  getSockaddr(void);
