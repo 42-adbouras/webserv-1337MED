@@ -6,11 +6,13 @@ Server::Server() {
 
 void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     struct pollfd   temp;
-    temp.fd = client.fd;
-    temp.events = POLLIN | POLLOUT;
+    std::cout << "client fd ==>" << client.getFd() << std::endl;
+    temp.fd = client.getFd();
+    temp.events = POLLIN;
+    temp.revents = 0;
     _client.push_back(client);
     _pollfd.push_back(temp);
-    std::cout << "client with fd: " << clientFd << " connected" << std::endl;
+    std::cout << "client with fd: " << client.getFd() << " connected" << std::endl;
 }
 
 void    Server::response(int clfd) {
@@ -47,15 +49,17 @@ void    Server::request(int clfd){
 }
 
 void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd) {
-    close(_pollfd[index].fd);
-    _pollfd.erase(_pollfd.begin() + index);
-    _clientSocks.erase(_clientSocks.begin() + 1);
+    
+    close(_client[index].getFd());
     std::cout << "client fd " << _pollfd[index].fd << " disconnect" << std::endl;
-
+    _pollfd.erase(_pollfd.begin() + index);
+    _client.erase(_client.begin() + index);
 }
 
 // status    Server::statOfUser(int clFd) const {
 //     return DISCONNECT
 // }
 
-Server::~Server() {}
+Server::~Server() {
+    std::cout << "<<<<< Server Obj distroyed >>>>>" << std::endl;
+}

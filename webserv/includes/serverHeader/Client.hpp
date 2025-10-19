@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 enum	Status {
 	DISCONNECT,
 	KEEP_ALIVE,
@@ -15,7 +17,9 @@ class   Client {
     public:
         Client(int fd);
         ~Client();
-        const Status getStatus()const;
-        void    setStatus(Status _status);
+        int     getFd() const;
+        void    setFd(int fd);
+        Status getStatus() const;
+        void    setStatus(Status status);
 
 };

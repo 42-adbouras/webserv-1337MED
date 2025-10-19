@@ -76,7 +76,7 @@ void    SocketManager::listenPorts(void) {
     }
 }
 
-void    socketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
+void    SocketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
     for (size_t i = 0; i < _listenSocks.size(); i++)
     {
         _pollfd[i].fd = _listenSocks[i].first; // fill "struct pollfd" with listen socket FDs
@@ -84,19 +84,20 @@ void    socketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
     }
 }
 
-bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd ) {
+bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server ) {
     int 	clientFd;
 
     for (size_t	i = 0; i < _listenSocks.size(); i++) 
     {
-        if (_pollfd[i].revents == POLLIN)
+        if (_pollfd[i].revents & POLLIN)
         {
             if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
             {
                 closeSockets(_listenSocks);
                 throw std::runtime_error(strerror(errno));
             }
-            server.addClients(Client(clientFd), _pollfd);
+            SocketManager::setNonBlocking(clientFd);
+            _server.addClients(Client(clientFd), _pollfd);
             std::cout << "<<< client added! >>>" << std::endl;
         }
     }
@@ -105,12 +106,18 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd )
 
 void    SocketManager::runCoreLoop(void) {
     int 	totalEvent;
+    size_t  clientIndex = _listenSocks.size();
     Server  server;
     std::vector<struct pollfd>  _pollfd(_listenSocks.size());
     //set all listen socket to accept POLLIN events
     setListenEvent(_pollfd);
     while (true)
     {
+        std::cout << "sockets that exist " << std::endl;
+        for (size_t k = 0; k < _pollfd.size(); k++)
+        {
+            std::cout << _pollfd[k].fd << std::endl;
+        }
         if ((totalEvent = poll(_pollfd.data(), _pollfd.size(), -1)) == -1)
         {
             closeSockets(_listenSocks);
@@ -118,22 +125,26 @@ void    SocketManager::runCoreLoop(void) {
         }
         // std::cout << "-->" << totalEvent << " <<<<<<< event occured ! >>>>>>>" << std::endl;
 		// check listen sockets for incomming Clients
-        checkForNewClients(_pollfd);
+        checkForNewClients(_pollfd, server);
         // check requests from clients
-        for (size_t i = _listenSocks.size(); i < _pollfd.size(); i++)
-        {
-            if ( _pollfd[i].revents & (POLLIN | POLLOUT) ) {
-
-                // here we go for parse http request.
-                std::cout << "request accepted from user " << _pollfd[i].fd << std::endl;
-                server.request(_pollfd[i].fd);
-                std::cout << "response for user " << _pollfd[i].fd << " has been generated with success!" << std::endl;
-                server.response(_pollfd[i].fd);
-                server.handleDisconnect(i, _pollfd);
-                std::cout << "sockets that exist " << std::endl;
-                for (size_t k = 0; k < _pollfd.size(); k++)
+        // NOTE: client fds start from index = _listenSocks.size
+        for (size_t i = clientIndex; i < _pollfd.size(); i++) {
+            if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) ) {
+                server.handleDisconnect(i - clientIndex, _pollfd);
+            }
+            else {
+                if ( _pollfd[i].revents & POLLIN )
                 {
-                    std::cout << _pollfd[k].fd << std::endl;
+                    // here we go for parse http request.
+                    std::cout << "request accepted from user " << _pollfd[i].fd << std::endl;
+                    server.request(_pollfd[i].fd);
+                    _pollfd[i].events |= POLLOUT;
+                }
+                if ( _pollfd[i].revents & POLLOUT )
+                {
+                    server.response(_pollfd[i].fd);
+                    std::cout << "response for user " << _pollfd[i].fd << " has been generated with success!" << std::endl;
+                    _pollfd[i].events &= ~POLLOUT;
                 }
             }
         }
