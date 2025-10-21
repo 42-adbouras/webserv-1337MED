@@ -1,7 +1,11 @@
 #include "../includes/serverHeader/Server.hpp"
 
-Server::Server() {
+Server::Server(int portOpen) : _OpenPort(portOpen) {
     std::cout << "server start ..." << std::endl;
+}
+
+std::vector<Client>& Server::getListOfClients(void) {
+    return _client;
 }
 
 void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
@@ -15,7 +19,7 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     std::cout << "client with fd: " << client.getFd() << " connected" << std::endl;
 }
 
-void    Server::response(int clfd) {
+void    Server::response(Client& _clt) {
     ssize_t sendByte;
     const char  *data = 
         "HTTP/1.1 200 OK\r\n"
@@ -23,24 +27,26 @@ void    Server::response(int clfd) {
         "Content-Length: 48\r\n"
         "\r\n"
         "<html><body><h1>Hello from C Server!</h1></body></html>";
-    if ((sendByte = send(clfd, data, std::strlen(data), 0)) == -1)
+    if ((sendByte = send(_clt.getFd(), data, std::strlen(data), 0)) == -1)
     {
-        std::cerr << strerror(errno) << "-> can't send data to " << clfd << std::endl;
+        std::cerr << strerror(errno) << "-> can't send data to " << _clt.getFd() << std::endl;
     }
 }
 
-void    Server::request(int clfd){
+void    Server::request(Client& _clt){
     ssize_t readByte;
     char    buffer[1024];
 
-    if ((readByte = recv(clfd, buffer, sizeof(buffer), 0)) > 0)
+    if ((readByte = recv(_clt.getFd(), buffer, sizeof(buffer), 0)) > 0)
     {
         buffer[readByte] = '\0';
         std::cout << "request ->\n" << buffer << std::endl;
+        _clt.setStatus(KEEP_ALIVE);
     }
     if (readByte == 0) 
     {
-        std::cout << "connection is closed by the user ->" << clfd << std::endl;
+        _clt.setStatus(DISCONNECT);
+        std::cout << "connection is closed by the user ->" << _clt.getFd() << std::endl;
     }
     else if (readByte < 0)
     {
@@ -51,8 +57,8 @@ void    Server::request(int clfd){
 void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd) {
     
     close(_client[index].getFd());
-    std::cout << "client fd " << _pollfd[index].fd << " disconnect" << std::endl;
-    _pollfd.erase(_pollfd.begin() + index);
+    std::cout << "client fd " << _client[index].getFd() << " disconnect" << std::endl;
+    _pollfd.erase(_pollfd.begin() + index + _OpenPort);
     _client.erase(_client.begin() + index);
 }
 

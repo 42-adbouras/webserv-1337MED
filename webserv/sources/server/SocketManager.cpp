@@ -15,7 +15,7 @@ void    SocketManager::initSockets(void) {
     struct  addrinfo    hints, *results;
     int status, optVal;
 
-    ::memset(&hints, 0, sizeof(hints));
+    std::memset(&hints, 0, sizeof(hints));
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -107,17 +107,13 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
 void    SocketManager::runCoreLoop(void) {
     int 	totalEvent;
     size_t  clientIndex = _listenSocks.size();
-    Server  server;
+    Server  _server(_listenSocks.size());
     std::vector<struct pollfd>  _pollfd(_listenSocks.size());
     //set all listen socket to accept POLLIN events
     setListenEvent(_pollfd);
+    std::vector<Client>&    _clients = _server.getListOfClients(); 
     while (true)
     {
-        std::cout << "sockets that exist " << std::endl;
-        for (size_t k = 0; k < _pollfd.size(); k++)
-        {
-            std::cout << _pollfd[k].fd << std::endl;
-        }
         if ((totalEvent = poll(_pollfd.data(), _pollfd.size(), -1)) == -1)
         {
             closeSockets(_listenSocks);
@@ -125,24 +121,39 @@ void    SocketManager::runCoreLoop(void) {
         }
         // std::cout << "-->" << totalEvent << " <<<<<<< event occured ! >>>>>>>" << std::endl;
 		// check listen sockets for incomming Clients
-        checkForNewClients(_pollfd, server);
+        checkForNewClients(_pollfd, _server);
         // check requests from clients
         // NOTE: client fds start from index = _listenSocks.size
         for (size_t i = clientIndex; i < _pollfd.size(); i++) {
+            std::cout << "in client check --> " << _pollfd[i].fd << std::endl;
+            // std::cout << "total of clinets--> " << _pollfd.size() - clientIndex << std::endl;
             if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) ) {
-                server.handleDisconnect(i - clientIndex, _pollfd);
+                std::cout << "handle disco index ==> " << i - clientIndex << std::endl;
+                _server.handleDisconnect(i - clientIndex, _pollfd);
             }
             else {
                 if ( _pollfd[i].revents & POLLIN )
                 {
                     // here we go for parse http request.
                     std::cout << "request accepted from user " << _pollfd[i].fd << std::endl;
-                    server.request(_pollfd[i].fd);
-                    _pollfd[i].events |= POLLOUT;
+                    _server.request(_clients[i - clientIndex]);
+                    if (_clients[i - clientIndex].getStatus() == DISCONNECT)
+                    {
+                        std::cout << "I get new Status" << std::endl;
+                        _server.handleDisconnect(i - clientIndex, _pollfd);
+                        std::cout << "sockets that exist " << std::endl;
+                        for (size_t k = 0; k < _pollfd.size(); k++)
+                        {
+                            std::cout << _pollfd[k].fd << std::endl;
+                        }
+                        continue;
+                    }
+                    else
+                        _pollfd[i].events |= POLLOUT;
                 }
                 if ( _pollfd[i].revents & POLLOUT )
                 {
-                    server.response(_pollfd[i].fd);
+                    _server.response(_clients[_pollfd.size() - clientIndex - 1]);
                     std::cout << "response for user " << _pollfd[i].fd << " has been generated with success!" << std::endl;
                     _pollfd[i].events &= ~POLLOUT;
                 }

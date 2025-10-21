@@ -20,9 +20,11 @@ class Server
 	private:
         std::vector<Client>    _client;
 	public:
-		Server();
-		void	request(int clfd);
-		void	response(int clfd);
+		int						_OpenPort;
+		Server(int portOpen);
+		std::vector<Client>&	getListOfClients(void);
+		void	request(Client& _clt);
+		void	response(Client& _clt);
 		void	addClients(Client client, std::vector<struct pollfd> &_pollfd);
 		// bool	statOfUser(int clFd) const;
 		void	handleDisconnect(int index, std::vector<struct pollfd>& _pollfd);
