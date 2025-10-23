@@ -6,13 +6,13 @@ int	setNonBlocking( int fd )
 }
 
 
-std::string	iToString(int x) {
-	std::string	str;
-	while (x > 0)
-	{
-		char c = x % 10 + '0';
-		str.insert(str.begin(), c);
-		x /= 10;
-	}
-	return str;
-}
+// std::string	iToString(int x) {
+// 	std::string	str;
+// 	while (x > 0)
+// 	{
+// 		char c = x % 10 + '0';
+// 		str.insert(str.begin(), c);
+// 		x /= 10;
+// 	}
+// 	return str;
+// }
