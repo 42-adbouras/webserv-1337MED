@@ -20,6 +20,9 @@
 #include <sstream>
 #include <set>
 #include <exception>
+#include <cstdlib>
+#include <limits>
+
 
 struct CGIEntry
 {

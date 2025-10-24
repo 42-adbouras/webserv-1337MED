@@ -87,8 +87,8 @@ int	main( int ac, char** av )
 		Data	config = p.parseTokens();
 		SocketManager	socketManager(config);
 		socketManager.initSockets();
-		socketManager.listenPorts();
-		socketManager.acceptIncomingConn();
+		socketManager.listenToPorts();
+		socketManager.runCoreLoop();
 		// Server	server(data);
 
 		

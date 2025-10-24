@@ -64,7 +64,7 @@ void    SocketManager::bindSockets(void) {
     std::cout << "socket " << index + 1 << ": binded successfull" << std::endl;
 }
 
-void    SocketManager::listenPorts(void) {
+void    SocketManager::listenToPorts(void) {
 	for (size_t i = 0; i < _listenSocks.size(); i++)
     {
         if (listen(_listenSocks[i].first, SOMAXCONN) == -1)
@@ -76,26 +76,42 @@ void    SocketManager::listenPorts(void) {
     }
 }
 
-void    SocketManager::acceptIncomingConn(void) {
-    int 	totalEvent;
-    size_t  count;
-    int 	clientFd;
-
-    struct sockaddr_in  *temp1 = (struct sockaddr_in*)_listenSocks[0].second;
-    std::cout << "addres0-> " << temp1->sin_addr.s_addr << "port: " << ntohs(temp1->sin_port) << std::endl;
-    struct sockaddr_in  *temp2 = (struct sockaddr_in*)_listenSocks[1].second;
-    std::cout << "addres1-> " << temp2->sin_addr.s_addr << std::endl;
-    struct sockaddr_in  *temp3 = (struct sockaddr_in*)_listenSocks[2].second;
-    std::cout << "addres2-> " << temp3->sin_addr.s_addr << std::endl;
-
-    std::vector<struct pollfd>  _pollfd(_listenSocks.size());
-    std::cout << _pollfd.size() << std::endl;
-    //set all listen socket to accept POLL_IN events
+void    SocketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
     for (size_t i = 0; i < _listenSocks.size(); i++)
     {
         _pollfd[i].fd = _listenSocks[i].first; // fill "struct pollfd" with listen socket FDs
-        _pollfd[i].events = POLL_IN;
+        _pollfd[i].events = POLLIN;
     }
+}
+
+bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server ) {
+    int 	clientFd;
+
+    for (size_t	i = 0; i < _listenSocks.size(); i++) 
+    {
+        if (_pollfd[i].revents & POLLIN)
+        {
+            if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
+            {
+                closeSockets(_listenSocks);
+                throw std::runtime_error(strerror(errno));
+            }
+            SocketManager::setNonBlocking(clientFd);
+            _server.addClients(Client(clientFd), _pollfd);
+            std::cout << "<<< client added! >>>" << std::endl;
+        }
+    }
+    return true;
+}
+
+void    SocketManager::runCoreLoop(void) {
+    int 	totalEvent;
+    size_t  clientStartIndex = _listenSocks.size();
+    Server  _server(_listenSocks.size());
+    std::vector<struct pollfd>  _pollfd(_listenSocks.size());
+    //set all listen socket to accept POLLIN events
+    setListenEvent(_pollfd);
+    std::vector<Client>&    _clients = _server.getListOfClients(); 
     while (true)
     {
         if ((totalEvent = poll(_pollfd.data(), _pollfd.size(), -1)) == -1)
@@ -103,31 +119,47 @@ void    SocketManager::acceptIncomingConn(void) {
             closeSockets(_listenSocks);
             throw   std::runtime_error(strerror(errno));
         }
-        std::cout << totalEvent << " <<<<<<< event occured ! >>>>>>>" << std::endl;
+        // std::cout << "-->" << totalEvent << " <<<<<<< event occured ! >>>>>>>" << std::endl;
 		// check listen sockets for incomming Clients
-        count = _listenSocks.size();
-        for (size_t	i = 0; i < _listenSocks.size(); i++) {
-            if (_pollfd[i].revents == POLL_IN)
-            {
-                if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
+        checkForNewClients(_pollfd, _server);
+        // check requests from clients
+        // NOTE: client fds start from index = _listenSocks.size
+        for (size_t i = clientStartIndex; i < _pollfd.size(); i++) {
+            std::cout << "in client check --> " << _pollfd[i].fd << std::endl;
+            // std::cout << "total of clinets--> " << _pollfd.size() - clientStartIndex << std::endl;
+            if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) ) {
+                std::cout << "handle disco index ==> " << i - clientStartIndex << std::endl;
+                _server.handleDisconnect(i - clientStartIndex, _pollfd);
+            }
+            else {
+                if ( _pollfd[i].revents & POLLIN )
                 {
-                    closeSockets(_listenSocks);
-                    throw std::runtime_error(strerror(errno));
+                    // here we go for parse http request.
+                    std::cout << "request accepted from user " << _pollfd[i].fd << std::endl;
+                    _server.request(_clients[i - clientStartIndex]);
+                    if (_clients[i - clientStartIndex].getStatus() == DISCONNECT)
+                    {
+                        std::cout << "I get new Status" << std::endl;
+                        _server.handleDisconnect(i - clientStartIndex, _pollfd);
+                        std::cout << "sockets that exist " << std::endl;
+                        for (size_t k = 0; k < _pollfd.size(); k++)
+                        {
+                            std::cout << _pollfd[k].fd << std::endl;
+                        }
+                        continue;
+                    }
+                    else
+                        _pollfd[i].events |= POLLOUT;
                 }
-                
-                // addClients(clientFd, &clientAddr);
-                std::cout << "after client added?" << std::endl;
-			}
-    	}
+                if ( _pollfd[i].revents & POLLOUT )
+                {
+                    _server.response(_clients[_pollfd.size() - clientStartIndex - 1]);
+                    std::cout << "response for user " << _pollfd[i].fd << " has been generated with success!" << std::endl;
+                    _pollfd[i].events &= ~POLLOUT;
+                }
+            }
+        }
 	}
-}
-
-std::vector<ServerEntry>&	SocketManager::retrieveServerBlock(size_t index) {
-	struct sockaddr_in	*addr = (struct sockaddr_in*)_listenSocks[index].second;
-    (void)addr;
-	// int	port = ntohl(addr->sin_port);
-	// int	address = addr->sin_addr.s_addr;
-    return _config->_servers;
 }
 
 //------ utils ------

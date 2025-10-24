@@ -1,5 +1,3 @@
-# Ignore unecessary folders and files
-
 .vscode/
 *.o
-.djgit/
+
