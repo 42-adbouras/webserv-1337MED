@@ -6,21 +6,27 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/02 11:30:53 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/02 11:39:03 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/23 16:22:07 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/Config.hpp"
+#include <string>
 
 bool	startsWith( const str& path, const str& start )
 {
     return (path.size() >= start.size() && path.compare(0, start.size(), start) == 0);
 }
 
-bool	validatePort( int port, int line, int col )
+bool	validatePort( str& portStr, int line, int col , const str& path )
 {
+	for (size_t i = 0; i < portStr.size(); ++i) {
+		if (!std::isdigit(portStr[i]))
+			throw ParsingError("invalide port value " + portStr, path, line, col);
+	}
+	int port = std::atoi(portStr.c_str());
 	if (port < PORT_MIN || port > PORT_MAX)
-		throw ParsingError("PortOutOfRange", line, col);
+		throw ParsingError("port out of range " + portStr, path, line, col);
 	return (true);
 }
 

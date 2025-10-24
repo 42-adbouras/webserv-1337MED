@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/08 11:46:46 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/08 15:52:27 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/09 13:10:01 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,15 +14,31 @@
 
 #include "TypeDefs.hpp"
 #include "Response.hpp"
-// #include <iostream>
+#include "Request.hpp"
+#include <iostream>
 #include <poll.h>
+#include <sys/poll.h>
 #include <unistd.h>
-// #include <signal.h>
+
+struct CGIContext
+{
+	str					_path;
+	str					_ntrp;
+	str					_method;
+	str					_query;
+	str					_name;
+	str					_serverName;
+	str					_serverPort;
+	str					_serverAddr;
+	str					_contenType;
+	str					_body;
+	std::map<str, str>	_headers;
+};
 
 struct CGIOutput
 {
-	int		_code;
-	str		_output;
+	int					_code;
+	str					_output;
 
 	CGIOutput( void ) : _code(200) {}
 
@@ -31,4 +47,4 @@ struct CGIOutput
 		, _output(output) {}
 };
 
-CGIOutput	cgiHandle( str& path, str& ntrp, str& reqBody );
+CGIOutput	cgiHandle( Request& req );
