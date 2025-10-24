@@ -3,6 +3,9 @@
 #include <iostream>
 #include <netdb.h>
 #include <poll.h>
+#include <cstring>
+#include <cerrno>
+
 // #include <utility>
 #include "../Config.hpp"
 
@@ -18,9 +21,11 @@ class   SocketManager {
     public:
         SocketManager(Data& config);
         void    initSockets(void);
-        void    listenPorts(void) ;
-        void    acceptIncomingConn(void);
-        std::vector<ServerEntry>&    retrieveServerBlock(size_t index);
+        void    listenToPorts(void) ;
+        void    runCoreLoop(void);
+        void    setListenEvent(std::vector<struct pollfd>& _pollfd);
+        bool    checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server );
+        // std::vector<ServerEntry>&    retrieveServerBlock(size_t index);
         // ----- Utils -----
         // static struct sockaddr_in  getSockaddr(void);
         static int  setNonBlocking(int fd);

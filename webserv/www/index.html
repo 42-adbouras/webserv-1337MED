@@ -1,95 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>WebServ 1337</title>
-	<style>
-		body {
-			font-family: Arial, sans-serif;
-			line-height: 1.6;
-			margin: 0;
-			padding: 0;
-			color: #333;
-			background-color: #f4f4f4;
-		}
-		.container {
-			width: 80%;
-			margin: 0 auto;
-			padding: 20px;
-		}
-		header {
-			background: #333;
-			color: #fff;
-			padding: 20px 0;
-			text-align: center;
-		}
-		header h1 {
-			margin: 0;
-		}
-		.content {
-			background: #fff;
-			padding: 20px;
-			margin: 20px 0;
-			border-radius: 5px;
-			box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-		}
-		.status {
-			background-color: #d4edda;
-			color: #155724;
-			padding: 15px;
-			border-radius: 4px;
-			text-align: center;
-			font-weight: bold;
-		}
-		footer {
-			background: #333;
-			color: #fff;
-			text-align: center;
-			padding: 10px;
-			position: fixed;
-			bottom: 0;
-			width: 100%;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to My Server Test</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-	<header>
-		<div class="container">
-			<h1>WebServ 1337</h1>
-			<p>A lightweight HTTP server implementation</p>
-		</div>
-	</header>
+    <header>
+        <img src="/images/logo.png" alt="Server Logo" class="logo">
+        <h1>Welcome to My Awesome Server!</h1>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/about.html">About Us</a></li>
+                <li><a href="/contact.html">Contact</a></li>
+                <li><a href="/nonexistent.html">404 Test</a></li>
+            </ul>
+        </nav>
+    </header>
 
-	<div class="container">
-		<div class="content">
-			<h2>Welcome to WebServ!</h2>
-			<div class="status">
-				Server is running successfully!
-			</div>
-			<p>If you can see this page, it means your custom HTTP server is working correctly.</p>
-			
-			<h3>Project Features:</h3>
-			<ul>
-				<li>Non-blocking I/O with poll()</li>
-				<li>Multiple client connections</li>
-				<li>Static file serving</li>
-				<li>HTTP request parsing</li>
-				<li>Connection persistence</li>
-			</ul>
-			
-			<h3>Try These Links:</h3>
-			<ul>
-				<li><a href="/about.html">About Page</a></li>
-				<li><a href="/contact.html">Contact Us</a></li>
-			</ul>
-		</div>
-	</div>
+    <main>
+        <section>
+            <h2>Hello from your custom web server!</h2>
+            <p>This is a simple static website designed to help you test the functionality and performance of your NGINX-like server. You should be able to navigate between pages, see the styling applied, and view the image.</p>
+            <p>If you're seeing this, your server is successfully serving <code>index.html</code>.</p>
+            <p>Try clicking the links above to test other pages and static assets.</p>
+        </section>
+    </main>
 
-	<footer>
-		<div class="container">
-			<p>&copy; 2025 WebServ - 1337 MED Project</p>
-		</div>
-	</footer>
+    <footer>
+        <p>&copy; 2023 My Custom Server. All rights reserved.</p>
+    </footer>
 </body>
 </html>
