@@ -83,7 +83,7 @@ int	main( int ac, char** av )
 		Lexer			lex(cfg);
 		TokensVector	tokens = lex.tokenize();
 		// printTokens(tokens);
-		ConfigParser	p(tokens);
+		ConfigParser	p(tokens, av[1]);
 		Data	config = p.parseTokens();
 		SocketManager	socketManager(config);
 		socketManager.initSockets();
