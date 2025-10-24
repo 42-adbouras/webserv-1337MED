@@ -21,13 +21,13 @@ void    SocketManager::initSockets(void) {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; //tell getaddrinfo() that the returned address will be used
     //               for binding a server socket, not for connecting as a client.
-    std::set<std::string>::iterator it;
     for (size_t i = 0; i < _config->_servers.size(); i++)
     {
-        it = _config->_servers[i]._portStr.begin();
-        while (it != _config->_servers[i]._portStr.end())
-        {
-            status = getaddrinfo(_config->_servers[i]._listen.c_str(), (*it).c_str(), &hints, &results);
+        std::set<std::pair<std::string, std::string> >::iterator it = _config->_servers[i]._listen.begin();
+        while (it != _config->_servers[i]._listen.end()) {
+            // it = _config->_servers[i]._listen.begin();
+            std::cout << "add: " << it->first << ", port: " << it->second << std::endl;
+            status = getaddrinfo(it->first.c_str(), it->second.c_str(), &hints, &results);
             if (status != 0)
             {
                 std::cerr << gai_strerror(errno) << std::endl;
@@ -50,6 +50,7 @@ void    SocketManager::initSockets(void) {
             freeaddrinfo(results);
             it++;
         }
+        
     }
 }
 
