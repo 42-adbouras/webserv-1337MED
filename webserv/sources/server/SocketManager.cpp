@@ -14,6 +14,7 @@ int SocketManager::setNonBlocking(int fd) {
 void    SocketManager::initSockets(void) {
     struct  addrinfo    hints, *results;
     int status, optVal;
+    std::set<std::pair<std::string, std::string> >::iterator it;
 
     std::memset(&hints, 0, sizeof(hints));
     hints.ai_protocol = IPPROTO_TCP;
@@ -23,7 +24,7 @@ void    SocketManager::initSockets(void) {
     //               for binding a server socket, not for connecting as a client.
     for (size_t i = 0; i < _config->_servers.size(); i++)
     {
-        std::set<std::pair<std::string, std::string> >::iterator it = _config->_servers[i]._listen.begin();
+        it = _config->_servers[i]._listen.begin();
         while (it != _config->_servers[i]._listen.end()) {
             // it = _config->_servers[i]._listen.begin();
             std::cout << "add: " << it->first << ", port: " << it->second << std::endl;
@@ -50,7 +51,6 @@ void    SocketManager::initSockets(void) {
             freeaddrinfo(results);
             it++;
         }
-        
     }
 }
 
@@ -73,7 +73,7 @@ void    SocketManager::listenToPorts(void) {
             closeSockets(_listenSocks);
             std::runtime_error(strerror(errno));
         }
-        std::cout << "socket " << _listenSocks[i].first << " listen!" << std::endl;
+        std::cout << "socket fd: " << _listenSocks[i].first << " -> listening!" << std::endl;
     }
 }
 
@@ -99,7 +99,7 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
             }
             SocketManager::setNonBlocking(clientFd);
             _server.addClients(Client(clientFd), _pollfd);
-            std::cout << "<<< client added! >>>" << std::endl;
+            std::cout << YELLOW << "<<< client added with fd: " << clientFd << " >>>" << RESET << std::endl;
         }
     }
     return true;
@@ -120,33 +120,34 @@ void    SocketManager::runCoreLoop(void) {
             closeSockets(_listenSocks);
             throw   std::runtime_error(strerror(errno));
         }
-        // std::cout << "-->" << totalEvent << " <<<<<<< event occured ! >>>>>>>" << std::endl;
+        std::cout << RED << totalEvent << " <<<<<<< event occured ! >>>>>>>" << RESET << std::endl;
 		// check listen sockets for incomming Clients
         checkForNewClients(_pollfd, _server);
         // check requests from clients
         // NOTE: client fds start from index = _listenSocks.size
         for (size_t i = clientStartIndex; i < _pollfd.size(); i++) {
-            std::cout << "in client check --> " << _pollfd[i].fd << std::endl;
+            // std::cout << "in client check --> " << _pollfd[i].fd << std::endl;
             // std::cout << "total of clinets--> " << _pollfd.size() - clientStartIndex << std::endl;
             if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) ) {
-                std::cout << "handle disco index ==> " << i - clientStartIndex << std::endl;
+                std::cout << RED << "Browser close connection " << i - clientStartIndex << RESET << std::endl;
                 _server.handleDisconnect(i - clientStartIndex, _pollfd);
             }
             else {
                 if ( _pollfd[i].revents & POLLIN )
                 {
                     // here we go for parse http request.
-                    std::cout << "request accepted from user " << _pollfd[i].fd << std::endl;
+                    std::cout <<  BLUE << "request accepted from user " << _pollfd[i].fd << RESET << std::endl;
                     _server.request(_clients[i - clientStartIndex]);
                     if (_clients[i - clientStartIndex].getStatus() == DISCONNECT)
                     {
-                        std::cout << "I get new Status" << std::endl;
+                        std::cout << RED << "read return 0 to close connection" << RESET << std::endl;
                         _server.handleDisconnect(i - clientStartIndex, _pollfd);
-                        std::cout << "sockets that exist " << std::endl;
+                        std::cout << YELLOW << "sockets that exist " << std::endl;
                         for (size_t k = 0; k < _pollfd.size(); k++)
                         {
                             std::cout << _pollfd[k].fd << std::endl;
                         }
+                        std::cout << RESET << std::endl;
                         continue;
                     }
                     else
@@ -155,7 +156,8 @@ void    SocketManager::runCoreLoop(void) {
                 if ( _pollfd[i].revents & POLLOUT )
                 {
                     _server.response(_clients[_pollfd.size() - clientStartIndex - 1]);
-                    std::cout << "response for user " << _pollfd[i].fd << " has been generated with success!" << std::endl;
+
+                    std::cout << GREEN << "response for user " << _pollfd[i].fd << " has been generated with success!" << RESET << std::endl;
                     _pollfd[i].events &= ~POLLOUT;
                 }
             }
@@ -164,19 +166,19 @@ void    SocketManager::runCoreLoop(void) {
 }
 
 //------ utils ------
-size_t SocketManager::portCounter(void) const {
-    size_t count = 0;
-    size_t i = 0;
-    size_t j;
-    while (i < _config->_servers.size())
-    {
-        j = 0;
-        while (j < _config->_servers[i]._listen.size())
-        {
-            j++;
-            count++;
-        }
-        i++;
-    }
-    return count;
-}
+// size_t SocketManager::portCounter(void) const {
+//     size_t count = 0;
+//     size_t i = 0;
+//     size_t j;
+//     while (i < _config->_servers.size())
+//     {
+//         j = 0;
+//         while (j < _config->_servers[i]._listen.size())
+//         {
+//             j++;
+//             count++;
+//         }
+//         i++;
+//     }
+//     return count;
+// }

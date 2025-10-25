@@ -21,19 +21,22 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
 void    Server::response(Client& _clt) {
     std::ostringstream  oss;
     oss << _clt.getFd();
-    std::string sec(oss.str() + "</h1></body></html>");
+    std::string sec(oss.str() + " </h1></body></html>");
     std::string req("HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n"
-        "Content-Length: 48\r\n"
+        "Content-Length: 58\r\n"
         "\r\n"
         "<html><body><h1>Hello from C Server! ");
     ssize_t sendByte;
     std::string    data(req + sec); 
     //     ;
-    if ((sendByte = send(_clt.getFd(), data.c_str(), std::strlen(data.c_str()), 0)) == -1)
+    if ((sendByte = send(_clt.getFd(), data.c_str(), data.size(), 0)) == -1)
     {
         std::cerr << strerror(errno) << "-> can't send data to " << _clt.getFd() << std::endl;
     }
+    std::cout << YELLOW << "sizeof data: " << data.size() << ", sendByte: " << sendByte << RESET <<  std::endl;
+
+    std::cout << data << std::endl;
 }
 
 void    Server::request(Client& _clt){
