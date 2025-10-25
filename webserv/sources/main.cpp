@@ -6,11 +6,11 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/22 16:39:08 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/24 14:07:08 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/serverHeader/Server.hpp" // IWYU pragma: keep
+#include "../includes/serverHeader/Server.hpp"
 #include "../includes/Lexer.hpp"
 #include "../includes/TypeDefs.hpp"
 #include "../includes/Config.hpp"
@@ -18,9 +18,6 @@
 #include <fstream>
 #include <sstream>
 #include <vector> // IWYU pragma: keep
-
-#define PORT 8080
-#define ROOT "www"
 
 const char*	tokenTypeName( TokenType t )
 {
@@ -70,7 +67,7 @@ str		readConfig( const str& path )
 	if (!in && in.eof())
 		throw std::runtime_error("[ErrorReadingFileExeption]");
 
-	return ( oss.str());
+	return (oss.str());
 }
 
 int	main( int ac, char** av )
@@ -85,16 +82,16 @@ int	main( int ac, char** av )
 		// printTokens(tokens);
 		ConfigParser	p(tokens, av[1]);
 		Data	config = p.parseTokens();
-		SocketManager	socketManager(config);
-		socketManager.initSockets();
-		socketManager.listenToPorts();
-		socketManager.runCoreLoop();
+		// SocketManager	socketManager(config);
+		// socketManager.initSockets();
+		// socketManager.listenToPorts();
+		// socketManager.runCoreLoop();
 		// Server	server(data);
 
 		
 	} catch (std::exception& e) {
 		// std::cerr << "Server " << std::endl;
-		std::cerr << e.what() << std::endl;
+		std::cerr << RED << e.what() << RESET << std::endl;
 		return (1);
 	}
 	// std::ifstream	confStream(av[1]);

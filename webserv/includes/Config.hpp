@@ -6,21 +6,22 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/23 16:19:45 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/24 17:09:24 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include "Lexer.hpp"
-#include "Server.hpp"
+// #include "Server.hpp"
 #include "TypeDefs.hpp"
 #include <cstddef>
 #include <map>
 #include <set>
 #include <exception>
-#include <sstream>
-#include <limits>
+#include <sstream> // IWYU pragma: keep
+#include <limits> // IWYU pragma: keep
+#include <iostream> // IWYU pragma: keep
 #include <cstring>
 #include <cstdlib>
 
@@ -79,7 +80,7 @@ private:
 
 public:
 	ParsingError( const str& msg, const str& path, int line, int col );
-	virtual ~ParsingError() throw();
+	virtual ~ParsingError( void ) throw();
 	const char*	what() const throw();
 };
 
