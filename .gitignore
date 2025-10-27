@@ -12,6 +12,7 @@
 !request/
 !response/
 !errors/
+!defaultErrorPages/
 !includes/
 !configs/
 !www/
