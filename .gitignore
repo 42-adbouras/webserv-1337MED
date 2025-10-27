@@ -5,6 +5,7 @@
 !*.tpp
 !*.html
 !*.conf
+!*.py
 
 !webserv/
 !sources/
@@ -16,8 +17,6 @@
 !includes/
 !configs/
 !www/
+!cgi/
 !Makefile
 !README.md
-!.gitignore
-
-test.cpp
