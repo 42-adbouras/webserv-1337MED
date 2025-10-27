@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <sstream>
+#include <fstream>
 
 #define PORT_MIN 1024
 #define PORT_MAX 65535
@@ -31,9 +33,10 @@
 
 struct Token;
 
-typedef std::string						str;
-typedef std::vector<Token>				TokensVector;
+typedef std::string			str;
+typedef std::vector<Token>	TokensVector;
 typedef std::set< std::pair<str, str> >	ListenSet;
+typedef std::stringstream	sstream;
 
 #define EXPECT_SEMI_ERR	"expression is not terminated by \";\""
 #define MAX_BODY_ERR	"\"client_max_body_size\" directive invalid value"
