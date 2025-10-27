@@ -32,4 +32,7 @@ public:
 	str generate( void ) const;
 };
 
+void notImplementedResponse( Response& response );
+void URItooLongResponse( Response& response );
+
 #endif
