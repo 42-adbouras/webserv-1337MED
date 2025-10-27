@@ -73,6 +73,16 @@ str		readConfig( const str& path )
 	return ( oss.str());
 }
 
+void	displayHashTable(const std::vector<TableOfListen> &table) {
+	for (size_t i = 0; i < table.size(); i++)
+	{
+		std::cout << YELLOW;
+		std::cout << "TABLE " << i + 1 << ": ==> " << "[ FD=" << table[i]._fd << ", IP=" << table[i]._ip << ", PORT=" << table[i]._port << ", SERVER_NAME=" << table[i]._serverName << " ]" << std::endl;
+		std::cout << GREEN << "          ========================        " << std::endl;
+	}
+	std::cout << RESET << std::endl;
+}
+
 int	main( int ac, char** av )
 {
 	if (ac < 2) {
@@ -82,12 +92,18 @@ int	main( int ac, char** av )
 		str				cfg = readConfig(av[1]);
 		Lexer			lex(cfg);
 		TokensVector	tokens = lex.tokenize();
-		// printTokens(tokens);
 		ConfigParser	p(tokens, av[1]);
 		Data	config = p.parseTokens();
-		SocketManager	socketManager(config);
+		// making a hash-table for all IP:PORT
+		std::vector<TableOfListen>	tableOfListen;
+		SocketManager	socketManager(config, tableOfListen);
+		socketManager.setTableOfListen(tableOfListen);
+		displayHashTable(tableOfListen);
+		// socketManager
 		socketManager.initSockets();
 		socketManager.listenToPorts();
+		displayHashTable(tableOfListen);
+		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
 		socketManager.runCoreLoop();
 		// Server	server(data);
 

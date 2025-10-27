@@ -13,9 +13,9 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     temp.fd = client.getFd();
     temp.events = POLLIN;
     temp.revents = 0;
+    client.setStatus(NON);
     _client.push_back(client);
     _pollfd.push_back(temp);
-    std::cout << "client with fd: " << client.getFd() << " connected" << std::endl;
 }
 
 void    Server::response(Client& _clt) {
@@ -24,9 +24,9 @@ void    Server::response(Client& _clt) {
     std::string sec(oss.str() + " </h1></body></html>");
     std::string req("HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n"
-        "Content-Length: 58\r\n"
+        "Content-Length: 65\r\n"
         "\r\n"
-        "<html><body><h1>Hello from C Server! ");
+        "<html><body><h1>fuck you mn hna l rachidiya ");
     ssize_t sendByte;
     std::string    data(req + sec); 
     //     ;
@@ -54,8 +54,7 @@ void    Server::request(Client& _clt){
         _clt.setStatus(DISCONNECT);
         std::cout << "connection is closed by the user ->" << _clt.getFd() << std::endl;
     }
-    else if (readByte < 0)
-    {
+    else if (readByte < 0) {
         std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
     }
 }
@@ -63,8 +62,8 @@ void    Server::request(Client& _clt){
 void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd) {
     
     close(_client[index].getFd());
-    std::cout << "client fd " << _client[index].getFd() << " disconnect" << std::endl;
-    _pollfd.erase(_pollfd.begin() + index + _OpenPort);
+    std::cout << RED << "USER WITH FD=" << _client[index].getFd() << " DISCONNECTED!" << std::endl;
+    _pollfd.erase(_pollfd.begin() + _OpenPort + index);
     _client.erase(_client.begin() + index);
 }
 

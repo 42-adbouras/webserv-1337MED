@@ -1,7 +1,7 @@
 #include "Client.hpp"
 
 Client::Client(int fd) : _fd(fd), _status(NON) {
-    std::cout << "client connected" << std::endl;
+    // std::cout << "client connected" << std::endl;
 }
 
 int Client::getFd() const {
