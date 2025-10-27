@@ -64,7 +64,7 @@ bool Request::parseReqline( const char* input, Response& response ) {
 		return false;
 	}
 	if(!is_valid_method( _method )) {
-		response.setStatus(501);
+		notImplementedResponse(response);
 		return false;
 	}
 	if(_version != "HTTP/1.1") {
@@ -72,7 +72,7 @@ bool Request::parseReqline( const char* input, Response& response ) {
 		return false;
 	}
 	if (_Uri.length() > 2048) {
-		response.setStatus(414);
+		URItooLongResponse(response);
 		return false;
 	}
 	if(!parse_query_params( _Uri ) || !UriAllowedChars( _Uri )) {
@@ -123,10 +123,9 @@ void requestHandler( const char* buffer, int socket ) {
 	Response response;
 
 	if (!request.parseReqline( buffer, response )) {
-		response.setBody("Error !");
-		response.addHeaders("Host", "localhost:8080");
-		response.addHeaders("Content-Type", "text/html");
-		response.addHeaders("Contenet-Length", "7");
+		str content = response.generate();
+		send(socket, content.c_str(), content.length(), 0);
+		return;
 	} else {
 		std::ifstream file("./www/index.html");
 		if (!file.is_open())
