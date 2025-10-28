@@ -1,5 +1,5 @@
-#include "../../includes/request.hpp"
-#include "../../includes/response.hpp"
+#include "../../includes/Request.hpp"
+#include "../../includes/Response.hpp"
 
 Request::Request( void )
 	: _method()
@@ -117,14 +117,28 @@ void Request::initBody( const char* input ) {
 		_body = raw.substr(pos + 4);
 }
 
+Request::Request( Client& clt ) {
+	requestHandler(clt);
+}
 
-void requestHandler( const char* buffer, int socket ) {
-	Request request;
+void requestHandler( Client& clt ) {
+	Request request(clt);
 	Response response;
+
+	char buffer[3000];
+	ssize_t rByte;
+	if((rByte = recv(clt.getFd(), buffer, sizeof(buffer), 0)) > 0) {
+		buffer[rByte] = '\0';
+		clt.setStatus(KEEP_ALIVE);
+	}
+	if(rByte == 0)
+		clt.setStatus(DISCONNECT);
+	else if (rByte < 0)
+		std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
 
 	if (!request.parseReqline( buffer, response )) {
 		str content = response.generate();
-		send(socket, content.c_str(), content.length(), 0);
+		send(clt.getFd(), content.c_str(), content.length(), 0);
 		return;
 	} else {
 		std::ifstream file("./www/index.html");
@@ -146,5 +160,5 @@ void requestHandler( const char* buffer, int socket ) {
 	request.initBody( buffer );
 	str content = response.generate();
 
-	send(socket, content.c_str(), content.length(), 0);
+	send(clt.getFd(), content.c_str(), content.length(), 0);
 }

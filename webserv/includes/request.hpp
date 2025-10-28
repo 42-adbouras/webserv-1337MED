@@ -5,8 +5,10 @@
 #include "./TypeDefs.hpp"
 #include <sys/socket.h>
 #include <map>
+#include "./serverHeader/Client.hpp"
 
 class Response;
+class Client;
 
 struct StatusEntry {
 	int code;
@@ -30,7 +32,19 @@ private:
 
 public:
 	Request( void );
+	Request( Client& clt );
 	~Request();
+
+	class RequestException : public std::exception {
+	private:
+		str msg;
+	public:
+		RequestException( const str& msg ) : msg(msg) { }
+		virtual const char* what() const throw() {
+			return msg.c_str();
+		}
+		virtual ~RequestException() throw() { }
+	};
 
 	const str& getMethod( void ) const;
 	const str& getreqTarget( void ) const;
