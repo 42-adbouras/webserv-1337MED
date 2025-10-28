@@ -13,6 +13,7 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     temp.fd = client.getFd();
     temp.events = POLLIN;
     temp.revents = 0;
+    // client._serverBlockHint[0]
     client.setStatus(NON);
     _client.push_back(client);
     _pollfd.push_back(temp);

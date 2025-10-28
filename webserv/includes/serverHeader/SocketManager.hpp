@@ -5,20 +5,24 @@
 #include <poll.h>
 #include <cstring>
 #include <cerrno>
+#include <vector>
 
+struct  TableOfListen;
+struct  ServerEntry;
+typedef std::vector<std::pair<TableOfListen*, ServerEntry*> >   serverBlockHint;
 // #include <utility>
+// #include "Server.hpp"
 #include "../Config.hpp"
-
-#include "Server.hpp"
+class   Server;
 
 struct  Data;
-struct  TableOfListen;
+
 
 class   SocketManager {
     private:
         Data                                            *_config;
         std::vector<TableOfListen>                      &_tableOfListen;
-        std::vector<std::pair<int, struct sockaddr*> >    _listenSocks;
+        // std::vector<std::pair<int, struct sockaddr*> >    _listenSocks;
         void    bindSockets(size_t counter);
     public:
         SocketManager(Data& config, std::vector<TableOfListen>& tableOfListen);
@@ -29,8 +33,10 @@ class   SocketManager {
         void    setListenEvent(std::vector<struct pollfd>& _pollfd);
         bool    checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server );
         void    hanldVirtualHost(TableOfListen& table, size_t index);
+        bool    checkIfAlreadyBinded(size_t index) const;
         void    closeListenSockets(void) const;
         void    closeClientsSockets();
+        serverBlockHint   detectServerBlock(int sockFd) const;
         // std::vector<ServerEntry>&    retrieveServerBlock(size_t index);
         // ----- Utils -----
         // static struct sockaddr_in  getSockaddr(void);
@@ -46,6 +52,7 @@ struct TableOfListen
     std::string _ip;
     std::string _port;
     std::string _serverName;
+    unsigned int    _serverBlockId;
     bool    alreadyBinded;
     bool    operator==(const TableOfListen& other) const {
         if (_ip == other._ip && _port == other._port)

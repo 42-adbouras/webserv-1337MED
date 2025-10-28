@@ -8,17 +8,18 @@ SocketManager::SocketManager(Data& config, std::vector<TableOfListen>& tableOfLi
 
 void    SocketManager::setTableOfListen(std::vector<TableOfListen>& table) {
     std::set<std::pair<str, str> >::iterator    it;
-    for (size_t server = 0; server < _config->_servers.size(); server++)
+    for (size_t serverId = 0; serverId < _config->_servers.size(); serverId++)
     {
-        it = _config->_servers[server]._listen.begin();
-        while (it != _config->_servers[server]._listen.end())
+        it = _config->_servers[serverId]._listen.begin();
+        while (it != _config->_servers[serverId]._listen.end())
         {
             TableOfListen  tmp;
             tmp._fd = -1;
             tmp.addr = NULL;
             tmp._ip = it->first;
             tmp._port = it->second;
-            tmp._serverName = _config->_servers[server]._serverName;
+            tmp._serverName = _config->_servers[serverId]._serverName;
+            tmp._serverBlockId = serverId;
             table.push_back(tmp);
             it++;
         }
@@ -61,14 +62,24 @@ void    SocketManager::initSockets(void) {
 
 }
 
+bool    SocketManager::checkIfAlreadyBinded(size_t index) const {
+    for (size_t i = 0; i < index; i++)
+    {
+        if (_tableOfListen[i] == _tableOfListen[index])
+            return true;
+    }
+    return false;
+}
+
 void    SocketManager::bindSockets(size_t counter) {
     int status = 0;
-    // int opValue = 1;
-    // if (setsockopt(_tableOfListen[i]._fd, SOL_SOCKET, SO_REUSEADDR, &opValue, sizeof(opValue)))
-    // {
-    //     /* code */
-    // }
-            
+    int opValue = 1;
+
+    if (!checkIfAlreadyBinded(counter) && (setsockopt(_tableOfListen[counter]._fd, SOL_SOCKET, SO_REUSEADDR, &opValue, sizeof(opValue)) != 0))
+    {
+        closeListenSockets();
+        throw std::runtime_error(strerror(errno));
+    }
     status = bind(_tableOfListen[counter]._fd, _tableOfListen[counter].addr, sizeof(struct sockaddr));
     if (status != 0 && errno == EADDRINUSE) {
         _tableOfListen[counter].alreadyBinded = true;
@@ -129,12 +140,6 @@ void    SocketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
             count++;
         }
     }
-    // std::cout << "POLLFD: ";
-    // for (size_t i = 0; i < _pollfd.size(); i++)
-    // {
-    //     std::cout << _pollfd[i].fd;
-    // }
-    // std::cout << std::endl;
 }
 
 bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server ) {
@@ -144,7 +149,7 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
     {
         if (_pollfd[i].revents & POLLIN)
         {
-            std::cout << "CONNECTION COMMME FROM FD: " << _pollfd[i].fd << std::endl;
+            std::cout << "CONNECTION COMMME FROM FD: " << _pollfd[i].fd << "PORT:"  << std::endl;
             if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
             {
                 std::cout << "IN ACCEPT FUNC" << std::endl;
@@ -152,8 +157,10 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
                 closeListenSockets();
                 throw std::runtime_error(strerror(errno));
             }
+
             SocketManager::setNonBlocking(clientFd);
-            _server.addClients(Client(clientFd), _pollfd);
+            // DETECT SERVER BLOCK
+            _server.addClients(Client(clientFd, detectServerBlock(_pollfd[i].fd)), _pollfd);
             std::cout << YELLOW << "<<< client added with fd: " << clientFd << " >>>" << RESET << std::endl;
         }
     }
@@ -196,7 +203,20 @@ void    SocketManager::runCoreLoop(void) {
                 {
                     // here we go for parse http request.
                     std::cout <<  BLUE << "REQUEST FROM USER WITH FD=" << GREEN << _pollfd[i].fd << RESET << std::endl;
+                    // DETECTING ON EACH SERVER THE USER COME-IN.
+                    
                     _server.request(_clients[i - clientStartIndex]);
+                    // kepp-alive 
+                    if (_clients[i-clientStartIndex].getStatus() == KEEP_ALIVE)
+                    {
+                        int opt = 1;
+                        if (setsockopt(_clients[i-clientStartIndex].getFd(), SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) != 0)
+                        {
+                            closeListenSockets();
+                            throw std::runtime_error(strerror(errno));
+                        }
+                    }
+                    
                     if (_clients[i - clientStartIndex].getStatus() == DISCONNECT)
                     {
                         std::cout << RED << "read return 0 to close connection" << RESET << std::endl;
@@ -204,7 +224,7 @@ void    SocketManager::runCoreLoop(void) {
                         std::cout << YELLOW << "sockets that exist after a user disconnect:" << std::endl;
                         for (size_t k = 0; k < _pollfd.size(); k++)
                         {
-                            std::cout << _pollfd[k].fd << std::endl;
+                            std::cout << _pollfd[k].fd << "-";
                         }
                         std::cout << RESET << std::endl;
                         i--;
@@ -223,6 +243,20 @@ void    SocketManager::runCoreLoop(void) {
             }
         }
 	}
+}
+
+serverBlockHint    SocketManager::detectServerBlock(int sockFd) const {
+    serverBlockHint   tmp;
+    for (size_t i = 0; i < _tableOfListen.size(); i++)
+    {
+        if (sockFd == _tableOfListen[i]._fd)
+        {
+            tmp.push_back(std::make_pair(&_tableOfListen[i],  &(_config->_servers[_tableOfListen[i]._serverBlockId])));
+            std::cout << BLUE << "HII THERE! I GET THE BLOCKE SERVER." << std::endl;
+            std::cout << "IP=" << _tableOfListen[i]._ip << ", PORT=" << _tableOfListen[i]._port << YELLOW << ", DOMAINE-NAME=[" << _tableOfListen[i]._serverName << "]" << RESET << std::endl;
+        }
+    }
+    return tmp;
 }
 
 void    SocketManager::closeListenSockets(void) const {

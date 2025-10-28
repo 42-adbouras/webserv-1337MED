@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <SocketManager.hpp>
 
 enum	Status {
 	DISCONNECT,
@@ -15,7 +16,8 @@ class   Client {
         Status  _status;
         Client();
     public:
-        Client(int fd);
+        serverBlockHint _serverBlockHint;
+        Client(int fd, const serverBlockHint& server_block);
         ~Client();
         int     getFd() const;
         void    setFd(int fd);
