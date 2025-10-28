@@ -3,7 +3,7 @@
 
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
-#include "./request.hpp"
+#include "./Request.hpp"
 
 #define BREAK_LINE "\r\n"
 
@@ -32,6 +32,7 @@ public:
 	str generate( void ) const;
 };
 
+str iToString(int n);
 void notImplementedResponse( Response& response );
 void URItooLongResponse( Response& response );
 

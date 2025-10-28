@@ -1,4 +1,4 @@
-#include "../../includes/request.hpp"
+#include "../../includes/Request.hpp"
 
 bool UriAllowedChars( str& uri ) {
 	str allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
