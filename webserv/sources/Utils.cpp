@@ -1,4 +1,5 @@
 #include "../includes/Utils.hpp"
+#include "../includes/TypeDefs.hpp"
 
 int	setNonBlocking( int fd )
 {
@@ -16,3 +17,9 @@ int	setNonBlocking( int fd )
 // 	}
 // 	return str;
 // }
+
+str iToString(int n) {	
+	sstream ss;
+	ss << n;
+	return ss.str();
+}
