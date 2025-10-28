@@ -5,8 +5,13 @@ Response::Response( void )
 	, _statusText()
 	, _version("HTTP/1.1")
 	, _body()
-	, _contentLength(0)
-	, _headers() { }
+	, _contentLength(0) {
+
+		_headers["Host"] = "";
+		_headers["Content-Type"] = "text/html";
+		_headers["Content-Length"] = "1";
+		_headers["Connection"] = "keep-alive";
+}
 
 Response::~Response() { }
 
