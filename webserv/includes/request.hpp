@@ -6,12 +6,8 @@
 #include <sys/socket.h>
 #include <map>
 
+class Client;
 class Response;
-
-struct StatusEntry {
-	int code;
-	str message;
-};
 
 class Request {
 private:
@@ -20,6 +16,7 @@ private:
 	str _path;
 	str _version;
 	str _body;
+	str _buffer;
 	std::map<str, str> _queryParams;
 	std::map<str, str> _headers;
 
@@ -31,6 +28,7 @@ private:
 public:
 	Request( void );
 	~Request();
+	Request& operator=( const Request& req );
 
 	const str& getMethod( void ) const;
 	const str& getreqTarget( void ) const;
@@ -39,6 +37,8 @@ public:
 	const std::map<str, str>& getHeaders( void ) const;
 	const str& getBody( void ) const;
 	const str& getPath( void ) const;
+	const str& getBuffer( void ) const;
+	void setBuffer( char* buffer );
 
 	bool parseReqline( const char* input, Response& response );
 	void initHeaders( const char* input );
@@ -46,6 +46,7 @@ public:
 };
 
 bool UriAllowedChars( str& uri );
-void requestHandler( const char* buffer, int socket );
+void requestHandler( Client& client );
+void sendResponse( Client& client );
 
 #endif

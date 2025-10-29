@@ -3,9 +3,13 @@
 
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
-#include "./request.hpp"
 
 #define BREAK_LINE "\r\n"
+
+struct StatusEntry {
+	int code;
+	str message;
+};
 
 class Response {
 private:

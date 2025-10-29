@@ -17,6 +17,17 @@
 #include <set>
 #include <sstream>
 #include <fstream>
+#include <map>
+#include <cstddef>
+#include <exception>
+#include <cstdlib>
+#include <limits>
+
+struct Token;
+typedef std::string			str;
+typedef std::vector<Token>	TokensVector;
+typedef std::set< std::pair<str, str> >	ListenSet;
+typedef std::stringstream	sstream;
 
 #define BLUE	"\033[1;34m"
 #define RED		"\033[1;31m"
@@ -36,13 +47,6 @@
 #define M_KILO 1024UL
 #define M_MEGA 1024UL * 1024UL
 #define M_GEGA 1024UL * 1024UL * 1024UL
-
-struct Token;
-
-typedef std::string			str;
-typedef std::vector<Token>	TokensVector;
-typedef std::set< std::pair<str, str> >	ListenSet;
-typedef std::stringstream	sstream;
 
 #define EXPECT_SEMI_ERR	"expression is not terminated by \";\""
 #define MAX_BODY_ERR	"\"client_max_body_size\" directive invalid value"

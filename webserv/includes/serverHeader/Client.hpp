@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <SocketManager.hpp>
+#include "../TypeDefs.hpp"
+#include "../request.hpp"
 
 enum	Status {
 	DISCONNECT,
@@ -9,11 +11,11 @@ enum	Status {
 	NON
 };
 
-
 class   Client {
     private:
         int     _fd;
         Status  _status;
+		Request _request;
         Client();
     public:
         serverBlockHint _serverBlockHint;
@@ -23,5 +25,7 @@ class   Client {
         void    setFd(int fd);
         Status getStatus() const;
         void    setStatus(Status status);
+		void	setRequest( Request req );
+		Request& getRequest();
 
 };

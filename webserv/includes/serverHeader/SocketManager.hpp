@@ -6,12 +6,10 @@
 #include <cstring>
 #include <cerrno>
 #include <vector>
-
 struct  TableOfListen;
 struct  ServerEntry;
 typedef std::vector<std::pair<TableOfListen*, ServerEntry*> >   serverBlockHint;
-// #include <utility>
-// #include "Server.hpp"
+#include "Client.hpp"
 #include "../Config.hpp"
 class   Server;
 

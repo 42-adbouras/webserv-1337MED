@@ -15,3 +15,9 @@ Status    Client::getStatus() const {
 void    Client::setStatus(Status status) {
     _status = status;
 }
+void	Client::setRequest( Request req ) {
+	_request = req;
+}
+Request& Client::getRequest() {
+	return _request;
+}
