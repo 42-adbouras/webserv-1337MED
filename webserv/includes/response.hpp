@@ -32,6 +32,7 @@ public:
 	str generate( void ) const;
 };
 
+str iToString(int n);
 void notImplementedResponse( Response& response );
 void URItooLongResponse( Response& response );
 

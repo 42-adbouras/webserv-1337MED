@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../../includes/CGI.hpp"
+/* #include "../../includes/CGI.hpp"
 #include <stdlib.h> // remove it pleaaaaaaaazzzzzee!!!!!!!!
 char**	buildEnv( Request& req )
 {
@@ -111,3 +111,4 @@ CGIOutput	cgiHandle( Request& req )
 		out._code = 500;
 	return(out);
 }
+ */
