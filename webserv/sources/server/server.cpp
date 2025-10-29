@@ -1,5 +1,5 @@
 #include "../includes/serverHeader/Server.hpp"
-
+#include "Client.hpp"
 Server::Server(int portOpen) : _OpenPort(portOpen) {
     std::cout << "server start ..." << std::endl;
 }
@@ -13,7 +13,6 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     temp.fd = client.getFd();
     temp.events = POLLIN;
     temp.revents = 0;
-    // client._serverBlockHint[0]
     client.setStatus(NON);
     _client.push_back(client);
     _pollfd.push_back(temp);
@@ -67,10 +66,6 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
     _pollfd.erase(_pollfd.begin() + _OpenPort + index);
     _client.erase(_client.begin() + index);
 }
-
-// status    Server::statOfUser(int clFd) const {
-//     return DISCONNECT
-// }
 
 Server::~Server() {
     std::cout << "<<<<< Server Obj distroyed >>>>>" << std::endl;

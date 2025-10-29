@@ -12,15 +12,9 @@
 
 #pragma once
 
+#include "TypeDefs.hpp"
 #include "Lexer.hpp"
 #include "Server.hpp"
-#include "TypeDefs.hpp"
-#include <cstddef>
-#include <map>
-#include <set>
-#include <exception>
-#include <cstdlib>
-#include <limits>
 
 struct CGIEntry
 {

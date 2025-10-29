@@ -10,10 +10,11 @@
 #include <cerrno>
 #include "../Config.hpp"
 #include "ServerExcept.hpp"
-#include  "Client.hpp"
+// #include  "Client.hpp"
 #include <fcntl.h>
 
-class	Client;
+class Client;
+
 struct Data;
 class Server
 {

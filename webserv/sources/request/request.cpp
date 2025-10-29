@@ -1,5 +1,6 @@
 #include "../../includes/request.hpp"
 #include "../../includes/response.hpp"
+#include "Client.hpp"
 
 Request::Request( void )
 	: _method()
@@ -12,6 +13,20 @@ Request::Request( void )
 
 Request::~Request() { }
 
+Request& Request::operator=( const Request& req ) {
+	if (this != &req) {
+		this->_method = req._method;
+		this->_Uri = req._Uri;
+		this->_path = req._path;
+		this->_version = req._version;
+		this->_body = req._body;
+		this->_queryParams = req._queryParams;
+		this->_headers = req._headers;
+		this->_buffer = req._buffer;
+	}
+	return *this;
+}
+
 const str& Request::getMethod( void ) const { return _method; }
 const str& Request::getreqTarget( void ) const { return _Uri; }
 const str& Request::getVersion( void ) const { return _version; }
@@ -19,6 +34,10 @@ const std::map<str, str>& Request::getQueryParams( void ) const { return _queryP
 const std::map<str, str>& Request::getHeaders( void ) const { return _headers; }
 const str& Request::getBody( void ) const { return _body; }
 const str& Request::getPath( void ) const { return _path; }
+const str& Request::getBuffer( void ) const { return _buffer; }
+void Request::setBuffer( char* buffer ) {
+	_buffer = buffer;
+}
 
 const char* Request::valid_methods[] = {
 	"GET", "POST", "DELETE", 0
@@ -117,28 +136,32 @@ void Request::initBody( const char* input ) {
 		_body = raw.substr(pos + 4);
 }
 
-Request::Request( Client& clt ) {
-	requestHandler(clt);
-}
-
-void requestHandler( Client& clt ) {
-	Request request(clt);
-	Response response;
+void requestHandler( Client& client ) {
+	Request request;
 
 	char buffer[3000];
 	ssize_t rByte;
-	if((rByte = recv(clt.getFd(), buffer, sizeof(buffer), 0)) > 0) {
+	if((rByte = recv(client.getFd(), buffer, sizeof(buffer), 0)) > 0) {
 		buffer[rByte] = '\0';
-		clt.setStatus(KEEP_ALIVE);
+		client.setStatus(KEEP_ALIVE);
 	}
 	if(rByte == 0)
-		clt.setStatus(DISCONNECT);
+		client.setStatus(DISCONNECT);
 	else if (rByte < 0)
 		std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
 
-	if (!request.parseReqline( buffer, response )) {
+	request.setBuffer( buffer );
+	request.initHeaders( buffer );
+	request.initBody( buffer );
+	client.setRequest(request);
+}
+
+void sendResponse( Client& client ) {
+	Response response;
+	Request request = client.getRequest();
+	if (!request.parseReqline( request.getBuffer().c_str(), response )) {
 		str content = response.generate();
-		send(clt.getFd(), content.c_str(), content.length(), 0);
+		send(client.getFd(), content.c_str(), content.length(), 0);
 		return;
 	} else {
 		std::ifstream file("./www/index.html");
@@ -152,13 +175,9 @@ void requestHandler( Client& clt ) {
 			response.setBody(content);
 			response.addHeaders("Host", "localhost:8080");
 			response.addHeaders("Content-Type", "text/html");
-			response.addHeaders("Contenet-Length", "230");
+			response.addHeaders("Content-Length", "230");
 		}
 	}
-
-	request.initHeaders( buffer );
-	request.initBody( buffer );
 	str content = response.generate();
-
-	send(clt.getFd(), content.c_str(), content.length(), 0);
+	send(client.getFd(), content.c_str(), content.length(), 0);
 }

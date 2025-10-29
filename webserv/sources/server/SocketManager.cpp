@@ -1,6 +1,7 @@
 #include "SocketManager.hpp"
 #include "ServerUtils.hpp"
 #include "Utils.hpp"
+
 SocketManager::SocketManager(Data& config, std::vector<TableOfListen>& tableOfListen) : _config(&config), _tableOfListen(tableOfListen) {
     std::cout << "Start setuping server" << std::endl;
     // std::cout << "address: " << _config->_servers[0]._listen[0].first << std::endl;
@@ -205,7 +206,7 @@ void    SocketManager::runCoreLoop(void) {
                     std::cout <<  BLUE << "REQUEST FROM USER WITH FD=" << GREEN << _pollfd[i].fd << RESET << std::endl;
                     // DETECTING ON EACH SERVER THE USER COME-IN.
                     
-                    _server.request(_clients[i - clientStartIndex]);
+                    requestHandler(_clients[i - clientStartIndex]);
                     // kepp-alive 
                     if (_clients[i-clientStartIndex].getStatus() == KEEP_ALIVE)
                     {
@@ -235,7 +236,7 @@ void    SocketManager::runCoreLoop(void) {
                 }
                 if ( _pollfd[i].revents & POLLOUT )
                 {
-                    _server.response(_clients[_pollfd.size() - clientStartIndex - 1]);
+                    sendResponse(_clients[_pollfd.size() - clientStartIndex - 1]);
 
                     std::cout << GREEN << "response for user " << _pollfd[i].fd << " has been generated with success!" << RESET << std::endl;
                     _pollfd[i].events &= ~POLLOUT;
