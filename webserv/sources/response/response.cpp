@@ -1,4 +1,4 @@
-#include "../../includes/Response.hpp"
+#include "../../includes/response.hpp"
 
 Response::Response( void )
 	: _statusCode(0)

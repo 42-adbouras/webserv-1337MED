@@ -3,7 +3,7 @@
 
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
-#include "./Request.hpp"
+#include "./request.hpp"
 
 #define BREAK_LINE "\r\n"
 

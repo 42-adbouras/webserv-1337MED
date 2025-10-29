@@ -1,5 +1,5 @@
-#include "../../includes/Request.hpp"
-#include "../../includes/Response.hpp"
+#include "../../includes/request.hpp"
+#include "../../includes/response.hpp"
 
 Request::Request( void )
 	: _method()
