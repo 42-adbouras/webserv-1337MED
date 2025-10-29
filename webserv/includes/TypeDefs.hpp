@@ -38,15 +38,54 @@ typedef std::stringstream	sstream;
 #define PORT_MIN 1024
 #define PORT_MAX 65535
 
-#define BLUE	"\033[1;34m"
-#define RED		"\033[1;31m"
-#define GREEN	"\033[1;32m"
-#define YELLOW	"\033[1;33m"
-#define RESET	"\033[0m"
-
 #define M_KILO 1024UL
 #define M_MEGA 1024UL * 1024UL
 #define M_GEGA 1024UL * 1024UL * 1024UL
+
+struct CGIEntry
+{
+	str						_extention;
+	str						_interpreter;
+};
+
+struct Location
+{
+	str						_path;
+	std::vector<str>		_index;
+	std::map<int, str>		_errorPages;
+	size_t					_maxBodySize;
+	str						_uploadStore;
+	std::set<str>			_allowedMethods;
+
+	bool					_autoIndexSet;
+	bool					_autoIndex;
+	
+	bool					_redirSet;
+	int						_redirCode;
+	str						_redirTarget;
+	CGIEntry				_cgi;
+	Location( void );
+};
+
+struct ServerEntry
+{
+	ListenSet				_listen;
+	bool					_listenSet;
+	// std::set<int>			_port;
+	// std::set<str>			_portStr;
+	str						_serverName;
+	str						_root;
+	std::vector<str>		_index;
+	std::map<int, str>		_errorPages;
+	size_t					_maxBodySize;
+	str						_uploadStore;
+	// bool					_autoIndexSet;
+	// bool					_autoIndex;
+	CGIEntry				_cgi;
+	std::vector<Location>	_locations;
+	ServerEntry( void );
+};
+
 
 #define EXPECT_SEMI_ERR	"expression is not terminated by \";\""
 #define MAX_BODY_ERR	"\"client_max_body_size\" directive invalid value"
@@ -57,6 +96,7 @@ typedef std::stringstream	sstream;
 #define UNK_SER_DIR_ERR	"unknown server directive \""
 #define UNK_LOC_DIR_ERR	"unknown location directive \""
 #define SERV_NAME_ERR	"] \"server_name\" is invalid"
+#define SERV_NAME_WAR	"\"server_name\" directive already set to \""
 #define UNK_METHOD_ERR	"unsupported method \""
 #define NUM_METHOD_ERR	"invalid number of arguments after \"allowed_methods\""
 #define EXP_REDIR_CODE	"expecting \"redirect\" code after expretion"
@@ -67,3 +107,6 @@ typedef std::stringstream	sstream;
 #define EXP_CGI_ITR_ERR	"expecting interpreter after extention"
 #define EXP_SERV_DIR	"expecting \"server\" directive"
 #define SERV_DIR_ERR	"\"server\" directive has no opening \"{\""
+#define EXP_ERR_PAGE	"expecting error number after \"error_page\" directive"
+#define INV_ERR_PAGE	"invalid error number in \"error_page\" directive"
+#define ERR_PAGE_PATH	"expecting path in \"error_page\" directive"

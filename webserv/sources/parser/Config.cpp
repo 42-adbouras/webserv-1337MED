@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/25 20:11:07 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/26 15:04:39 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ ParsingError::ParsingError( const str& msg, const str& path, int line, int col )
 }
 
 ServerEntry::ServerEntry( void )
-	: _listenSet(false)
+	: _listenSet(false), _serverName("")
 {
 	_listen.insert(std::make_pair("0.0.0.0", "8080"));
 }
@@ -252,13 +252,27 @@ void	ConfigParser::fetchListen( ServerEntry& serv )
 // 	}
 // }
 
+void	ConfigParser::printWarning( const str& arg, int line, int col )
+{
+	std::ostringstream	oss;
+	
+	oss << YELLOW << "[WARNING]: configuration file " << _path << "["  \
+		<< line << ":" << col << "]\n\t➜ " << arg << RESET;
+	std::cout << oss.str() << std::endl;
+}
+
 void	ConfigParser::fetchServerName( ServerEntry& serv )
 {
 	Token	cur = current();
 
 	if (!accept(T_STR))
 		throw ParsingError("[" + cur._token + SERV_NAME_ERR, _path, cur._line, cur._col);
-	serv._serverName = cur._token;
+	if (serv._serverName.empty())
+		serv._serverName = cur._token;
+	else
+		printWarning(SERV_NAME_WAR + serv._serverName \
+							+ "\".\n\t\t:: [" + cur._token + "] will be ignored." \
+							, cur._line, cur._col);
 }
 
 void	ConfigParser::fetchPath( str& path )
@@ -336,17 +350,21 @@ void	ConfigParser::fetchErrorPages( std::map<int, str>& errors )
 	Token	cur = current();
 
 	if (!accept(T_NUM))
-		throw ParsingError("expectedErrorNumber", _path, cur._line, cur._col);
+		throw ParsingError(EXP_ERR_PAGE, _path, cur._line, cur._col);
 
 	str	strCode = cur._token;
 	if (strCode.size() != 3)
-		throw ParsingError("InvalidErrorNumber", _path, cur._line, cur._col);
+		throw ParsingError(INV_ERR_PAGE, _path, cur._line, cur._col);
 
 	cur = current();
 	if (!accept(T_STR))
-		throw ParsingError("expectedPath", _path, cur._line, cur._col);
+		throw ParsingError(ERR_PAGE_PATH, _path, cur._line, cur._col);
 
 	int code = std::atoi(strCode.c_str());
+	if (errors.count(code)) {
+		printWarning("duplicated \"error_page\" for [" + strCode + "].\n\t\t :: replacing \"" \
+					+ errors[code] + "\" with \"" + cur._token + "\"", cur._line, cur._col);
+	}
 	errors[code] = cur._token;
 }
 
