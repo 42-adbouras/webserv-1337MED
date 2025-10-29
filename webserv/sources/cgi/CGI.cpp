@@ -6,11 +6,12 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/07 21:19:38 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/22 14:53:32 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/29 13:29:02 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 /* #include "../../includes/CGI.hpp"
+#include <cstring>
 #include <stdlib.h> // remove it pleaaaaaaaazzzzzee!!!!!!!!
 char**	buildEnv( Request& req )
 {
@@ -31,8 +32,12 @@ char**	buildEnv( Request& req )
 
 	char**	env = new char*[envVect.size() + 1];
 	
-	for (size_t i = 0; i < envVect.size(); ++i)
-		env[i] = strdup(envVect[i].c_str());
+	for (size_t i = 0; i < envVect.size(); ++i) {
+		const str& s = envVect[i];
+		char* buf = new char[s.size() + 1];
+		std::memcpy(buf, s.c_str(), s.size() + 1);
+		env[i] = buf;
+	}
 	env[envVect.size()] = NULL;
 	return (env);
 }
@@ -86,7 +91,7 @@ CGIOutput	cgiHandle( Request& req )
 		execve(req.getNTRP().c_str(), av, env);
 		std::cerr << "execve() failed" << std::endl;
 		for (int i = 0; env[i]; ++i)
-			free(env[i]);
+			delete[] env[i];
 		delete[] env;
 		exit(EXIT_FAILURE);
 	}
@@ -110,5 +115,4 @@ CGIOutput	cgiHandle( Request& req )
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		out._code = 500;
 	return(out);
-}
- */
+} */
