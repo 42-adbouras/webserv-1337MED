@@ -13,8 +13,8 @@
 #include  "Client.hpp"
 #include <fcntl.h>
 
+class	Client;
 struct Data;
-
 class Server
 {
 	private:
