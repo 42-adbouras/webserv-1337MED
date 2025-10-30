@@ -29,6 +29,7 @@ class Server
 		void	addClients(Client client, std::vector<struct pollfd> &_pollfd);
 		// bool	statOfUser(int clFd) const;
 		void	handleDisconnect(int index, std::vector<struct pollfd>& _pollfd);
+		void	closeClientConnection(void);
 		~Server();
 	
 

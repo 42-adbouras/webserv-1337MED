@@ -56,7 +56,6 @@ void    SocketManager::initSockets(void) {
         _tableOfListen[counter]._fd = fd;
         _tableOfListen[counter].alreadyBinded = false;
         _tableOfListen[counter].addr = (reinterpret_cast<struct sockaddr*>(results->ai_addr));
-        // _listenSocks.push_back(std::make_pair(fd, &(*reinterpret_cast<struct sockaddr*>(results->ai_addr))));
         bindSockets(counter);
         freeaddrinfo(results);
     }
@@ -154,11 +153,10 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
             if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
             {
                 std::cout << "IN ACCEPT FUNC" << std::endl;
-                // TODO: add method for closing client sockets.
                 closeListenSockets();
+                _server.closeClientConnection();
                 throw std::runtime_error(strerror(errno));
             }
-
             SocketManager::setNonBlocking(clientFd);
             // DETECT SERVER BLOCK
             _server.addClients(Client(clientFd, detectServerBlock(_pollfd[i].fd)), _pollfd);
@@ -168,23 +166,36 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
     return true;
 }
 
+void    SocketManager::rmClientFromPoll(std::vector<struct pollfd>& _pollfd, size_t  cltSize) {
+    for (size_t i = 0; i < cltSize; i++)
+    {
+        _pollfd.erase(_pollfd.begin() + portCounter() + i);
+    }
+}
+
 void    SocketManager::runCoreLoop(void) {
     int 	totalEvent;
     size_t  clientStartIndex = portCounter();
     Server  _server(portCounter());
-
     std::vector<struct pollfd>  _pollfd(portCounter());
-    std::cout  << "PORT COUNTER: " << portCounter() << std::endl;
     
     //set all listen socket to accept POLLIN events
     setListenEvent(_pollfd);
     std::vector<Client>&    _clients = _server.getListOfClients(); 
     while (true)
     {
-        if ((totalEvent = poll(_pollfd.data(), _pollfd.size(), -1)) == -1)
+        totalEvent = poll(_pollfd.data(), _pollfd.size(), G_TIME_OUT);
+        if (totalEvent == 0 && _clients.size() > 0)
+        {
+            rmClientFromPoll(_pollfd, _clients.size());
+            _server.closeClientConnection();
+            std::cout << RED  << "clients timed out (110: "<< BLUE << "Connection timed out) "<< RED << "while waiting for requests from clients" << RESET <<std::endl;
+            continue;
+        }
+        else if (totalEvent == -1)
         {
             closeListenSockets();
-            // TODO: add method to close client sockets.
+            _server.closeClientConnection();
             throw   std::runtime_error(strerror(errno));
         }
         std::cout << RED << totalEvent << " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;

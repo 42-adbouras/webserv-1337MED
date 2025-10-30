@@ -173,11 +173,12 @@ void sendResponse( Client& client ) {
 			buff << file.rdbuf();
 			str content = buff.str();
 			response.setBody(content);
-			response.addHeaders("Host", "localhost:8080");
+			response.addHeaders("Host", "localhost:1337");
 			response.addHeaders("Content-Type", "text/html");
-			response.addHeaders("Content-Length", "230");
+			response.addHeaders("Content-Length", iToString(response.getContentLength()));
 		}
 	}
 	str content = response.generate();
+	std::cout << content << std::endl;
 	send(client.getFd(), content.c_str(), content.length(), 0);
 }
