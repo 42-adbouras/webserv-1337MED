@@ -13,7 +13,8 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     temp.fd = client.getFd();
     temp.events = POLLIN;
     temp.revents = 0;
-    client.setStatus(NON);
+    client.setTimeOut(CLIENT_HEADER_TIMEOUT);
+    client.setClientState(CS_NEW);
     _client.push_back(client);
     _pollfd.push_back(temp);
 }
@@ -47,11 +48,11 @@ void    Server::request(Client& _clt){
     {
         buffer[readByte] = '\0';
         std::cout << "request ->\n" << buffer << std::endl;
-        _clt.setStatus(KEEP_ALIVE);
+        _clt.setClientState(CS_KEEPALIVE);
     }
     if (readByte == 0) 
     {
-        _clt.setStatus(DISCONNECT);
+        _clt.setClientState(CS_DISCONNECT);
         std::cout << "connection is closed by the user ->" << _clt.getFd() << std::endl;
     }
     else if (readByte < 0) {

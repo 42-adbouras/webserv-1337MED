@@ -189,7 +189,7 @@ void    SocketManager::runCoreLoop(void) {
         {
             rmClientFromPoll(_pollfd, _clients.size());
             _server.closeClientConnection();
-            std::cout << RED  << "clients timed out (110: "<< BLUE << "Connection timed out) "<< RED << "while waiting for requests from clients" << RESET <<std::endl;
+            std::cout << RED  << "clients timed out (" << G_TIME_OUT / 1000 << "s: "<< BLUE << "Connection timed out) "<< RED << "while waiting for requests from clients" << RESET <<std::endl;
             continue;
         }
         else if (totalEvent == -1)
@@ -198,10 +198,9 @@ void    SocketManager::runCoreLoop(void) {
             _server.closeClientConnection();
             throw   std::runtime_error(strerror(errno));
         }
-        std::cout << RED << totalEvent << " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
+        std::cout << GREEN << "[ " << totalEvent << " ]" << RED<< " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
 		// check listen sockets for incomming Clients
         checkForNewClients(_pollfd, _server);
-        // std::cout << GREEN << "---------- AFTER CHECK NEW CLIENT ----------" << RESET << std::endl;
         // check requests from clients
         // NOTE: client fds start from index = _listenSocks.size
         for (size_t i = clientStartIndex; i < _pollfd.size(); i++) {
@@ -213,13 +212,12 @@ void    SocketManager::runCoreLoop(void) {
             else {
                 if ( _pollfd[i].revents & POLLIN )
                 {
-                    // here we go for parse http request.
                     std::cout <<  BLUE << "REQUEST FROM USER WITH FD=" << GREEN << _pollfd[i].fd << RESET << std::endl;
                     // DETECTING ON EACH SERVER THE USER COME-IN.
                     
                     requestHandler(_clients[i - clientStartIndex]);
                     // kepp-alive 
-                    if (_clients[i-clientStartIndex].getStatus() == KEEP_ALIVE)
+                    if (_clients[i-clientStartIndex].getStatus() == CS_KEEPALIVE)
                     {
                         int opt = 1;
                         if (setsockopt(_clients[i-clientStartIndex].getFd(), SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) != 0)
@@ -228,8 +226,7 @@ void    SocketManager::runCoreLoop(void) {
                             throw std::runtime_error(strerror(errno));
                         }
                     }
-                    
-                    if (_clients[i - clientStartIndex].getStatus() == DISCONNECT)
+                    if (_clients[i - clientStartIndex].getStatus() == CS_DISCONNECT)
                     {
                         std::cout << RED << "read return 0 to close connection" << RESET << std::endl;
                         _server.handleDisconnect(i - clientStartIndex, _pollfd);
@@ -248,7 +245,6 @@ void    SocketManager::runCoreLoop(void) {
                 if ( _pollfd[i].revents & POLLOUT )
                 {
                     sendResponse(_clients[_pollfd.size() - clientStartIndex - 1]);
-
                     std::cout << GREEN << "response for user " << _pollfd[i].fd << " has been generated with success!" << RESET << std::endl;
                     _pollfd[i].events &= ~POLLOUT;
                 }

@@ -79,7 +79,7 @@ bool Request::parseReqline( const char* input, Response& response ) {
 
 	sstream stream(raw);
 	if(!(stream >> _method >> _Uri >> _version)) {
-		response.setStatus(400);
+		response.setClientState(400);
 		return false;
 	}
 	if(!is_valid_method( _method )) {
@@ -87,7 +87,7 @@ bool Request::parseReqline( const char* input, Response& response ) {
 		return false;
 	}
 	if(_version != "HTTP/1.1") {
-		response.setStatus(400);
+		response.setClientState(400);
 		return false;
 	}
 	if (_Uri.length() > 2048) {
@@ -95,7 +95,7 @@ bool Request::parseReqline( const char* input, Response& response ) {
 		return false;
 	}
 	if(!parse_query_params( _Uri ) || !UriAllowedChars( _Uri )) {
-		response.setStatus(400);
+		response.setClientState(400);
 		return false;
 	}
 
@@ -141,12 +141,13 @@ void requestHandler( Client& client ) {
 
 	char buffer[3000];
 	ssize_t rByte;
+	client.setClientState(CS_READING);
 	if((rByte = recv(client.getFd(), buffer, sizeof(buffer), 0)) > 0) {
 		buffer[rByte] = '\0';
-		client.setStatus(KEEP_ALIVE);
+		client.setClientState(CS_READING_DONE);
 	}
 	if(rByte == 0)
-		client.setStatus(DISCONNECT);
+		client.setClientState(CS_DISCONNECT);
 	else if (rByte < 0)
 		std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
 
@@ -161,14 +162,16 @@ void sendResponse( Client& client ) {
 	Request request = client.getRequest();
 	if (!request.parseReqline( request.getBuffer().c_str(), response )) {
 		str content = response.generate();
+		client.setClientState(CS_WRITING);
 		send(client.getFd(), content.c_str(), content.length(), 0);
+		client.setClientState(CS_WRITING_DONE);
 		return;
 	} else {
 		std::ifstream file("./www/index.html");
 		if (!file.is_open())
-			response.setStatus(404);
+			response.setClientState(404);
 		else {
-			response.setStatus(200);
+			response.setClientState(200);
 			sstream buff;
 			buff << file.rdbuf();
 			str content = buff.str();
@@ -180,5 +183,7 @@ void sendResponse( Client& client ) {
 	}
 	str content = response.generate();
 	std::cout << content << std::endl;
+	client.setClientState(CS_WRITING);
 	send(client.getFd(), content.c_str(), content.length(), 0);
+	client.setClientState(CS_WRITING_DONE);
 }

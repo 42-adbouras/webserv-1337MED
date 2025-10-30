@@ -2,7 +2,7 @@
 #include "../../includes/response.hpp"
 
 void notImplementedResponse( Response& response ) {
-	response.setStatus(501);
+	response.setClientState(501);
 	std::ifstream file("./www/defaultErrorPages/501.html");
 	if (!file.is_open()) {
 		// throw Request::RequestException("501 error page not found!");
@@ -17,7 +17,7 @@ void notImplementedResponse( Response& response ) {
 }
 
 void URItooLongResponse( Response& response ) {
-	response.setStatus(414);
+	response.setClientState(414);
 	std::ifstream file("./www/defaultErrorPages/414.html");
 	if (!file.is_open()) {
 		// throw Request::RequestException("414 error page not found!");
