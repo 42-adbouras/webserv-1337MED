@@ -35,6 +35,7 @@ class   SocketManager {
         void    closeListenSockets(void) const;
         void    closeClientsSockets();
         serverBlockHint   detectServerBlock(int sockFd) const;
+        void    rmClientFromPoll(std::vector<struct pollfd>& _pollfd, size_t  cltSize);
         // std::vector<ServerEntry>&    retrieveServerBlock(size_t index);
         // ----- Utils -----
         // static struct sockaddr_in  getSockaddr(void);

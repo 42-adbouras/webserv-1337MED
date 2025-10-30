@@ -67,6 +67,15 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
     _client.erase(_client.begin() + index);
 }
 
+void    Server::closeClientConnection(void) {
+    for (size_t i = 0; i < _client.size(); i++)
+    {
+        close(_client[i].getFd());
+        
+    }
+    _client.clear();
+}
+
 Server::~Server() {
     std::cout << "<<<<< Server Obj distroyed >>>>>" << std::endl;
 }
