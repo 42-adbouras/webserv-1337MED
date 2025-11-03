@@ -12,16 +12,40 @@ Client::~Client() {}
 ClientState    Client::getStatus() const {
     return _clientState;
 }
+
 void    Client::setClientState(ClientState clientState) {
     _clientState = clientState;
 }
+
 void	Client::setRequest( Request req ) {
 	_request = req;
 }
+
 Request& Client::getRequest() {
 	return _request;
 }
 
-void    Client::setTimeOut(std::time_t current) {
-    this->_startTimeOut = current;
+void    Client::setTimeOut(std::time_t timeout) {
+    this->_timeOut = timeout;
+}
+
+std::time_t Client::getTimeOut(void) const {
+    return this->_timeOut;
+}
+
+void        Client::setStartTime(std::time_t start) {
+    this->_startTime = start;
+    // std::cout << CYAN << "START TIME IS= " << _startTime << RESET << std::endl;
+}
+
+std::time_t   Client::getStartTime(void) const {
+    return this->_startTime;
+}
+
+void    Client::setRemainingTime(wsrv_timer_t  remaining) {
+    _remaining = remaining;
+}
+
+wsrv_timer_t    Client::getRemainingTime(void) const {
+    return _remaining;
 }

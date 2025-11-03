@@ -1,25 +1,23 @@
 #pragma once
 
 #include <ctime>
-#include <SocketManager.hpp>
+// #include <SocketManager.hpp>
+#include <cstring>
+#include "SocketManager.hpp"
 #include "ServerUtils.hpp"
-#include "../TypeDefs.hpp"
 #include "../request.hpp"
+// class Request;
 
-enum	Status {
-	DISCONNECT,
-	KEEP_ALIVE,
-	NON
-};
-
-enum    ClientState {
+enum    ClientState {   // Enum for Clients state only
     CS_NEW,
+    CS_TIMEDOUT,
+    CS_OLD,
     CS_READING,
     CS_READING_DONE,
     CS_WRITING,
     CS_WRITING_DONE,
     CS_KEEPALIVE,
-    CS_DISCONNECT
+    CS_DISCONNECT,
     // CS_CGI_PROCESSING // FOR CGI REQUEST
 };
 
@@ -28,8 +26,9 @@ class   Client {
         int             _fd;
         ClientState     _clientState;
 		Request         _request;
-        std::time_t     _startTimeOut;
-    
+        std::time_t     _startTime;
+        std::time_t     _timeOut;
+        std::time_t     _remaining; // time-out
         Client();
     public:
         serverBlockHint _serverBlockHint;
@@ -37,10 +36,17 @@ class   Client {
         ~Client();
         int         getFd() const;
         void        setFd(int fd);
+		Request&    getRequest();
         ClientState getStatus() const;
-        void        setTimeOut(std::time_t current);
         void        setClientState(ClientState clientState);
 		void	    setRequest( Request req );
-		Request&    getRequest();
+        void        setRemainingTime(wsrv_timer_t remaining);
+        wsrv_timer_t getRemainingTime(void) const;
+        // Time-Out methode handler
+        
+        void        setStartTime(std::time_t start);
+        void        setTimeOut(std::time_t timeout);
+        std::time_t   getTimeOut() const;
+        std::time_t   getStartTime(void) const;
 
 };
