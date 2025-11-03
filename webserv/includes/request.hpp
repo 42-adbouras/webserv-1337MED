@@ -30,6 +30,18 @@ public:
 	~Request();
 	Request& operator=( const Request& req );
 
+	class RequestException : public std::exception {
+	private:
+		str msg;
+	public:
+		RequestException( const str& message ) : msg(message) { }
+		virtual ~RequestException() throw() { }
+
+		virtual const char* what() const throw() {
+			return msg.c_str();
+		}
+	};
+
 	const str& getMethod( void ) const;
 	const str& getreqTarget( void ) const;
 	const str& getVersion( void ) const;
@@ -48,5 +60,9 @@ public:
 bool UriAllowedChars( str& uri );
 void requestHandler( Client& client );
 void sendResponse( Client& client );
+str getHost( const std::map<str, str>& headers );
+str getSource( const str& path );
+bool requestErrors( Request& request, Response& response );
+bool isNumber(str& s);
 
 #endif
