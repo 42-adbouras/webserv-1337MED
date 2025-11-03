@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/25 18:29:58 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/03 15:07:40 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,18 +16,20 @@
 #include <vector>
 #include <set>
 #include <sstream>
-#include <fstream>
+#include <fstream> // IWYU pragma: keep
 #include <map>
 #include <cstddef>
-#include <exception>
+#include <exception> // IWYU pragma: keep
 #include <cstdlib>
-#include <limits>
+#include <limits> // IWYU pragma: keep
 
 struct Token;
-typedef std::string			str;
-typedef std::vector<Token>	TokensVector;
+typedef std::string						str;
+typedef std::vector<Token>				TokensVector;
 typedef std::set< std::pair<str, str> >	ListenSet;
-typedef std::stringstream	sstream;
+typedef std::stringstream				sstream;
+typedef std::map<str, str>				HeadersMap;
+typedef std::map<str, str>				QueryMap;
 
 #define BLUE	"\033[1;34m"
 #define RED		"\033[1;31m"
@@ -37,6 +39,8 @@ typedef std::stringstream	sstream;
 
 #define PORT_MIN 1024
 #define PORT_MAX 65535
+
+#define MAX_TIMEOUT 86400
 
 #define M_KILO 1024UL
 #define M_MEGA 1024UL * 1024UL
@@ -81,6 +85,9 @@ struct ServerEntry
 	str						_uploadStore;
 	// bool					_autoIndexSet;
 	// bool					_autoIndex;
+	size_t					_cltHeadTimeout;
+	size_t					_cltBodyTimeout;
+	size_t					_keepAliveTimeout;
 	CGIEntry				_cgi;
 	std::vector<Location>	_locations;
 	ServerEntry( void );
@@ -110,3 +117,7 @@ struct ServerEntry
 #define EXP_ERR_PAGE	"expecting error number after \"error_page\" directive"
 #define INV_ERR_PAGE	"invalid error number in \"error_page\" directive"
 #define ERR_PAGE_PATH	"expecting path in \"error_page\" directive"
+#define INV_TIME_OUT	"\" directive invalid value \""
+#define MAX_T_OUT_ERR	"\" directive must be less than 24 hours"
+#define DUP_ERRPAGE_WAR	"duplicated \"error_page\" for ["
+#define LOC_DUP_ERR		"detected \"location\" directive duplication \""

@@ -6,14 +6,14 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/26 16:47:02 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/10/31 13:23:03 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include "Lexer.hpp"
-#include "Server.hpp"
+#include "serverHeader/Server.hpp"
 #include "TypeDefs.hpp"
 #include <cstddef>
 #include <map>
@@ -78,6 +78,7 @@ private:
 	void			fetchCGI( CGIEntry& cgi );
 	void			fetchMethods( std::set<str>& methods );
 	void			fetchRedirect( Location& loc );
+	void			fetchTimeout( ServerEntry& serv, const str& type );
 
 	void			printWarning( const str& arg, int line, int col );
 };

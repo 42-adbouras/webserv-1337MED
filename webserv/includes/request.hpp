@@ -1,7 +1,7 @@
 #ifndef __REQUEST_HPP__
 #define __REQUEST_HPP__
 
-#include "./Utils.hpp"
+#include "./Utils.hpp" // IWYU pragma: keep
 #include "./TypeDefs.hpp"
 #include <sys/socket.h>
 #include <map>
