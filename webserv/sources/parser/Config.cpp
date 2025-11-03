@@ -6,11 +6,12 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/26 15:04:39 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/03 15:07:58 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/Config.hpp"
+#include <cstddef>
 
 ParsingError::ParsingError( const str& msg, const str& path, int line, int col )
 	: _msg(msg)
@@ -26,7 +27,8 @@ ParsingError::ParsingError( const str& msg, const str& path, int line, int col )
 }
 
 ServerEntry::ServerEntry( void )
-	: _listenSet(false), _serverName("")
+	: _listenSet(false), _serverName(""), _cltHeadTimeout(60)
+	, _cltBodyTimeout(60), _keepAliveTimeout(75)
 {
 	_listen.insert(std::make_pair("0.0.0.0", "8080"));
 }
@@ -34,7 +36,10 @@ ServerEntry::ServerEntry( void )
 Location::Location( void )
 	: _autoIndexSet(false)
 	, _autoIndex(false)
-	, _redirSet(false) {}
+	, _redirSet(false)
+{
+	_allowedMethods.insert("GET");
+}
 
 ParsingError::~ParsingError( void ) throw() {}
 
@@ -79,6 +84,23 @@ Data	ConfigParser::parseTokens( void )
 	return (data);
 }
 
+str		normPath( const str& path )
+{
+	str out(path);
+
+	if (path.size() == 1 && path[0] == '/')
+		return (out);
+
+	int start = 0, end = path.size();
+
+	while (out[start] && out[start] == '/') ++start;
+	while (end > start && out[end - 1] == '/') --end;
+
+	if (start == end)
+		return ("/");
+	return (out.substr(start, end - start));
+}
+
 ServerEntry	ConfigParser::parseServerBlock( void )
 {
 	Token	t = current();
@@ -98,6 +120,10 @@ ServerEntry	ConfigParser::parseServerBlock( void )
 
 		if (cur._type == T_STR && cur._token == "location") {
 			Location loc = parseLocationBlock();
+			for (size_t i = 0; i < s._locations.size(); ++i) {
+				if (normPath(s._locations[i]._path) == normPath(loc._path))
+					throw ParsingError(LOC_DUP_ERR + loc._path + "\"", _path, cur._line, cur._col);
+			}
 			s._locations.push_back(loc);
 		} else if (cur._type == T_STR) {
 			parseServerDir(s);
@@ -108,7 +134,7 @@ ServerEntry	ConfigParser::parseServerBlock( void )
 	return (s);
 }
 
-Location	ConfigParser::parseLocationBlock ( void )
+Location	ConfigParser::parseLocationBlock( void )
 {
 	Token	token = current();
 	++_index;
@@ -130,12 +156,17 @@ Location	ConfigParser::parseLocationBlock ( void )
 	return (loc);
 }
 
+bool	isTimeout( const str& token ) {
+	return (token == "client_header_timeout" \
+			|| token == "client_body_timeout" \
+			|| token == "keepalive_timeout");
+}
+
 void	ConfigParser::parseServerDir( ServerEntry& serv )
 {
-	(void) serv;
 	Token	cur = current();
+	
 	++_index;
-
 	if (cur._token == "listen") {
 		fetchListen(serv);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
@@ -148,12 +179,7 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 	} else if (cur._token == "index") {
 		fetchPathList(serv._index);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
-	} /*else if (cur._token == "autoindex") {
-		serv._autoIndex = fetchAutoIndex();
-		serv._autoIndexSet = true;
-		expect(T_SEMI, "expected ';' after autoindex");
-	} */
-	else if (cur._token == "client_max_body_size") {
+	} else if (cur._token == "client_max_body_size") {
 		fetchBodySize(serv._maxBodySize);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else if (cur._token == "error_page") {
@@ -161,6 +187,9 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else if (cur._token == "cgi") {
 		fetchCGI(serv._cgi);
+		expect(T_SEMI, EXPECT_SEMI_ERR);
+	} else if (isTimeout(cur._token)) {
+		fetchTimeout(serv, cur._token);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else {
 		throw ParsingError(UNK_SER_DIR_ERR + cur._token + "\"", _path, cur._line, cur._col);
@@ -205,6 +234,25 @@ void	ConfigParser::parseLocationDir ( Location& loc )
 	}
 }
 
+void	ConfigParser::fetchTimeout( ServerEntry& serv, const str& type )
+{
+	Token 	cur = current();
+
+	if (!accept(T_NUM))
+		throw ParsingError("\"" + type + INV_TIME_OUT + cur._token + "\"", _path, cur._line, cur._col);
+
+	size_t timeout = std::atoi(cur._token.c_str());
+
+	if (timeout > MAX_TIMEOUT)
+		throw ParsingError("\"" + type + MAX_T_OUT_ERR, _path, cur._line, cur._col);
+	
+	if (type == "client_header_timeout")
+		serv._cltHeadTimeout = timeout; 
+	else if (type == "client_body_timeout")
+		serv._cltBodyTimeout = timeout; 
+	else serv._keepAliveTimeout = timeout; 
+}
+
 void	ConfigParser::fetchListen( ServerEntry& serv )
 {
 	Token	cur = current();
@@ -229,28 +277,7 @@ void	ConfigParser::fetchListen( ServerEntry& serv )
 		}
 		serv._listen.insert(std::make_pair(host, portStr));
 	}
-	// if (!serv._listenSet) {
-	// 	serv._listen = cur._token;
-	// 	serv._listenSet = true;
-	// } else {
-	// 	std::cout << "[WARNING]: listen already set to [" << serv._listen << "] :: [" << cur._token << "] will be ignored." << std::endl;
-	// }
 }
-
-// void	ConfigParser::fetchPortList( ServerEntry& serv, const str& path )
-// {
-// 	(void) serv;
-// 	Token cur = current();
-// 	while (cur._type == T_NUM) {
-// 		int port = std::atoi(cur._token.c_str());
-// 		if (validatePort(port, cur._line, cur._col, path)) {
-// 			serv._port.insert(port);
-// 			serv._portStr.insert(cur._token);
-// 		}
-// 		++_index;
-// 		cur = current();
-// 	}
-// }
 
 void	ConfigParser::printWarning( const str& arg, int line, int col )
 {
@@ -362,7 +389,7 @@ void	ConfigParser::fetchErrorPages( std::map<int, str>& errors )
 
 	int code = std::atoi(strCode.c_str());
 	if (errors.count(code)) {
-		printWarning("duplicated \"error_page\" for [" + strCode + "].\n\t\t :: replacing \"" \
+		printWarning(DUP_ERRPAGE_WAR + strCode + "].\n\t\t :: replacing \"" \
 					+ errors[code] + "\" with \"" + cur._token + "\"", cur._line, cur._col);
 	}
 	errors[code] = cur._token;

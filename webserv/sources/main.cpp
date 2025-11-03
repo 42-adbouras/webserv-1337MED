@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/24 14:07:08 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/03 13:10:52 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector> // IWYU pragma: keep
+#include "../includes/CGI.hpp"
 
 const char*	tokenTypeName( TokenType t )
 {
@@ -92,17 +93,35 @@ int	main( int ac, char** av )
 		ConfigParser	p(tokens, av[1]);
 		Data	config = p.parseTokens();
 		// making a hash-table for all IP:PORT
-		std::vector<TableOfListen>	tableOfListen;
-		SocketManager	socketManager(config, tableOfListen);
-		socketManager.setTableOfListen(tableOfListen);
-		displayHashTable(tableOfListen);
-		// socketManager
-		socketManager.initSockets();
-		socketManager.listenToPorts();
-		displayHashTable(tableOfListen);
-		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
-		socketManager.runCoreLoop();
+		// std::vector<TableOfListen>	tableOfListen;
+		// SocketManager	socketManager(config, tableOfListen);
+		// socketManager.setTableOfListen(tableOfListen);
+		// displayHashTable(tableOfListen);
+		// // socketManager
+		// socketManager.initSockets();
+		// socketManager.listenToPorts();
+		// displayHashTable(tableOfListen);
+		// std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
+		// socketManager.runCoreLoop();
 		// Server	server(data);
+		// CGIContext	cgi;
+		// cgi._path = "www/cgi-scripts/env.js";
+		// cgi._name = "hello.py"; cgi._ntrp = "/opt/homebrew/bin/node";
+		// cgi._method = "POST"; cgi._serverName = "ait-server";
+		// cgi._serverAddr = "0.0.0.0"; cgi._serverPort = "8080";
+		// cgi._contenType = "text/palin";
+		// cgi._query["name"] = "world"; cgi._query["lang"] = "en";
+		// cgi._headers["Host"] = "0.0.0.0:8080";
+		// cgi._headers["Content-Type"] = "text/plain";
+		// cgi._headers["User-Agent"] = "webserv-dev/0.1";
+		// cgi._headers["Accept"] = "*/*";
+		// cgi._body = "<user>\n\t"
+		// 			"<name>Jane Doe</name>\n\t"
+		// 			"<email>jane.doe@example.com</email>\n\t"
+		// 			"<age>25</age>\n"
+		// 			"</user>";
+		// std::cout << cgiHandle(cgi)._output << std::endl;
+		
 
 		
 	} catch (std::exception& e) {
@@ -119,5 +138,6 @@ int	main( int ac, char** av )
 	// if (!server.init())
 	// 	return (1);
 	// server.run();
+	
 	return (0);
 }
