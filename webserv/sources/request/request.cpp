@@ -79,23 +79,23 @@ bool Request::parseReqline( const char* input, Response& response ) {
 
 	sstream stream(raw);
 	if(!(stream >> _method >> _Uri >> _version)) {
-		response.setStatus(400);
+		errorResponse(response, BAD_REQUEST);
 		return false;
 	}
 	if(!is_valid_method( _method )) {
-		notImplementedResponse(response);
+		errorResponse(response, NOT_IMPLEMENTED);
 		return false;
 	}
 	if(_version != "HTTP/1.1") {
-		response.setStatus(400);
+		errorResponse(response, BAD_REQUEST);
 		return false;
 	}
 	if (_Uri.length() > 2048) {
-		URItooLongResponse(response);
+		errorResponse(response, URI_TOO_LONG);
 		return false;
 	}
 	if(!parse_query_params( _Uri ) || !UriAllowedChars( _Uri )) {
-		response.setStatus(400);
+		errorResponse(response, BAD_REQUEST);
 		return false;
 	}
 
@@ -153,31 +153,44 @@ void requestHandler( Client& client ) {
 	request.setBuffer( buffer );
 	request.initHeaders( buffer );
 	request.initBody( buffer );
-	client.setRequest(request);
+	client.setRequest( request );
+}
+
+void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response ) {
+	if (request.getMethod() == "DELETE")
+		deleteHandler(_srvEntry, request, response);
+	else if (request.getMethod() == "GET")
+		getHandler(_srvEntry, request, response);
+	else if (request.getMethod() == "POST")
+		postHandler(_srvEntry, request, response);
+}
+
+ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
+	serverBlockHint::iterator it = _srvBlockHint.begin();
+	while(it != _srvBlockHint.end()) {
+		if (it->first->_serverName == getHost(request.getHeaders()))
+			return it->second;
+		++it;
+	}
+	return _srvBlockHint.begin()->second;
 }
 
 void sendResponse( Client& client ) {
 	Response response;
+	str content;
 	Request request = client.getRequest();
 	if (!request.parseReqline( request.getBuffer().c_str(), response )) {
-		str content = response.generate();
+		content = response.generate();
 		send(client.getFd(), content.c_str(), content.length(), 0);
 		return;
 	} else {
-		std::ifstream file("./www/index.html");
-		if (!file.is_open())
-			response.setStatus(404);
-		else {
-			response.setStatus(200);
-			sstream buff;
-			buff << file.rdbuf();
-			str content = buff.str();
-			response.setBody(content);
-			response.addHeaders("Host", "localhost:8080");
-			response.addHeaders("Content-Type", "text/html");
-			response.addHeaders("Content-Length", "230");
+		if (requestErrors(request, response)) {
+			// get the client work with
+			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
+
+			checkMethod( _srvEntry, request, response );
 		}
 	}
-	str content = response.generate();
+	content = response.generate();
 	send(client.getFd(), content.c_str(), content.length(), 0);
 }
