@@ -22,6 +22,7 @@
 #include <exception>
 #include <cstdlib>
 #include <limits>
+#include <deque>
 
 struct Token;
 typedef std::string			str;

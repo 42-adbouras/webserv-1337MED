@@ -3,8 +3,21 @@
 
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
+#include "SocketManager.hpp"
 
-#define BREAK_LINE "\r\n"
+#define OK 200
+#define CREATED 201
+#define NO_CONTENT 204
+#define MOVED_PERMANENTLY 301
+#define BAD_REQUEST 400
+#define FORBIDDEN 403
+#define NOT_FOUND 404
+#define METHOD_NOT_ALLOWED 405
+#define CONFLICT 409
+#define CONTENET_TOO_LARGE 413
+#define URI_TOO_LONG 414
+#define INTERNAL_SERVER_ERROR 500
+#define NOT_IMPLEMENTED 501
 
 struct StatusEntry {
 	int code;
@@ -37,7 +50,12 @@ public:
 };
 
 str iToString(int n);
-void notImplementedResponse( Response& response );
-void URItooLongResponse( Response& response );
+// void notImplementedResponse( Response& response );
+// void URItooLongResponse( Response& response );
+// void BadRequestResponse( Response& response );
+void deleteHandler( ServerEntry *_srvEntry, Request& request, Response& response );
+void postHandler( ServerEntry *_srvEntry, Request& request, Response& response );
+void getHandler( ServerEntry *_srvEntry, Request& request, Response& response );
+void errorResponse( Response& response, int code);
 
 #endif
