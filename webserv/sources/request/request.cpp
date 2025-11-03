@@ -142,6 +142,7 @@ void requestHandler( Client& client ) {
 	char buffer[3000];
 	ssize_t rByte;
 	client.setClientState(CS_READING);
+	std::cout << BG_BLUE << "recve fd " << client.getFd() << std::endl;
 	if((rByte = recv(client.getFd(), buffer, sizeof(buffer), 0)) > 0) {
 		buffer[rByte] = '\0';
 		client.setClientState(CS_READING_DONE);
@@ -164,7 +165,7 @@ void sendResponse( Client& client ) {
 		str content = response.generate();
 		client.setClientState(CS_WRITING);
 		send(client.getFd(), content.c_str(), content.length(), 0);
-		client.setClientState(CS_WRITING_DONE);
+		client.setClientState(CS_KEEPALIVE);
 		return;
 	} else {
 		std::ifstream file("./www/index.html");
@@ -185,5 +186,5 @@ void sendResponse( Client& client ) {
 	std::cout << content << std::endl;
 	client.setClientState(CS_WRITING);
 	send(client.getFd(), content.c_str(), content.length(), 0);
-	client.setClientState(CS_WRITING_DONE);
+	client.setClientState(CS_KEEPALIVE);
 }

@@ -1,10 +1,10 @@
 #include "SocketManager.hpp"
 #include "ServerUtils.hpp"
 #include "Utils.hpp"
+#include "Client.hpp"
 
 SocketManager::SocketManager(Data& config, std::vector<TableOfListen>& tableOfListen) : _config(&config), _tableOfListen(tableOfListen) {
-    std::cout << "Start setuping server" << std::endl;
-    // std::cout << "address: " << _config->_servers[0]._listen[0].first << std::endl;
+    std::cout << BG_GREEN << "\n    [INFO] Start managing listening sockets...    \n" << RESET << std::endl;
 }
 
 void    SocketManager::setTableOfListen(std::vector<TableOfListen>& table) {
@@ -144,12 +144,11 @@ void    SocketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
 
 bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server ) {
     int 	clientFd;
-
     for (size_t	i = 0; i < portCounter(); i++) 
     {
         if (_pollfd[i].revents & POLLIN)
         {
-            std::cout << "CONNECTION COMMME FROM FD: " << _pollfd[i].fd << "PORT:"  << std::endl;
+            std::cout << "CONNECTION COMMME FROM FD: " << _pollfd[i].fd << " PORT:"  << std::endl;
             if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
             {
                 std::cout << "IN ACCEPT FUNC" << std::endl;
@@ -157,9 +156,8 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
                 _server.closeClientConnection();
                 throw std::runtime_error(strerror(errno));
             }
-            SocketManager::setNonBlocking(clientFd);
-            // DETECT SERVER BLOCK
             _server.addClients(Client(clientFd, detectServerBlock(_pollfd[i].fd)), _pollfd);
+            SocketManager::setNonBlocking(clientFd);
             std::cout << YELLOW << "<<< client added with fd: " << clientFd << " >>>" << RESET << std::endl;
         }
     }
@@ -173,8 +171,31 @@ void    SocketManager::rmClientFromPoll(std::vector<struct pollfd>& _pollfd, siz
     }
 }
 
+Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Server& server,size_t cltSize) {
+    int 	        totalEvent;
+    wsrv_timer_t    coreTimeOut;
+
+    (cltSize == 0 ? coreTimeOut = -1 : coreTimeOut = server.wsrv_find_next_timeout()*1000);
+    std::cout << BG_BLUE << "TIME-OUT = " << static_cast<int>(coreTimeOut) << RESET << std::endl;
+    totalEvent = poll(pollFd.data(), pollFd.size(), static_cast<int>(coreTimeOut));
+    if (totalEvent == 0 && cltSize > 0)
+    {
+        server.wsrv_timeout_closer(pollFd);
+        std::cout << GREEN << "[ " << totalEvent << " ]" << RED<< " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
+        return S_TIMEDOUT;
+        // return (server.wsrv_timeout_closer(pollFd) ? NON : S_TIMEDOUT);
+    }
+    else if (totalEvent == -1)
+    {
+        closeListenSockets();
+        server.closeClientConnection();
+        throw   std::runtime_error(strerror(errno));
+    }
+    std::cout << GREEN << "[ " << totalEvent << " ]" << RED<< " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
+    return NON;
+}
+
 void    SocketManager::runCoreLoop(void) {
-    int 	totalEvent;
     size_t  clientStartIndex = portCounter();
     Server  _server(portCounter());
     std::vector<struct pollfd>  _pollfd(portCounter());
@@ -184,68 +205,41 @@ void    SocketManager::runCoreLoop(void) {
     std::vector<Client>&    _clients = _server.getListOfClients(); 
     while (true)
     {
-        totalEvent = poll(_pollfd.data(), _pollfd.size(), G_TIME_OUT);
-        if (totalEvent == 0 && _clients.size() > 0)
-        {
-            rmClientFromPoll(_pollfd, _clients.size());
-            _server.closeClientConnection();
-            std::cout << RED  << "clients timed out (" << G_TIME_OUT / 1000 << "s: "<< BLUE << "Connection timed out) "<< RED << "while waiting for requests from clients" << RESET <<std::endl;
+        if (PollingForEvents(_pollfd, _server, _clients.size()) == S_TIMEDOUT)
             continue;
-        }
-        else if (totalEvent == -1)
-        {
-            closeListenSockets();
-            _server.closeClientConnection();
-            throw   std::runtime_error(strerror(errno));
-        }
-        std::cout << GREEN << "[ " << totalEvent << " ]" << RED<< " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
-		// check listen sockets for incomming Clients
+        // check listen sockets for incomming Clients
         checkForNewClients(_pollfd, _server);
         // check requests from clients
-        // NOTE: client fds start from index = _listenSocks.size
+        // NOTE: client fds start from position _pollfd.begin()+portCounter().
         for (size_t i = clientStartIndex; i < _pollfd.size(); i++) {
             if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) ) {
-                std::cout << RED << "Browser want to close connection " << i - clientStartIndex << RESET << std::endl;
+                std::cout << RED << "[ INFO ] ——— connection closed: client=" << _pollfd[i].fd << " idx=" << (i - clientStartIndex) << RESET << std::endl;
                 _server.handleDisconnect(i - clientStartIndex, _pollfd);
                 i--;
             }
             else {
                 if ( _pollfd[i].revents & POLLIN )
                 {
-                    std::cout <<  BLUE << "REQUEST FROM USER WITH FD=" << GREEN << _pollfd[i].fd << RESET << std::endl;
-                    // DETECTING ON EACH SERVER THE USER COME-IN.
-                    
-                    requestHandler(_clients[i - clientStartIndex]);
-                    // kepp-alive 
-                    if (_clients[i-clientStartIndex].getStatus() == CS_KEEPALIVE)
-                    {
-                        int opt = 1;
-                        if (setsockopt(_clients[i-clientStartIndex].getFd(), SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) != 0)
-                        {
-                            closeListenSockets();
-                            throw std::runtime_error(strerror(errno));
-                        }
-                    }
-                    if (_clients[i - clientStartIndex].getStatus() == CS_DISCONNECT)
-                    {
-                        std::cout << RED << "read return 0 to close connection" << RESET << std::endl;
-                        _server.handleDisconnect(i - clientStartIndex, _pollfd);
-                        std::cout << YELLOW << "sockets that exist after a user disconnect:" << std::endl;
-                        for (size_t k = 0; k < _pollfd.size(); k++)
-                        {
-                            std::cout << _pollfd[k].fd << "-";
-                        }
-                        std::cout << RESET << std::endl;
-                        i--;
+                    if (_server.readClientRequest(_pollfd, i - clientStartIndex, i) == S_CONTINUE)
                         continue;
-                    }
-                    else
-                        _pollfd[i].events |= POLLOUT;
                 }
                 if ( _pollfd[i].revents & POLLOUT )
                 {
                     sendResponse(_clients[_pollfd.size() - clientStartIndex - 1]);
-                    std::cout << GREEN << "response for user " << _pollfd[i].fd << " has been generated with success!" << RESET << std::endl;
+                    if (_clients[i-clientStartIndex].getStatus() == CS_KEEPALIVE)
+                    {
+                        std::cout << BLUE << "[ CONNECTION ] —— TCP connection still open to another request/response for USER fd = " << _clients[i-clientStartIndex].getFd() << RESET << std::endl;
+                        int opt = 1;
+                        if (setsockopt(_clients[i-clientStartIndex].getFd(), SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) != 0)
+                        {
+                            closeListenSockets();
+                            _server.closeClientConnection();
+                            throw std::runtime_error(strerror(errno));
+                        }
+                        _clients[i=clientStartIndex].setStartTime(std::time(NULL));
+                        _clients[i-clientStartIndex].setTimeOut(KEEPALIVE_TIMEOUT);
+                    }
+                    std::cout << GREEN << "[ INFO ] —— response for user " << _pollfd[i].fd << " has been send with success!" << RESET << std::endl;
                     _pollfd[i].events &= ~POLLOUT;
                 }
             }
