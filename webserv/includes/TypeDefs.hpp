@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <limits>
 #include <deque>
+#include <algorithm>
 
 struct Token;
 typedef std::string			str;

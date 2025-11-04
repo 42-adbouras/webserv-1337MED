@@ -36,6 +36,18 @@ public:
 	Response( void );
 	~Response();
 
+	class ResponseException : public std::exception {
+	private:
+		str msg;
+	public:
+		ResponseException( const str& message ) : msg(message) { }
+		virtual ~ResponseException() throw() { }
+
+		virtual const char* what() const throw() {
+			return msg.c_str();
+		}
+	};
+
 	const int& getStatusCode( void ) const;
 	const str& getStatusText( void ) const;
 	const str& getVersion( void ) const;
@@ -57,5 +69,8 @@ void deleteHandler( ServerEntry *_srvEntry, Request& request, Response& response
 void postHandler( ServerEntry *_srvEntry, Request& request, Response& response );
 void getHandler( ServerEntry *_srvEntry, Request& request, Response& response );
 void errorResponse( Response& response, int code);
+bool startsWith( const str& path, const str& start );
+Location getLocation( ServerEntry *_srvEntry, Request& request );
+std::deque<str> splitPath( const str& path );
 
 #endif
