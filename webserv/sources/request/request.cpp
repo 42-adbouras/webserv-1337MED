@@ -139,7 +139,7 @@ void Request::initBody( const char* input ) {
 void requestHandler( Client& client ) {
 	Request request;
 
-	char buffer[3000];
+	char buffer[30000];
 	ssize_t rByte;
 	if((rByte = recv(client.getFd(), buffer, sizeof(buffer), 0)) > 0) {
 		buffer[rByte] = '\0';
@@ -185,7 +185,7 @@ void sendResponse( Client& client ) {
 		return;
 	} else {
 		if (requestErrors(request, response)) {
-			// get the client work with
+			// get the client to work with
 			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
 
 			checkMethod( _srvEntry, request, response );
