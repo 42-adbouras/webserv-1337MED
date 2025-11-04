@@ -98,8 +98,13 @@ int	main( int ac, char** av )
 		displayHashTable(tableOfListen);
 		// socketManager
 		socketManager.initSockets();
-		socketManager.listenToPorts();
+		// if (errno == EADDRINUSE)
+		// {
+		// 	throw std::runtime_error("yessss! correct");
+		// }
+		
 		displayHashTable(tableOfListen);
+		socketManager.listenToPorts();
 		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
 		socketManager.runCoreLoop();
 		// Server	server(data);
