@@ -28,8 +28,7 @@ void    SocketManager::setTableOfListen(std::vector<TableOfListen>& table) {
 }
 
 int SocketManager::setNonBlocking(int fd) {
-    int flag = fcntl(fd, F_GETFL);
-    return (fcntl(fd, F_SETFL, flag | O_NONBLOCK));
+    return (fcntl(fd, F_SETFL, O_NONBLOCK));
 }
 
 void    SocketManager::initSockets(void) {
@@ -183,7 +182,6 @@ Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Serv
         server.wsrv_timeout_closer(pollFd);
         std::cout << GREEN << "[ " << totalEvent << " ]" << RED<< " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
         return S_TIMEDOUT;
-        // return (server.wsrv_timeout_closer(pollFd) ? NON : S_TIMEDOUT);
     }
     else if (totalEvent == -1)
     {
@@ -199,19 +197,15 @@ void    SocketManager::runCoreLoop(void) {
     size_t  clientStartIndex = portCounter();
     Server  _server(portCounter());
     std::vector<struct pollfd>  _pollfd(portCounter());
-    
-    //set all listen socket to accept POLLIN events
-    setListenEvent(_pollfd);
+
+    setListenEvent(_pollfd);    // set listen socket to wait for POLLIN events
     std::vector<Client>&    _clients = _server.getListOfClients(); 
     while (true)
     {
         if (PollingForEvents(_pollfd, _server, _clients.size()) == S_TIMEDOUT)
             continue;
-        // check listen sockets for incomming Clients
-        checkForNewClients(_pollfd, _server);
-        // check requests from clients
-        // NOTE: client fds start from position _pollfd.begin()+portCounter().
-        for (size_t i = clientStartIndex; i < _pollfd.size(); i++) {
+        checkForNewClients(_pollfd, _server);   // check listen sockets if there is new connections
+        for (size_t i = clientStartIndex; i < _pollfd.size(); i++) {    // check for request/response from clients
             if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) ) {
                 std::cout << RED << "[ INFO ] ——— connection closed: client=" << _pollfd[i].fd << " idx=" << (i - clientStartIndex) << RESET << std::endl;
                 _server.handleDisconnect(i - clientStartIndex, _pollfd);
@@ -225,21 +219,7 @@ void    SocketManager::runCoreLoop(void) {
                 }
                 if ( _pollfd[i].revents & POLLOUT )
                 {
-                    sendResponse(_clients[_pollfd.size() - clientStartIndex - 1]);
-                    if (_clients[i-clientStartIndex].getStatus() == CS_KEEPALIVE)
-                    {
-                        std::cout << BLUE << "[ CONNECTION ] —— TCP connection still open to another request/response for USER fd = " << _clients[i-clientStartIndex].getFd() << RESET << std::endl;
-                        int opt = 1;
-                        if (setsockopt(_clients[i-clientStartIndex].getFd(), SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) != 0)
-                        {
-                            closeListenSockets();
-                            _server.closeClientConnection();
-                            throw std::runtime_error(strerror(errno));
-                        }
-                        _clients[i=clientStartIndex].setStartTime(std::time(NULL));
-                        _clients[i-clientStartIndex].setTimeOut(KEEPALIVE_TIMEOUT);
-                    }
-                    std::cout << GREEN << "[ INFO ] —— response for user " << _pollfd[i].fd << " has been send with success!" << RESET << std::endl;
+                    _server.responsePart(i - clientStartIndex);
                     _pollfd[i].events &= ~POLLOUT;
                 }
             }

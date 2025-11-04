@@ -86,6 +86,24 @@ Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t c
     return NON;
 }
 
+void    Server::responsePart(size_t cltIndex) {
+    sendResponse(_client[cltIndex]);
+    if (_client[cltIndex].getStatus() == CS_KEEPALIVE)
+    {
+        std::cout << BLUE << "[ CONNECTION ] —— TCP connection still open to another request/response for USER fd = " << _client[cltIndex].getFd() << RESET << std::endl;
+        int opt = 1;
+        if (setsockopt(_client[cltIndex].getFd(), SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) != 0)
+        {
+            // closeListenSockets();
+            closeClientConnection();
+            throw std::runtime_error(strerror(errno));
+        }
+        _client[cltIndex].setStartTime(std::time(NULL));
+        _client[cltIndex].setTimeOut(KEEPALIVE_TIMEOUT);
+    }
+    std::cout << GREEN << "[ INFO ] —— response for user " << _client[cltIndex].getFd() << " has been send with success!" << RESET << std::endl;  
+}
+
 void    Server::response(Client& _clt) {
     std::ostringstream  oss;
     oss << _clt.getFd();
