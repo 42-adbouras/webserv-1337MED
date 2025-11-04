@@ -106,6 +106,7 @@ void    SocketManager::hanldVirtualHost(TableOfListen& table, size_t index) {
 }
 void    SocketManager::listenToPorts(void) {
     int status;
+	errno = 0;
 	for (size_t i = 0; i < _tableOfListen.size(); i++)
     {
         std::cout << GREEN << "<< " << _tableOfListen[i]._ip << ", " << _tableOfListen[i]._port << RESET << std::endl;
