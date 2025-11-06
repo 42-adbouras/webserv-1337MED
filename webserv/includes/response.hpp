@@ -18,6 +18,7 @@
 #define URI_TOO_LONG 414
 #define INTERNAL_SERVER_ERROR 500
 #define NOT_IMPLEMENTED 501
+#define HTTP_VERSION_NOT_SUPPORTED 505
 
 struct StatusEntry {
 	int code;
@@ -62,15 +63,12 @@ public:
 };
 
 str iToString(int n);
-// void notImplementedResponse( Response& response );
-// void URItooLongResponse( Response& response );
-// void BadRequestResponse( Response& response );
-void deleteHandler( ServerEntry *_srvEntry, Request& request, Response& response );
-void postHandler( ServerEntry *_srvEntry, Request& request, Response& response );
-void getHandler( ServerEntry *_srvEntry, Request& request, Response& response );
+void deleteHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src );
+void postHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src );
+void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src );
 void errorResponse( Response& response, int code);
 bool startsWith( const str& path, const str& start );
-Location getLocation( ServerEntry *_srvEntry, Request& request );
-std::deque<str> splitPath( const str& path );
+Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
+str fileOpen( const str& source );
 
 #endif
