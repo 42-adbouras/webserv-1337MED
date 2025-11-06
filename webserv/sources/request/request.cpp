@@ -35,8 +35,16 @@ const std::map<str, str>& Request::getHeaders( void ) const { return _headers; }
 const str& Request::getBody( void ) const { return _body; }
 const str& Request::getPath( void ) const { return _path; }
 const str& Request::getBuffer( void ) const { return _buffer; }
+const str& Request::getUri( void ) const { return _Uri; }
+const str& Request::getLocation( void ) const { return _location; }
 void Request::setBuffer( char* buffer ) {
 	_buffer = buffer;
+}
+void Request::setLocation( str& location ) {
+	_location = location;
+}
+void Request::setPath( const str& path ) {
+	_path = path;
 }
 
 const char* Request::valid_methods[] = {
@@ -57,7 +65,7 @@ bool Request::parse_query_params( const str& path ) {
 	if (pos == str::npos)
 		return true;
 	
-	_path = path.substr(0, pos);
+	_path = normalizePath(path.substr(0, pos));
 	str query = path.substr(pos + 1);
 
 	str param;
@@ -74,6 +82,15 @@ bool Request::parse_query_params( const str& path ) {
 	return true;
 }
 
+void initPath( Request& request ) {
+	str uri = request.getUri();
+	str::size_type pos = uri.find('?');
+	if (pos != str::npos)
+		request.setPath(normalizePath(uri.substr(0, pos)));
+	else
+		request.setPath(normalizePath(uri));
+}
+
 bool Request::parseReqline( const char* input, Response& response ) {
 	str raw = str(input);
 
@@ -87,7 +104,7 @@ bool Request::parseReqline( const char* input, Response& response ) {
 		return false;
 	}
 	if(_version != "HTTP/1.1") {
-		errorResponse(response, BAD_REQUEST);
+		errorResponse(response, HTTP_VERSION_NOT_SUPPORTED);
 		return false;
 	}
 	if (_Uri.length() > 2048) {
@@ -156,13 +173,13 @@ void requestHandler( Client& client ) {
 	client.setRequest( request );
 }
 
-void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response ) {
+void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, str& src ) {
 	if (request.getMethod() == "DELETE")
-		deleteHandler(_srvEntry, request, response);
+		deleteHandler(_srvEntry, request, response, src);
 	else if (request.getMethod() == "GET")
-		getHandler(_srvEntry, request, response);
+		getHandler(_srvEntry, request, response, src);
 	else if (request.getMethod() == "POST")
-		postHandler(_srvEntry, request, response);
+		postHandler(_srvEntry, request, response, src);
 }
 
 ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
@@ -177,9 +194,12 @@ ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
 
 void sendResponse( Client& client ) {
 	Response response;
-	str content;
+
 	Request request = client.getRequest();
-	if (!request.parseReqline( request.getBuffer().c_str(), response )) {
+	str content;
+	bool reqFlg = request.parseReqline( request.getBuffer().c_str(), response );
+	initPath(request);
+	if (!reqFlg) {
 		content = response.generate();
 		send(client.getFd(), content.c_str(), content.length(), 0);
 		return;
@@ -187,8 +207,9 @@ void sendResponse( Client& client ) {
 		if (requestErrors(request, response)) {
 			// get the client to work with
 			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
-
-			checkMethod( _srvEntry, request, response );
+			str source = getSource(request, _srvEntry, response);
+			std::cout << "--Source-- : " << source << std::endl;
+			checkMethod( _srvEntry, request, response, source );
 		}
 	}
 	content = response.generate();
