@@ -17,6 +17,7 @@ private:
 	str _version;
 	str _body;
 	str _buffer;
+	str _location;
 	std::map<str, str> _queryParams;
 	std::map<str, str> _headers;
 
@@ -50,7 +51,11 @@ public:
 	const str& getBody( void ) const;
 	const str& getPath( void ) const;
 	const str& getBuffer( void ) const;
+	const str& getUri( void ) const;
 	void setBuffer( char* buffer );
+	void setLocation( str& location );
+	void setPath( const str& path );
+	const str& getLocation( void ) const;
 
 	bool parseReqline( const char* input, Response& response );
 	void initHeaders( const char* input );
@@ -60,9 +65,12 @@ public:
 bool UriAllowedChars( str& uri );
 void requestHandler( Client& client );
 void sendResponse( Client& client );
+str normalizePath( const str& path );
 str getHost( const std::map<str, str>& headers );
-str getSource( const str& path );
+str getSource( Request& request, ServerEntry* _srvEntry, Response& response );
 bool requestErrors( Request& request, Response& response );
 bool isNumber(str& s);
+std::deque<str> splitPath( const str& path );
+Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
 
 #endif
