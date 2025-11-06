@@ -116,8 +116,7 @@ void    SocketManager::listenToPorts(void) {
         {
             closeListenSockets();
             std::runtime_error(strerror(errno));    
-        }
-        
+        }  
         if (errno == EADDRINUSE)
         {
             std::cout << " ==================== IN THE LISTEN FUNCTION ===================" << std::endl;
@@ -215,10 +214,19 @@ void    SocketManager::runCoreLoop(void) {
             else {
                 if ( _pollfd[i].revents & POLLIN )
                 {
-                    if (_server.readClientRequest(_pollfd, i - clientStartIndex, i) == S_CONTINUE)
+                    if (_server.readClientRequest(_pollfd, i - 0, i) == S_CONTINUE)
                         continue;
-                }
-                if ( _pollfd[i].revents & POLLOUT )
+                    }
+                    if ( _pollfd[i].revents & POLLOUT )
+                    // CGI handler
+                    // if (_clients[i-clientStartIndex].getStatus() == CS_CGI_REQ) {
+                    //     // before calling cgiHandle ,must check if already executed.
+                    //     cgiHandle(); // @param req and _client[i-clientStartIndex].getBool() ==> alreadyExec.
+                    //     // read from  pipe.
+
+                    // }
+                        // break;
+                        
                 {
                     _server.responsePart(i - clientStartIndex);
                     _pollfd[i].events &= ~POLLOUT;
