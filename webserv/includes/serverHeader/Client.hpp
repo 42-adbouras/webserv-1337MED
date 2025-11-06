@@ -5,11 +5,13 @@
 #include <cstring>
 #include "SocketManager.hpp"
 #include "ServerUtils.hpp"
+// #include "../CGI.hpp"
 #include "../request.hpp"
 // class Request;
 
 enum    ClientState {   // Enum for Clients state only
     CS_NEW,
+    CS_CGI_REQ,
     CS_TIMEDOUT,
     CS_OLD,
     CS_READING,
@@ -18,6 +20,7 @@ enum    ClientState {   // Enum for Clients state only
     CS_WRITING_DONE,
     CS_KEEPALIVE,
     CS_DISCONNECT,
+    CS_NORM_REQ
     // CS_CGI_PROCESSING // FOR CGI REQUEST
 };
 
@@ -29,6 +32,11 @@ class   Client {
         std::time_t     _startTime;
         std::time_t     _timeOut;
         std::time_t     _remaining; // time-out
+        // CGI
+        ClientState     _requestType;
+        // CGIContext      *_cgiContext;
+        bool            _alreadyExec;
+
         Client();
     public:
         serverBlockHint _serverBlockHint;

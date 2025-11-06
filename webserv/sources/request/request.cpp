@@ -156,6 +156,7 @@ void requestHandler( Client& client ) {
 	request.initHeaders( buffer );
 	request.initBody( buffer );
 	client.setRequest(request);
+	// if it's cgi ? set _alreadyExec = false;
 }
 
 void sendResponse( Client& client ) {
