@@ -1,6 +1,7 @@
 #include "../../includes/response.hpp"
 
-void postHandler(ServerEntry *_srvEntry, Request& request, Response& response) {
+void postHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src) {
+	(void)src;
 	(void)_srvEntry;
 	(void)request;
 	(void)response;

@@ -17,8 +17,9 @@ std::deque<str> splitPath( const str& path ) {
 	return segments;
 }
 
-Location getLocation( ServerEntry *_srvEntry, Request& request ) {
+Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response ) {
 	str path = request.getPath();
+	std::cout << "Path:    " << path << std::endl;
 
 	std::vector<Location> locations = _srvEntry->_locations;
 	std::vector<str> lcts;
@@ -26,12 +27,17 @@ Location getLocation( ServerEntry *_srvEntry, Request& request ) {
 		if (startsWith(path, locations[i]._path))
 			lcts.push_back(locations[i]._path);
 	}
-	if (lcts.empty())
-		throw Response::ResponseException("No matching location found");
+	if (lcts.empty()) {
+		// set srv errors pages
+		// response.setBody(fileOpen(_srvEntry->_root + _srvEntry->_errorPages[404]));
+		errorResponse(response, NOT_FOUND);
+		return Location();
+	}
 	std::vector<str>::iterator largest = std::max_element(lcts.begin(), lcts.end());
+	request.setLocation(*largest);
 	for(size_t i=0; i<locations.size(); ++i) {
 		if(locations[i]._path == *largest)
 			return locations[i];
 	}
-	return locations[0];
+	return Location();
 }
