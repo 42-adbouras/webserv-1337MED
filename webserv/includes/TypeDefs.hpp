@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/03 15:07:40 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/07 14:56:38 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ struct CGIEntry
 struct Location
 {
 	str						_path;
+	str						_root;
 	std::vector<str>		_index;
 	std::map<int, str>		_errorPages;
 	size_t					_maxBodySize;
@@ -75,16 +76,12 @@ struct ServerEntry
 {
 	ListenSet				_listen;
 	bool					_listenSet;
-	// std::set<int>			_port;
-	// std::set<str>			_portStr;
 	str						_serverName;
 	str						_root;
 	std::vector<str>		_index;
 	std::map<int, str>		_errorPages;
 	size_t					_maxBodySize;
 	str						_uploadStore;
-	// bool					_autoIndexSet;
-	// bool					_autoIndex;
 	size_t					_cltHeadTimeout;
 	size_t					_cltBodyTimeout;
 	size_t					_keepAliveTimeout;
@@ -93,6 +90,11 @@ struct ServerEntry
 	ServerEntry( void );
 };
 
+
+#define INV_CFG_PATH	"[ERROR]: invalid config path exception."
+#define INV_CFG_FILE	"[ERROR]: invalid config file exception."
+#define FAIL_OPEN_FILE	"[ERROR]: failed to open file exception."
+#define FAIL_READ_FILE	"[ERROR]: failed to read file exception."
 
 #define EXPECT_SEMI_ERR	"expression is not terminated by \";\""
 #define MAX_BODY_ERR	"\"client_max_body_size\" directive invalid value"
