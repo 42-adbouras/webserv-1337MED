@@ -30,7 +30,7 @@ public:
 	const int& getContentLength( void ) const;
 	const std::map<str, str>& getHeaders( void ) const;
 
-	void setStatus( int code );
+	void setClientState( int code );
 	void addHeaders( const str& key, const str& value );
 	void setBody( const str& bodyData );
 	str generate( void ) const;

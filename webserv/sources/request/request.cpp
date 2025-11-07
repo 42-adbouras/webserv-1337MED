@@ -79,7 +79,7 @@ bool Request::parseReqline( const char* input, Response& response ) {
 
 	sstream stream(raw);
 	if(!(stream >> _method >> _Uri >> _version)) {
-		response.setStatus(400);
+		response.setClientState(400);
 		return false;
 	}
 	if(!is_valid_method( _method )) {
@@ -87,7 +87,7 @@ bool Request::parseReqline( const char* input, Response& response ) {
 		return false;
 	}
 	if(_version != "HTTP/1.1") {
-		response.setStatus(400);
+		response.setClientState(400);
 		return false;
 	}
 	if (_Uri.length() > 2048) {
@@ -95,7 +95,7 @@ bool Request::parseReqline( const char* input, Response& response ) {
 		return false;
 	}
 	if(!parse_query_params( _Uri ) || !UriAllowedChars( _Uri )) {
-		response.setStatus(400);
+		response.setClientState(400);
 		return false;
 	}
 
@@ -141,12 +141,15 @@ void requestHandler( Client& client ) {
 
 	char buffer[3000];
 	ssize_t rByte;
+	client.setClientState(CS_READING);
+	std::cout << BG_BLUE << "recve fd " << client.getFd() << std::endl;
+
 	if((rByte = recv(client.getFd(), buffer, sizeof(buffer), 0)) > 0) {
 		buffer[rByte] = '\0';
-		client.setStatus(KEEP_ALIVE);
+		client.setClientState(CS_READING_DONE);
 	}
 	if(rByte == 0)
-		client.setStatus(DISCONNECT);
+		client.setClientState(CS_DISCONNECT);
 	else if (rByte < 0)
 		std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
 
@@ -154,30 +157,62 @@ void requestHandler( Client& client ) {
 	request.initHeaders( buffer );
 	request.initBody( buffer );
 	client.setRequest(request);
+	// if it's cgi ? set _alreadyExec = false;
 }
 
-void sendResponse( Client& client ) {
+void sendResponse( Client& client, CookiesSessionManager& sessionManager ) {
 	Response response;
 	Request request = client.getRequest();
+	std::map<str,str>	headers = request.getHeaders();
+	
+	if (!headers["Cookie"].empty())
+	{
+		str	id = headers["Cookie"];
+		std::cout << CYAN << "COOKIE ID IS: " << id << std::endl;
+		if (!sessionManager._sessionTable[id].isLogedIn)
+		{
+			std::cout << "the client is not logged in yet!" << std::endl;
+		} else
+		{
+			std::cout << "-- the client logg in --" << std::endl;
+		}
+	}
+	
+	// request.getHeaders
 	if (!request.parseReqline( request.getBuffer().c_str(), response )) {
 		str content = response.generate();
+		client.setClientState(CS_WRITING);
 		send(client.getFd(), content.c_str(), content.length(), 0);
+		client.setClientState(CS_KEEPALIVE);
 		return;
 	} else {
 		std::ifstream file("./www/index.html");
 		if (!file.is_open())
-			response.setStatus(404);
+		response.setClientState(404);
 		else {
-			response.setStatus(200);
+			response.setClientState(200);
 			sstream buff;
 			buff << file.rdbuf();
 			str content = buff.str();
 			response.setBody(content);
-			response.addHeaders("Host", "localhost:8080");
+			response.addHeaders("Host", "localhost:1337");
 			response.addHeaders("Content-Type", "text/html");
-			response.addHeaders("Content-Length", "230");
+			response.addHeaders("Content-Length", iToString(response.getContentLength()));
+			if (headers["Cookie"].empty())
+			{
+				sessionManager.addSession(sessionManager.generateSessionId());
+				response.addHeaders("set-cookie", sessionManager.getCurrentId());
+				std::cout << "Set Session Id with succes" << std::endl;
+			}
+			else {
+				std::cout << "Cookies already exist" << std::endl;
+			}
+			// response.addHeaders("set-cookie", "122455");
 		}
 	}
 	str content = response.generate();
+	// std::cout << content << std::endl;
+	client.setClientState(CS_WRITING);
 	send(client.getFd(), content.c_str(), content.length(), 0);
+	client.setClientState(CS_KEEPALIVE);
 }

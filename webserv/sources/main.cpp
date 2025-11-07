@@ -65,16 +65,21 @@ int	main( int ac, char** av )
 		ConfigParser	p(tokens, av[1]);
 		Data	config = p.parseTokens();
 		// making a hash-table for all IP:PORT
-		// std::vector<TableOfListen>	tableOfListen;
-		// SocketManager	socketManager(config, tableOfListen);
-		// socketManager.setTableOfListen(tableOfListen);
-		// displayHashTable(tableOfListen);
-		// // socketManager
-		// socketManager.initSockets();
-		// socketManager.listenToPorts();
-		// displayHashTable(tableOfListen);
-		// std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
-		// socketManager.runCoreLoop();
+		std::vector<TableOfListen>	tableOfListen;
+		SocketManager	socketManager(config, tableOfListen);
+		socketManager.setTableOfListen(tableOfListen);
+		displayHashTable(tableOfListen);
+		// socketManager
+		socketManager.initSockets();
+		// if (errno == EADDRINUSE)
+		// {
+		// 	throw std::runtime_error("yessss! correct");
+		// }
+		
+		displayHashTable(tableOfListen);
+		socketManager.listenToPorts();
+		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
+		socketManager.runCoreLoop();
 		// Server	server(data);
 		// CGIContext	cgi;
 		// cgi._path = "www/cgi-scripts/env.js";
