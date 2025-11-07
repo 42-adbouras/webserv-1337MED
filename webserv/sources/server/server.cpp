@@ -87,7 +87,7 @@ Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t c
 }
 
 void    Server::responsePart(size_t cltIndex) {
-    sendResponse(_client[cltIndex], _sessionManager);
+    sendResponse(_client[cltIndex]);
     if (_client[cltIndex].getStatus() == CS_KEEPALIVE)
     {
         std::cout << BLUE << "[ CONNECTION ] —— TCP connection still open to another request/response for USER fd = " << _client[cltIndex].getFd() << RESET << std::endl;

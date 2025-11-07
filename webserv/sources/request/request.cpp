@@ -195,7 +195,7 @@ ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
 	return _srvBlockHint.begin()->second;
 }
 
-void sendResponse( Client& client, CookiesSessionManager& sessionManager ) {
+void sendResponse( Client& client ) {
 	Response response;
 
 	Request request = client.getRequest();
