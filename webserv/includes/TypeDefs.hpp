@@ -22,6 +22,8 @@
 #include <exception> // IWYU pragma: keep
 #include <cstdlib>
 #include <limits> // IWYU pragma: keep
+#include <algorithm>
+#include <deque>
 
 struct Token;
 typedef std::string						str;

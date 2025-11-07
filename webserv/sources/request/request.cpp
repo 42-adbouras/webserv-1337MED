@@ -35,8 +35,16 @@ const std::map<str, str>& Request::getHeaders( void ) const { return _headers; }
 const str& Request::getBody( void ) const { return _body; }
 const str& Request::getPath( void ) const { return _path; }
 const str& Request::getBuffer( void ) const { return _buffer; }
+const str& Request::getUri( void ) const { return _Uri; }
+const str& Request::getLocation( void ) const { return _location; }
 void Request::setBuffer( char* buffer ) {
 	_buffer = buffer;
+}
+void Request::setLocation( str& location ) {
+	_location = location;
+}
+void Request::setPath( const str& path ) {
+	_path = path;
 }
 
 const char* Request::valid_methods[] = {
@@ -57,7 +65,7 @@ bool Request::parse_query_params( const str& path ) {
 	if (pos == str::npos)
 		return true;
 	
-	_path = path.substr(0, pos);
+	_path = normalizePath(path.substr(0, pos));
 	str query = path.substr(pos + 1);
 
 	str param;
@@ -74,28 +82,37 @@ bool Request::parse_query_params( const str& path ) {
 	return true;
 }
 
+void initPath( Request& request ) {
+	str uri = request.getUri();
+	str::size_type pos = uri.find('?');
+	if (pos != str::npos)
+		request.setPath(normalizePath(uri.substr(0, pos)));
+	else
+		request.setPath(normalizePath(uri));
+}
+
 bool Request::parseReqline( const char* input, Response& response ) {
 	str raw = str(input);
 
 	sstream stream(raw);
 	if(!(stream >> _method >> _Uri >> _version)) {
-		response.setClientState(400);
+		errorResponse(response, BAD_REQUEST);
 		return false;
 	}
 	if(!is_valid_method( _method )) {
-		notImplementedResponse(response);
+		errorResponse(response, NOT_IMPLEMENTED);
 		return false;
 	}
 	if(_version != "HTTP/1.1") {
-		response.setClientState(400);
+		errorResponse(response, HTTP_VERSION_NOT_SUPPORTED);
 		return false;
 	}
 	if (_Uri.length() > 2048) {
-		URItooLongResponse(response);
+		errorResponse(response, URI_TOO_LONG);
 		return false;
 	}
 	if(!parse_query_params( _Uri ) || !UriAllowedChars( _Uri )) {
-		response.setClientState(400);
+		errorResponse(response, BAD_REQUEST);
 		return false;
 	}
 
@@ -139,7 +156,7 @@ void Request::initBody( const char* input ) {
 void requestHandler( Client& client ) {
 	Request request;
 
-	char buffer[3000];
+	char buffer[30000];
 	ssize_t rByte;
 	client.setClientState(CS_READING);
 	std::cout << BG_BLUE << "recve fd " << client.getFd() << std::endl;
@@ -156,63 +173,50 @@ void requestHandler( Client& client ) {
 	request.setBuffer( buffer );
 	request.initHeaders( buffer );
 	request.initBody( buffer );
-	client.setRequest(request);
-	// if it's cgi ? set _alreadyExec = false;
+	client.setRequest( request );
+}
+
+void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, str& src ) {
+	if (request.getMethod() == "DELETE")
+		deleteHandler(_srvEntry, request, response, src);
+	else if (request.getMethod() == "GET")
+		getHandler(_srvEntry, request, response, src);
+	else if (request.getMethod() == "POST")
+		postHandler(_srvEntry, request, response, src);
+}
+
+ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
+	serverBlockHint::iterator it = _srvBlockHint.begin();
+	while(it != _srvBlockHint.end()) {
+		if (it->first->_serverName == getHost(request.getHeaders()))
+			return it->second;
+		++it;
+	}
+	return _srvBlockHint.begin()->second;
 }
 
 void sendResponse( Client& client, CookiesSessionManager& sessionManager ) {
 	Response response;
+
 	Request request = client.getRequest();
-	std::map<str,str>	headers = request.getHeaders();
-	
-	if (!headers["Cookie"].empty())
-	{
-		str	id = headers["Cookie"];
-		std::cout << CYAN << "COOKIE ID IS: " << id << std::endl;
-		if (!sessionManager._sessionTable[id].isLogedIn)
-		{
-			std::cout << "the client is not logged in yet!" << std::endl;
-		} else
-		{
-			std::cout << "-- the client logg in --" << std::endl;
-		}
-	}
-	
-	// request.getHeaders
-	if (!request.parseReqline( request.getBuffer().c_str(), response )) {
-		str content = response.generate();
-		client.setClientState(CS_WRITING);
+	str content;
+	bool reqFlg = request.parseReqline( request.getBuffer().c_str(), response );
+	initPath(request);
+	if (!reqFlg) {
+		content = response.generate();
 		send(client.getFd(), content.c_str(), content.length(), 0);
 		client.setClientState(CS_KEEPALIVE);
 		return;
 	} else {
-		std::ifstream file("./www/index.html");
-		if (!file.is_open())
-		response.setClientState(404);
-		else {
-			response.setClientState(200);
-			sstream buff;
-			buff << file.rdbuf();
-			str content = buff.str();
-			response.setBody(content);
-			response.addHeaders("Host", "localhost:1337");
-			response.addHeaders("Content-Type", "text/html");
-			response.addHeaders("Content-Length", iToString(response.getContentLength()));
-			if (headers["Cookie"].empty())
-			{
-				sessionManager.addSession(sessionManager.generateSessionId());
-				response.addHeaders("set-cookie", sessionManager.getCurrentId());
-				std::cout << "Set Session Id with succes" << std::endl;
-			}
-			else {
-				std::cout << "Cookies already exist" << std::endl;
-			}
-			// response.addHeaders("set-cookie", "122455");
+		if (requestErrors(request, response)) {
+			// get the client to work with
+			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
+			str source = getSource(request, _srvEntry, response);
+			std::cout << "--Source-- : " << source << std::endl;
+			checkMethod( _srvEntry, request, response, source );
 		}
 	}
-	str content = response.generate();
-	// std::cout << content << std::endl;
-	client.setClientState(CS_WRITING);
+	content = response.generate();
 	send(client.getFd(), content.c_str(), content.length(), 0);
 	client.setClientState(CS_KEEPALIVE);
 }
