@@ -7,9 +7,9 @@ Response::Response( void )
 	, _body()
 	, _contentLength(0) {
 
-		_headers["Host"] = "";
-		_headers["Content-Type"] = "text/html";
-		_headers["Content-Length"] = "1";
+		_headers["Server"] = "webServer";
+		_headers["Content-Type"] = "text/plain";
+		_headers["Content-Length"] = "0";
 		_headers["Connection"] = "keep-alive";
 }
 
@@ -70,13 +70,13 @@ str Response::generate( void ) const {
 	sstream ss;
 	ss << _statusCode;
 
-	str HTTPresponse = _version + " " + ss.str() + " " + _statusText + BREAK_LINE;
+	str HTTPresponse = _version + " " + ss.str() + " " + _statusText + "\r\n";
 	std::map<str, str>::const_iterator it = _headers.begin();
 	while( it != _headers.end() ) {
-		HTTPresponse += it->first + ": " + it->second + BREAK_LINE;
+		HTTPresponse += it->first + ": " + it->second + "\r\n";
 		++it; 
 	}
-	HTTPresponse += BREAK_LINE + _body;
+	HTTPresponse += "\r\n" + _body;
 
 	return HTTPresponse;
 }
