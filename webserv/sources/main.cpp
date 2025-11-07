@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/03 13:10:52 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/07 15:27:33 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,34 +41,6 @@ void	printTokens( const TokensVector& tokens )
 				  << tokenTypeName(t._type) << "  '"
 				  << t._token << "'" << std::endl;
 	}
-}
-
-bool	validFile( const str& path )
-{
-	if (path.size() < 5)
-		return (false);
-	const str	ext = path.substr(path.size() - 5);
-	return (ext == ".conf");
-}
-
-str		readConfig( const str& path )
-{
-	if (path.empty())
-		throw std::invalid_argument("[InvalidConfigPathException]");
-	if (!validFile(path))
-		throw std::invalid_argument("[InvalidConfigFileException]");
-
-	std::ifstream	in(path.c_str());
-	if (!in.is_open())
-		throw std::runtime_error("[FailedToOpenFileException]");
-
-	std::ostringstream	oss;
-	oss << in.rdbuf();
-
-	if (!in && in.eof())
-		throw std::runtime_error("[ErrorReadingFileExeption]");
-
-	return ( oss.str());
 }
 
 void	displayHashTable(const std::vector<TableOfListen> &table) {
