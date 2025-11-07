@@ -2,6 +2,7 @@
 #include "ServerUtils.hpp"
 #include "Utils.hpp"
 #include "Client.hpp"
+#include "CookiesSessionManager.hpp"
 
 SocketManager::SocketManager(Data& config, std::vector<TableOfListen>& tableOfListen) : _config(&config), _tableOfListen(tableOfListen) {
     std::cout << BG_GREEN << "\n    [INFO] Start managing listening sockets...    \n" << RESET << std::endl;
@@ -194,8 +195,9 @@ Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Serv
 }
 
 void    SocketManager::runCoreLoop(void) {
-    size_t  clientStartIndex = portCounter();
-    Server  _server(portCounter());
+    size_t                      clientStartIndex = portCounter();
+    CookiesSessionManager       sessionManager;
+    Server                      _server(sessionManager, portCounter());
     std::vector<struct pollfd>  _pollfd(portCounter());
 
     setListenEvent(_pollfd);    // set listen socket to wait for POLLIN events
@@ -214,8 +216,8 @@ void    SocketManager::runCoreLoop(void) {
             else {
                 if ( _pollfd[i].revents & POLLIN )
                 {
-                    if (_server.readClientRequest(_pollfd, i - 0, i) == S_CONTINUE)
-                        continue;
+                    if (_server.readClientRequest(_pollfd, i - clientStartIndex, i) == S_CONTINUE)
+                        continue ;
                     }
                     if ( _pollfd[i].revents & POLLOUT )
                     // CGI handler

@@ -2,7 +2,7 @@
 #include "../includes/serverHeader/Server.hpp"
 #include "Client.hpp"
 
-Server::Server(int portOpen) : _OpenPort(portOpen) {
+Server::Server(CookiesSessionManager& sessionManager, int portOpen) : _sessionManager(sessionManager), _OpenPort(portOpen) {
     std::cout << BG_GREEN << "[INFO] Server started — config=config.conf" << RESET << std::endl;
 }
 
@@ -87,7 +87,7 @@ Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t c
 }
 
 void    Server::responsePart(size_t cltIndex) {
-    sendResponse(_client[cltIndex]);
+    sendResponse(_client[cltIndex], _sessionManager);
     if (_client[cltIndex].getStatus() == CS_KEEPALIVE)
     {
         std::cout << BLUE << "[ CONNECTION ] —— TCP connection still open to another request/response for USER fd = " << _client[cltIndex].getFd() << RESET << std::endl;
