@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/08 11:46:46 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/30 16:41:05 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/07 12:18:04 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,13 @@ struct CGIContext
 	str			_contenType;
 	QueryMap	_query;
 	HeadersMap	_headers;
+};
+
+struct CGIProc
+{
+	pid_t		_childPid;
+	int			_readPipe;
+	str			_out;
 };
 
 struct CGIOutput

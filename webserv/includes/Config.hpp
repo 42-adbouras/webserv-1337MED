@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/31 13:23:03 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/07 14:48:10 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ private:
 	str		_what;
 
 public:
-	ParsingError( const str& msg, const str& path, int line, int col );
+	ParsingError( const str& msg, const str& path, const Token& cur );
 	virtual ~ParsingError( void ) throw();
 	const char*	what() const throw();
 };
@@ -80,10 +80,14 @@ private:
 	void			fetchRedirect( Location& loc );
 	void			fetchTimeout( ServerEntry& serv, const str& type );
 
+	void			mapLocationsRoot( ServerEntry& serv );
 	void			printWarning( const str& arg, int line, int col );
 };
 
+str		readConfig( const str& path );
+bool	validFile( const str& path );
+
 bool	startsWith( const str& path, const str& start );
-bool	validatePort( str& port, int line, int col, const str& path );
+bool	validatePort( str& portStr, const Token& cur, const str& path );
 bool	isNum( const str& s );
 bool	validHost( str& host );

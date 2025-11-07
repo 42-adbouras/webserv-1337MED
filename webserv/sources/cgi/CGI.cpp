@@ -6,11 +6,12 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/07 21:19:38 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/02 13:18:04 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/07 15:21:03 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/CGI.hpp"
+#include "../../includes/serverHeader/SocketManager.hpp"
 #include <cstring>
 
 str		joinQuery( const QueryMap& query )
@@ -55,12 +56,19 @@ char**	buildEnv( const CGIContext& req )
 		std::ostringstream oss;
 		oss << bSize;
 		envVect.push_back("CONTENT_LENGTH=" + oss.str());
-	} if (!req._query.empty()) {
+	}
+
+	HeadersMap::const_iterator it = req._headers.find("Content-Type");
+	if (it != req._headers.end() && !it->second.empty())
+		envVect.push_back("CONTENT-TYPE="+ it->second);
+
+	if (!req._query.empty())
 		envVect.push_back("QUERY_STRING=" + joinQuery(req._query));
-	} if (!req._headers.empty()) {
-		HeadersMap::const_iterator it = req._headers.begin();
+
+	if (!req._headers.empty()) {
+		it = req._headers.begin();
 		for (; it != req._headers.end(); ++it) {
-			if (it->first == "CONTENT_TYPE" || it->first == "CONTENT_LENGTH")
+			if (it->first == "CONTENT_LENGTH")
 				continue;
 			envVect.push_back("HTTP_" + toUpper(it->first) + "=" + it->second);
 		}
@@ -85,13 +93,20 @@ CGIOutput	cgiHandle( CGIContext& req )
 	int			outPipe[2];
 
 	// try access first
-
+	if (access(req._path.c_str(), X_OK) < 0) {
+		std::cerr << "access() denied" << std::endl;
+		return (CGIOutput(403, "")); 
+	}
 	(void) req;
 	if (pipe(inPipe) < 0 || pipe(outPipe) < 0) {
 		std::cerr << "pipe() failed" << std::endl;
 		return (CGIOutput(500, ""));
 	}
-	
+
+	// SocketManager::setNonBlocking(outPipe[1]);
+	// SocketManager::setNonBlocking(outPipe[0]);
+	// SocketManager::setNonBlocking(inPipe[0]);
+	// SocketManager::setNonBlocking(inPipe[1]);
 	pid_t	pid = fork();
 	if (pid < 0) {
 		std::cerr << "fork() failed" << std::endl;
@@ -111,7 +126,6 @@ CGIOutput	cgiHandle( CGIContext& req )
 		dup2(outPipe[1], STDOUT_FILENO);
 		close(outPipe[0]); close(outPipe[1]);
         close(inPipe[0]);  close(inPipe[1]);
-
 		execve(av[0], av, env);
 		std::cerr << "execve() failed" << std::endl;
 		for (int i = 0; env[i]; ++i)
@@ -127,7 +141,7 @@ CGIOutput	cgiHandle( CGIContext& req )
 	}
 	close(inPipe[1]);
 
-	char	buff[1024];
+	char	buff[2048];
 	int		byte;
 	
 	while ((byte = read(outPipe[0], buff, sizeof(buff))) > 0) {

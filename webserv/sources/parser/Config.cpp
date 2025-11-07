@@ -6,17 +6,17 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/03 15:07:58 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/05 15:03:57 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/Config.hpp"
 #include <cstddef>
 
-ParsingError::ParsingError( const str& msg, const str& path, int line, int col )
+ParsingError::ParsingError( const str& msg, const str& path, const Token& cur )
 	: _msg(msg)
-	, _line(line)
-	, _col(col)
+	, _line(cur._line)
+	, _col(cur._col)
 	, _path(path)
 {
 	std::ostringstream	oss;
@@ -27,7 +27,7 @@ ParsingError::ParsingError( const str& msg, const str& path, int line, int col )
 }
 
 ServerEntry::ServerEntry( void )
-	: _listenSet(false), _serverName(""), _cltHeadTimeout(60)
+	: _listenSet(false), _serverName(""), _root("/html"), _maxBodySize(0), _cltHeadTimeout(60)
 	, _cltBodyTimeout(60), _keepAliveTimeout(75)
 {
 	_listen.insert(std::make_pair("0.0.0.0", "8080"));
@@ -70,7 +70,7 @@ bool	ConfigParser::expect( TokenType type, const str& err )
 	if (accept(type))
 		return (true);
 	Token	cur = current();
-	throw ParsingError(err, _path, cur._line, cur._col);
+	throw ParsingError(err, _path, cur);
 }
 
 Data	ConfigParser::parseTokens( void )
@@ -78,10 +78,19 @@ Data	ConfigParser::parseTokens( void )
 	Data	data;
 
 	while(!accept(T_EOF)) {
-		ServerEntry	s = parseServerBlock();
-		data._servers.push_back(s);
+		ServerEntry	serv = parseServerBlock();
+		mapLocationsRoot(serv);
+		data._servers.push_back(serv);
 	}
 	return (data);
+}
+
+void	ConfigParser::mapLocationsRoot( ServerEntry& serv )
+{
+	for (size_t i = 0; i < serv._locations.size(); ++i) {
+		if (serv._locations[i]._root.empty())
+			serv._locations[i]._root = serv._root;
+	}
 }
 
 str		normPath( const str& path )
@@ -93,8 +102,10 @@ str		normPath( const str& path )
 
 	int start = 0, end = path.size();
 
-	while (out[start] && out[start] == '/') ++start;
-	while (end > start && out[end - 1] == '/') --end;
+	while (out[start] && out[start] == '/')
+		++start;
+	while (end > start && out[end - 1] == '/')
+		--end;
 
 	if (start == end)
 		return ("/");
@@ -103,15 +114,16 @@ str		normPath( const str& path )
 
 ServerEntry	ConfigParser::parseServerBlock( void )
 {
-	Token	t = current();
+	Token	cur = current();
 
-	if (!(t._type == T_STR && t._token == "server"))
-		throw ParsingError(EXP_SERV_DIR, _path, t._line, t._col);
+	if (!(cur._type == T_STR && cur._token == "server"))
+		throw ParsingError(EXP_SERV_DIR, _path, cur);
 
 	++_index;
 
+	cur = current();
 	if (!accept(T_LBRACE))
-		throw ParsingError(SERV_DIR_ERR, _path, current()._line, current()._col);
+		throw ParsingError(SERV_DIR_ERR, _path, cur);
 
 	ServerEntry	s;
 
@@ -122,13 +134,13 @@ ServerEntry	ConfigParser::parseServerBlock( void )
 			Location loc = parseLocationBlock();
 			for (size_t i = 0; i < s._locations.size(); ++i) {
 				if (normPath(s._locations[i]._path) == normPath(loc._path))
-					throw ParsingError(LOC_DUP_ERR + loc._path + "\"", _path, cur._line, cur._col);
+					throw ParsingError(LOC_DUP_ERR + loc._path + "\"", _path, cur);
 			}
 			s._locations.push_back(loc);
 		} else if (cur._type == T_STR) {
 			parseServerDir(s);
 		} else {
-			throw ParsingError("unknown directive \"" + cur._token + "\"", _path, cur._line, cur._col);
+			throw ParsingError("unknown directive \"" + cur._token + "\"", _path, cur);
 		}
 	}
 	return (s);
@@ -141,16 +153,16 @@ Location	ConfigParser::parseLocationBlock( void )
 	Token	tPath = current();
 	
 	if (!(tPath._type == T_STR && startsWith(tPath._token, "/")))
-		throw ParsingError("UnexpectedPathPrefix [" + tPath._token + "]", _path, tPath._line, tPath._col);
+		throw ParsingError("UnexpectedPathPrefix [" + tPath._token + "]", _path, tPath);
 
 	Location	loc;
 	loc._path = tPath._token;
 	++_index;
 	if (!accept(T_LBRACE))
-		throw ParsingError("expecting \"{\" after location directive", _path, current()._line, current()._col);
+		throw ParsingError("expecting \"{\" after location directive", _path, current());
 	while (!accept(T_RBRACE)) {
 		if (!(current()._type == T_STR))
-			throw ParsingError("expecting \"location\" directive", _path, current()._line, current()._col);
+			throw ParsingError("expecting \"location\" directive", _path, current());
 		parseLocationDir(loc);
 	}
 	return (loc);
@@ -192,7 +204,7 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 		fetchTimeout(serv, cur._token);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else {
-		throw ParsingError(UNK_SER_DIR_ERR + cur._token + "\"", _path, cur._line, cur._col);
+		throw ParsingError(UNK_SER_DIR_ERR + cur._token + "\"", _path, cur);
 	}
 }
 
@@ -202,7 +214,7 @@ void	ConfigParser::parseLocationDir ( Location& loc )
 
 	++_index;
 	if (cur._token == "root") {
-		fetchPath(loc._path);
+		fetchPath(loc._root);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else if (cur._token == "index") {
 		fetchPathList(loc._index);
@@ -230,7 +242,7 @@ void	ConfigParser::parseLocationDir ( Location& loc )
 		fetchCGI(loc._cgi);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else {
-		throw ParsingError(UNK_LOC_DIR_ERR + cur._token + "\"", _path, cur._line, cur._col);
+		throw ParsingError(UNK_LOC_DIR_ERR + cur._token + "\"", _path, cur);
 	}
 }
 
@@ -239,12 +251,12 @@ void	ConfigParser::fetchTimeout( ServerEntry& serv, const str& type )
 	Token 	cur = current();
 
 	if (!accept(T_NUM))
-		throw ParsingError("\"" + type + INV_TIME_OUT + cur._token + "\"", _path, cur._line, cur._col);
+		throw ParsingError("\"" + type + INV_TIME_OUT + cur._token + "\"", _path, cur);
 
 	size_t timeout = std::atoi(cur._token.c_str());
 
 	if (timeout > MAX_TIMEOUT)
-		throw ParsingError("\"" + type + MAX_T_OUT_ERR, _path, cur._line, cur._col);
+		throw ParsingError("\"" + type + MAX_T_OUT_ERR, _path, cur);
 	
 	if (type == "client_header_timeout")
 		serv._cltHeadTimeout = timeout; 
@@ -258,19 +270,19 @@ void	ConfigParser::fetchListen( ServerEntry& serv )
 	Token	cur = current();
 
 	if (!accept(T_STR))
-		throw ParsingError(EXP_LISTEN_ERR, _path, cur._line, cur._col);
+		throw ParsingError(EXP_LISTEN_ERR, _path, cur);
 
 	str		host, portStr;
 	size_t	col = cur._token.find(':');
 	if (col == str::npos)
-		throw ParsingError(INV_LISTEN_ERR + cur._token, _path, cur._line, cur._col);
+		throw ParsingError(INV_LISTEN_ERR + cur._token, _path, cur);
 	host = cur._token.substr(0, col);
 	portStr = cur._token.substr(col + 1);
 
 	if (!validHost(host))
-		throw ParsingError(INV_LISTEN_ERR + cur._token, _path, cur._line, cur._col);
+		throw ParsingError(INV_LISTEN_ERR + cur._token, _path, cur);
 
-	if (validatePort(portStr, cur._line, cur._col, _path)) {
+	if (validatePort(portStr, cur, _path)) {
 		if (!serv._listenSet) {
 			serv._listen.erase(serv._listen.begin());
 			serv._listenSet = true;
@@ -293,7 +305,7 @@ void	ConfigParser::fetchServerName( ServerEntry& serv )
 	Token	cur = current();
 
 	if (!accept(T_STR))
-		throw ParsingError("[" + cur._token + SERV_NAME_ERR, _path, cur._line, cur._col);
+		throw ParsingError("[" + cur._token + SERV_NAME_ERR, _path, cur);
 	if (serv._serverName.empty())
 		serv._serverName = cur._token;
 	else
@@ -307,7 +319,7 @@ void	ConfigParser::fetchPath( str& path )
 	Token	cur = current();
 	
 	if (!accept(T_STR)) 
-		throw ParsingError("expected path", _path, cur._line, cur._col);
+		throw ParsingError("expected path", _path, cur);
 
 	path = cur._token;
 }
@@ -328,13 +340,13 @@ bool	ConfigParser::fetchAutoIndex( void )
 	bool	value;
 
 	if (!accept(T_STR))
-		throw ParsingError(INV_AUTO_IDX, _path, current()._line, current()._col);
+		throw ParsingError(INV_AUTO_IDX, _path, current());
 	if (cur._token == "on" || cur._token == "true")
 		value = true;
 	else if (cur._token == "off" || cur._token == "false")
 		value = false;
 	else
-		throw ParsingError(INV_AUTO_IDX + cur._token + AUTO_IDX_ERR, _path, cur._line, cur._col);
+		throw ParsingError(INV_AUTO_IDX + cur._token + AUTO_IDX_ERR, _path, cur);
 	return (value);
 }
 
@@ -343,32 +355,32 @@ void	ConfigParser::fetchBodySize( size_t& bodySize )
 	Token	cur = current();
 
 	if (!accept(T_STR))
-		throw ParsingError(MAX_BODY_ERR, _path, cur._line, cur._col);
+		throw ParsingError(MAX_BODY_ERR, _path, cur);
 
 	str	size  = cur._token;
 	size_t	i = 0;
 	while (i < size.size() && std::isdigit(size[i]))
 		++i;
 
-	if (!i) throw ParsingError(MAX_BODY_ERR, _path, cur._line, cur._col);
+	if (!i) throw ParsingError(MAX_BODY_ERR, _path, cur);
 
 	str	nums = size.substr(0, i);
 	str	unit = size.substr(i);
 
 	size_t num = std::atol(nums.c_str());
 	if (unit.empty() || unit.size() != 1)
-		throw ParsingError(MAX_BODY_ERR, _path, cur._line, cur._col);
+		throw ParsingError(MAX_BODY_ERR, _path, cur);
 	char target = std::tolower(unit[0]);
 	unsigned long mult;
 	if (target == 'k')		mult = M_KILO;
 	else if (target == 'm')	mult = M_MEGA;
 	else if (target == 'g') mult = M_GEGA;
 	else
-		throw ParsingError(MAX_BODY_ERR, _path, cur._line, cur._col);
+		throw ParsingError(MAX_BODY_ERR, _path, cur);
 	
 	size_t maxSize = std::numeric_limits<size_t>::max();
 	if (num > maxSize / mult)
-		throw ParsingError(MAX_BODY_ERR, _path, cur._line, cur._col);
+		throw ParsingError(MAX_BODY_ERR, _path, cur);
 	bodySize = num * mult;
 }
 
@@ -377,15 +389,15 @@ void	ConfigParser::fetchErrorPages( std::map<int, str>& errors )
 	Token	cur = current();
 
 	if (!accept(T_NUM))
-		throw ParsingError(EXP_ERR_PAGE, _path, cur._line, cur._col);
+		throw ParsingError(EXP_ERR_PAGE, _path, cur);
 
 	str	strCode = cur._token;
 	if (strCode.size() != 3)
-		throw ParsingError(INV_ERR_PAGE, _path, cur._line, cur._col);
+		throw ParsingError(INV_ERR_PAGE, _path, cur);
 
 	cur = current();
 	if (!accept(T_STR))
-		throw ParsingError(ERR_PAGE_PATH, _path, cur._line, cur._col);
+		throw ParsingError(ERR_PAGE_PATH, _path, cur);
 
 	int code = std::atoi(strCode.c_str());
 	if (errors.count(code)) {
@@ -399,15 +411,15 @@ void	ConfigParser::fetchCGI( CGIEntry& cgi )
 {
 	Token	cur = current();
 	if (!accept(T_STR))
-		throw ParsingError(EXP_FILE_EXT, _path, cur._line, cur._col);
+		throw ParsingError(EXP_FILE_EXT, _path, cur);
 		
 	str	ext = cur._token;
 	if (ext.size() < 2 || ext[0] != '.')
-		throw ParsingError(INV_CGI_EXT_ERR, _path, cur._line, cur._col);
+		throw ParsingError(INV_CGI_EXT_ERR, _path, cur);
 
 	cur = current();
 	if (!accept(T_STR))
-		throw ParsingError(EXP_CGI_ITR_ERR, _path, cur._line, cur._col);
+		throw ParsingError(EXP_CGI_ITR_ERR, _path, cur);
 	str inter = cur._token;
 	cgi._extention = ext;
 	cgi._interpreter = inter;
@@ -428,14 +440,14 @@ void	ConfigParser::fetchMethods( std::set<str>& methods )
 			break ;
 		}
 		if (!ok)
-			throw ParsingError(UNK_METHOD_ERR + method + "\"", _path, cur._line, cur._col);
+			throw ParsingError(UNK_METHOD_ERR + method + "\"", _path, cur);
 		else
 			methods.insert(method);
 		++_index;
 		cur = current();
 	}
 	if (methods.empty())
-		throw ParsingError(NUM_METHOD_ERR, _path, cur._line, cur._col);
+		throw ParsingError(NUM_METHOD_ERR, _path, cur);
 }
 
 void	ConfigParser::fetchRedirect( Location& loc )
@@ -443,15 +455,15 @@ void	ConfigParser::fetchRedirect( Location& loc )
 	Token	cur = current();
 
 	if (!accept(T_NUM))
-		throw ParsingError(EXP_REDIR_CODE, _path, cur._line, cur._col);
+		throw ParsingError(EXP_REDIR_CODE, _path, cur);
 		
 	if (cur._token.size() != 3 || cur._token[0] != '3')
-		throw ParsingError(INV_REDIR_CODE + cur._token + "\"", _path, cur._line, cur._col);
+		throw ParsingError(INV_REDIR_CODE + cur._token + "\"", _path, cur);
 
 	loc._redirCode = std::atoi(cur._token.c_str());
 	cur = current();
 	if (!accept(T_STR))
-		throw ParsingError(NUM_REDIR_ERR, _path, cur._line, cur._col);
+		throw ParsingError(NUM_REDIR_ERR, _path, cur);
 
 	loc._redirTarget = cur._token;
 	loc._redirSet = true;
