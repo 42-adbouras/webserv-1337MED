@@ -6,7 +6,10 @@
 !*.html
 !*.conf
 !*.py
+!*.js
 
+!server/
+!serverHeader/
 !webserv/
 !sources/
 !parser/
@@ -21,3 +24,4 @@
 !cgi-scripts/
 !Makefile
 !README.md
+!.gitignore
