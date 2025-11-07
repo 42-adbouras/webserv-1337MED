@@ -1,4 +1,5 @@
 #include "../../includes/response.hpp"
+#include "../../includes/request.hpp"
 
 std::deque<str> splitPath( const str& path ) {
 	std::deque<str> segments;

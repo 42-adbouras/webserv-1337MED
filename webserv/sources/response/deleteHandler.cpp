@@ -1,7 +1,8 @@
 #include "../../includes/response.hpp"
+#include "../../includes/request.hpp"
 
 void redirResponse( Response& response, Location location ) {
-	response.setStatus(location._redirCode);
+	response.setClientState(location._redirCode);
 	response.addHeaders("Location", location._redirTarget);
 	response.addHeaders("Content-Length", iToString(response.getContentLength()));
 

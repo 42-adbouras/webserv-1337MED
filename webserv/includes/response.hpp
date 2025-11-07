@@ -20,6 +20,8 @@
 #define NOT_IMPLEMENTED 501
 #define HTTP_VERSION_NOT_SUPPORTED 505
 
+class Request;
+
 struct StatusEntry {
 	int code;
 	str message;
