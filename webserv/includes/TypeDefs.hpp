@@ -35,7 +35,14 @@ typedef std::map<str, str>				QueryMap;
 #define RED		"\033[1;31m"
 #define GREEN	"\033[1;32m"
 #define YELLOW	"\033[1;33m"
+#define CYAN	"\033[1;36m"
 #define RESET	"\033[0m"
+
+// Background Color
+
+#define BG_BLUE		"\033[44m"
+#define BG_GREEN	"\033[42m"
+#define BG_RED	"\033[41m"
 
 #define PORT_MIN 1024
 #define PORT_MAX 65535
@@ -90,6 +97,11 @@ struct ServerEntry
 	ServerEntry( void );
 };
 
+enum	Status {    // Enum for programe status only.
+	S_TIMEDOUT,
+    S_CONTINUE,
+	NON
+};
 
 #define INV_CFG_PATH	"[ERROR]: invalid config path exception."
 #define INV_CFG_FILE	"[ERROR]: invalid config file exception."

@@ -6,15 +6,15 @@
 #include <cstring>
 #include <cerrno>
 #include <vector>
+#include "../Config.hpp"
+// #include "Client.hpp"
+
 struct  TableOfListen;
 struct  ServerEntry;
-typedef std::vector<std::pair<TableOfListen*, ServerEntry*> >   serverBlockHint;
-#include "Client.hpp"
-#include "../Config.hpp"
 class   Server;
-
 struct  Data;
 
+typedef std::vector<std::pair<TableOfListen*, ServerEntry*> >   serverBlockHint;
 
 class   SocketManager {
     private:
@@ -25,6 +25,7 @@ class   SocketManager {
     public:
         SocketManager(Data& config, std::vector<TableOfListen>& tableOfListen);
         void    setTableOfListen(std::vector<TableOfListen>& table);
+        Status  PollingForEvents(std::vector<struct pollfd>& pollFd, Server& server,size_t cltSize);    
         void    initSockets(void);
         void    listenToPorts(void) ;
         void    runCoreLoop(void);
@@ -35,6 +36,7 @@ class   SocketManager {
         void    closeListenSockets(void) const;
         void    closeClientsSockets();
         serverBlockHint   detectServerBlock(int sockFd) const;
+        void    rmClientFromPoll(std::vector<struct pollfd>& _pollfd, size_t  cltSize);
         // std::vector<ServerEntry>&    retrieveServerBlock(size_t index);
         // ----- Utils -----
         // static struct sockaddr_in  getSockaddr(void);

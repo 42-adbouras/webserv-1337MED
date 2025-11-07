@@ -49,7 +49,7 @@ static const std::map<int, str>& getStatusMap() {
 
 std::map<int, str> statusMap = getStatusMap();
 
-void Response::setStatus( int code ) {
+void Response::setClientState( int code ) {
 	std::map<int, str>::const_iterator it = statusMap.find(code);
 	if ( it != statusMap.end() ) {
 		_statusCode = code;
