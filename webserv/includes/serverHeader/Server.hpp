@@ -11,6 +11,7 @@
 #include "SocketManager.hpp"
 #include "../Config.hpp"
 #include "ServerExcept.hpp"
+#include "CookiesSessionManager.hpp"
 // #include  "Client.hpp"
 #include <fcntl.h>
 // enum	Status;
@@ -20,10 +21,11 @@ struct Data;
 class Server
 {
 	private:
-        std::vector<Client>    _client;
+        std::vector<Client>		_client;
+		CookiesSessionManager	&_sessionManager;
 	public:
 		int						_OpenPort;
-		Server(int portOpen);
+		Server(CookiesSessionManager& sessionManager, int portOpen);
 		std::vector<Client>&	getListOfClients(void);
 		void	request(Client& _clt);
 		void	response(Client& _clt);

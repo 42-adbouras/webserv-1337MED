@@ -8,6 +8,7 @@
 
 class Client;
 class Response;
+class	CookiesSessionManager;
 
 class Request {
 private:
@@ -47,6 +48,6 @@ public:
 
 bool UriAllowedChars( str& uri );
 void requestHandler( Client& client );
-void sendResponse( Client& client );
+void sendResponse( Client& client, CookiesSessionManager& sessionManager );
 
 #endif
