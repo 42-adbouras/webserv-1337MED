@@ -10,18 +10,18 @@
 
 !server/
 !serverHeader/
-!webserv/
-!sources/
-!parser/
-!request/
-!response/
-!errors/
-!defaultErrorPages/
-!includes/
-!configs/
-!www/
-!cgi/
-!cgi-scripts/
-!Makefile
-!README.md
+# !webserv/
+# !sources/
+# !parser/
+# !request/
+# !response/
+# !errors/
+# !defaultErrorPages/
+# !includes/
+# !configs/
+# !www/
+# !cgi/
+# !cgi-scripts/
+# !Makefile
+# !README.md
 !.gitignore
