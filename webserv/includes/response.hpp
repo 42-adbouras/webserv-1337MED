@@ -58,7 +58,7 @@ public:
 	const int& getContentLength( void ) const;
 	const std::map<str, str>& getHeaders( void ) const;
 
-	void setClientState( int code );
+	void setStatus( int code );
 	void addHeaders( const str& key, const str& value );
 	void setBody( const str& bodyData );
 	str generate( void ) const;
@@ -72,5 +72,6 @@ void errorResponse( Response& response, int code);
 bool startsWith( const str& path, const str& start );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
 str fileOpen( const str& source );
+void redirResponse( Response& response, Location location );
 
 #endif
