@@ -44,7 +44,7 @@ bool requestErrors( Request& request, Response& response ) {
 }
 
 void errorResponse( Response& response, int code) {
-	response.setClientState(code);
+	response.setStatus(code);
 	str f = "./www/defaultErrorPages/" + iToString(code) + ".html";
 	std::ifstream file(f.c_str());
 	str errorExpt = iToString(code) + " error default page not found!";
