@@ -8,6 +8,8 @@ Request::Request( void )
 	, _path()
 	, _version()
 	, _body()
+	, _buffer()
+	,_location()
 	, _queryParams()
 	, _headers() { }
 
@@ -23,6 +25,7 @@ Request& Request::operator=( const Request& req ) {
 		this->_queryParams = req._queryParams;
 		this->_headers = req._headers;
 		this->_buffer = req._buffer;
+		this->_location = req._location;
 	}
 	return *this;
 }
@@ -163,7 +166,7 @@ void requestHandler( Client& client ) {
 
 	if((rByte = recv(client.getFd(), buffer, sizeof(buffer), 0)) > 0) {
 		buffer[rByte] = '\0';
-		client.setClientState(CS_READING_DONE);
+		client.setClientState(CS_KEEPALIVE);
 	}
 	if(rByte == 0)
 		client.setClientState(CS_DISCONNECT);

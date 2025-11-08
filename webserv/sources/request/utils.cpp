@@ -33,7 +33,6 @@ str getSource( Request& request, ServerEntry* _srvEntry, Response& response ) {
 	Location lct = getLocation(_srvEntry, request, response);
 	str::size_type start_pos = 0;
 	str location = request.getLocation();
-	std::cout << "locationnnnn: " << location << std::endl;
 	str root = lct._root;
 	if (!root.length())
 		root = _srvEntry->_root;
