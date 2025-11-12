@@ -33,8 +33,8 @@ private:
 	str _statusText;
 	str _version;
 	str _body;
-	int _contentLength;
-	std::map<str, str> _headers;
+	size_t _contentLength;
+	HeadersMap _headers;
 public:
 	Response( void );
 	~Response();
@@ -55,8 +55,8 @@ public:
 	const str& getStatusText( void ) const;
 	const str& getVersion( void ) const;
 	const str& getBody( void ) const;
-	const int& getContentLength( void ) const;
-	const std::map<str, str>& getHeaders( void ) const;
+	const size_t& getContentLength( void ) const;
+	const HeadersMap& getHeaders( void ) const;
 
 	void setStatus( int code );
 	void addHeaders( const str& key, const str& value );
@@ -64,7 +64,7 @@ public:
 	str generate( void ) const;
 };
 
-str iToString(int n);
+str iToString(size_t n);
 void deleteHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src );
 void postHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src );
 void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src );
@@ -73,5 +73,8 @@ bool startsWith( const str& path, const str& start );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
 str fileOpen( const str& source );
 void redirResponse( Response& response, Location location );
+str getContentType( const str& path );
+void genResponse( Response& response, str& src );
+bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location );
 
 #endif
