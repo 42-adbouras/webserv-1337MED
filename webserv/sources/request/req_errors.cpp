@@ -2,20 +2,20 @@
 #include "../../includes/response.hpp"
 
 bool headersCheck( Request& request ) {
-	std::map<str, str> headers = request.getHeaders();
-	std::map<str, str>::iterator it = headers.begin();
+	HeadersMap headers = request.getHeaders();
+	HeadersMap::iterator it = headers.begin();
 	while( it != headers.end() ) {
 		if (it->second == "")
 			return false;
 		++it;
 	}
-	std::map<str, str>::iterator hostIt = headers.find("Host");
+	HeadersMap::iterator hostIt = headers.find("Host");
 	if (hostIt == headers.end())
 		return false;
 	if (hostIt->second.empty())
 		return false;
 	if (request.getBody() != "") {
-		std::map<str, str>::iterator clIt = headers.find("Content-Length");
+		HeadersMap::iterator clIt = headers.find("Content-Length");
 		if (clIt == headers.end())
 			return false;
 		if (!isNumber(clIt->second))
@@ -25,9 +25,9 @@ bool headersCheck( Request& request ) {
 }
 
 bool requestErrors( Request& request, Response& response ) {
-	const std::map<str, str>& headers = request.getHeaders();
-	std::map<str, str>::const_iterator te = headers.find("Transfer-Encoding");
-	std::map<str, str>::const_iterator cl = headers.find("Content-Length");
+	const HeadersMap& headers = request.getHeaders();
+	HeadersMap::const_iterator te = headers.find("Transfer-Encoding");
+	HeadersMap::const_iterator cl = headers.find("Content-Length");
 	if (te != headers.end()) {
 		if(te->second != "chunked") {
 			errorResponse(response, NOT_IMPLEMENTED);
@@ -48,12 +48,13 @@ void errorResponse( Response& response, int code) {
 	str f = "./www/defaultErrorPages/" + iToString(code) + ".html";
 	std::ifstream file(f.c_str());
 	str errorExpt = iToString(code) + " error default page not found!";
-	if (!file.is_open()) {
-		throw Request::RequestException(errorExpt);
-	} else {
+	if (file.is_open()) {
 		sstream buffer;
 		buffer << file.rdbuf();
 		response.setBody(buffer.str());
 		response.addHeaders("Content-Length", iToString(response.getContentLength()));
-	}
+		response.addHeaders("Content-Type", getContentType(f.substr(1)));
+		file.close();
+	} else
+		throw Request::RequestException(errorExpt);
 }

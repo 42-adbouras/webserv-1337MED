@@ -33,8 +33,8 @@ Request& Request::operator=( const Request& req ) {
 const str& Request::getMethod( void ) const { return _method; }
 const str& Request::getreqTarget( void ) const { return _Uri; }
 const str& Request::getVersion( void ) const { return _version; }
-const std::map<str, str>& Request::getQueryParams( void ) const { return _queryParams; }
-const std::map<str, str>& Request::getHeaders( void ) const { return _headers; }
+const QueryMap& Request::getQueryParams( void ) const { return _queryParams; }
+const HeadersMap& Request::getHeaders( void ) const { return _headers; }
 const str& Request::getBody( void ) const { return _body; }
 const str& Request::getPath( void ) const { return _path; }
 const str& Request::getBuffer( void ) const { return _buffer; }

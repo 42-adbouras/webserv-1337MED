@@ -13,6 +13,8 @@ static std::map<str, str> mimeMap() {
 		m[".html"] = "text/html";
 		m[".htm"]  = "text/html";
 		m[".css"]  = "text/css";
+		m[".py"]   = "text/x-python";
+		m[".php"]  = "application/x-httpd-php";
 		m[".js"]   = "application/javascript";
 		m[".json"] = "application/json";
 		m[".xml"]  = "application/xml";
@@ -50,7 +52,40 @@ str getContentType( const str& path ) {
 void redirResponse( Response& response, Location location ) {
 	response.setStatus(location._redirCode);
 	response.addHeaders("Location", location._redirTarget);
-	response.addHeaders("Content-Length", iToString(response.getContentLength()));
-
 	response.setBody("Moved Permanently. Redirecting to " + location._redirTarget);
+	response.addHeaders("Content-Length", iToString(response.getContentLength()));
+}
+
+void genResponse( Response& response, str& src ) {
+	std::ifstream file(src.c_str());
+	sstream buffer;
+	if (file.is_open()) {
+		buffer << file.rdbuf();
+		response.setBody(buffer.str());
+		response.setStatus(OK);
+		response.addHeaders("Content-Length", iToString(response.getContentLength()));
+		response.addHeaders("Content-Type", getContentType(src.substr(1)));
+		file.close();
+	} else {
+		errorResponse(response, NOT_FOUND);
+	}
+}
+
+bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location ) {
+	if (request.getBody().length()) {
+		if (request.getBody().length() > _srvEntry->_maxBodySize) {
+			errorResponse(response, CONTENET_TOO_LARGE);
+			return false;
+		}
+	}
+	else if (location._allowedMethods.find(request.getMethod())
+		== location._allowedMethods.end()) {
+		errorResponse(response, METHOD_NOT_ALLOWED);
+		return false;
+	}
+	else if (location._redirSet) {
+		redirResponse(response, location);
+		return false;
+	}
+	return true;
 }

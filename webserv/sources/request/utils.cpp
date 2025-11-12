@@ -31,24 +31,26 @@ str normalizePath( const str& path ) {
 str getSource( Request& request, ServerEntry* _srvEntry, Response& response ) {
 	str path = request.getPath();
 	Location lct = getLocation(_srvEntry, request, response);
-	str::size_type start_pos = 0;
 	str location = request.getLocation();
 	str root = lct._root;
+
 	if (!root.length())
 		root = _srvEntry->_root;
 	if (root[root.length() - 1] != '/')
 		root += "/";
 	if (!location.length())
 		return "";
+	str::size_type start_pos = 0;
 	if (location != "/") {
 		while((start_pos = path.find(location, start_pos)) != str::npos) {
 			path.replace(start_pos, location.length(), root);
 			start_pos += root.length();
 		}
+	} else {
+		path.replace(0, location.length(), root);
 	}
 	std::deque<str> segments = splitPath(path);
 	std::deque<str> ss;
-	str source;
 	std::deque<str>::iterator it = segments.begin();
 	if (segments.empty())
 		return "/";
@@ -60,6 +62,7 @@ str getSource( Request& request, ServerEntry* _srvEntry, Response& response ) {
 			ss.push_back(*it);
 		++it;
 	}
+	str source;
 	while (!ss.empty()) {
 		str segment = ss.front();
 		ss.pop_front();
@@ -71,8 +74,8 @@ str getSource( Request& request, ServerEntry* _srvEntry, Response& response ) {
 	return source;
 }
 
-str getHost( const std::map<str, str>& headers ) {
-	std::map<str, str>::const_iterator it = headers.find("Host");
+str getHost( const HeadersMap& headers ) {
+	HeadersMap::const_iterator it = headers.find("Host");
 	if (it != headers.end())
 		return it->second;
 	return "";
@@ -86,12 +89,12 @@ bool isNumber(str& s) {
 	return true;
 }
 
-str fileOpen( const str& source ) {
+str fileOpen( str& source ) {
 	std::ifstream file(source.c_str());
 	sstream buffer;
-	if (!file.is_open())
-		return "";
-	else
+	if (file.is_open())
 		buffer << file.rdbuf();
+	else
+		return "";
 	return buffer.str();
 }

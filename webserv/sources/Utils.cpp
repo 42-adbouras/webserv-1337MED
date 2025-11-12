@@ -6,7 +6,7 @@ int	setNonBlocking( int fd )
 	return (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK));
 }
 
-str iToString(int n) {	
+str iToString(size_t n) {	
 	sstream ss;
 	ss << n;
 	return ss.str();

@@ -19,8 +19,8 @@ const int& Response::getStatusCode( void ) const { return _statusCode; }
 const str& Response::getStatusText( void ) const { return _statusText; }
 const str& Response::getVersion( void ) const { return _version; }
 const str& Response::getBody( void ) const { return _body; }
-const int& Response::getContentLength( void ) const { return _contentLength; }
-const std::map<str, str>& Response::getHeaders( void ) const { return _headers; }
+const size_t& Response::getContentLength( void ) const { return _contentLength; }
+const HeadersMap& Response::getHeaders( void ) const { return _headers; }
 
 static const StatusEntry StatusEntries[] = {
 	{200, "OK"},
@@ -71,7 +71,7 @@ str Response::generate( void ) const {
 	ss << _statusCode;
 
 	str HTTPresponse = _version + " " + ss.str() + " " + _statusText + "\r\n";
-	std::map<str, str>::const_iterator it = _headers.begin();
+	HeadersMap::const_iterator it = _headers.begin();
 	while( it != _headers.end() ) {
 		HTTPresponse += it->first + ": " + it->second + "\r\n";
 		++it; 
