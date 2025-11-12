@@ -19,8 +19,8 @@ private:
 	str _body;
 	str _buffer;
 	str _location;
-	std::map<str, str> _queryParams;
-	std::map<str, str> _headers;
+	QueryMap _queryParams;
+	HeadersMap _headers;
 
 	static const char* valid_methods[];
 
@@ -47,8 +47,8 @@ public:
 	const str& getMethod( void ) const;
 	const str& getreqTarget( void ) const;
 	const str& getVersion( void ) const;
-	const std::map<str, str>& getQueryParams( void ) const;
-	const std::map<str, str>& getHeaders( void ) const;
+	const QueryMap& getQueryParams( void ) const;
+	const HeadersMap& getHeaders( void ) const;
 	const str& getBody( void ) const;
 	const str& getPath( void ) const;
 	const str& getBuffer( void ) const;
@@ -67,7 +67,7 @@ bool UriAllowedChars( str& uri );
 void requestHandler( Client& client );
 void sendResponse( Client& client );
 str normalizePath( const str& path );
-str getHost( const std::map<str, str>& headers );
+str getHost( const HeadersMap& headers );
 str getSource( Request& request, ServerEntry* _srvEntry, Response& response );
 bool requestErrors( Request& request, Response& response );
 bool isNumber(str& s);
