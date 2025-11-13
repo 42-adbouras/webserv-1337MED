@@ -44,7 +44,7 @@ str getContentType( const str& path ) {
 	}
 	const std::map<str, str>& m = mimeMap();
 	std::map<str, str>::const_iterator it = m.find(ext);
-	str mime = (it != m.end()) ? it->second : "application/octet-stream";
+	str mime = (it != m.end()) ? it->second : "text/plain";
 
 	return mime;
 }
@@ -88,4 +88,35 @@ bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& respon
 		return false;
 	}
 	return true;
+}
+
+str getDateHeader( void ) {
+	time_t now = time(0);
+	struct tm _time;
+
+	_time = *localtime(&now);
+	char buf[100];
+
+	strftime(buf, sizeof(buf), "%a, %d %b %Y %X ", &_time);
+
+	return str(buf);
+}
+
+int fileStat( const str& src ) {
+	struct stat st;
+
+	if (lstat(src.c_str(), &st) != 0) {
+		return -1;
+	}
+	if (S_ISDIR(st.st_mode)) return 0;
+	if (S_ISREG(st.st_mode)) return 1;
+
+	return -2;
+}
+
+bool isFileExist( str& src ) {
+	std::ifstream file(src.c_str());
+	if (file.is_open())
+		return true;
+	return false;
 }

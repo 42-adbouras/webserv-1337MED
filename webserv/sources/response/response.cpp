@@ -7,10 +7,9 @@ Response::Response( void )
 	, _body()
 	, _contentLength(0) {
 
-		_headers["Server"] = "webServer";
-		_headers["Content-Type"] = "text/plain";
-		_headers["Content-Length"] = "0";
+		_headers["Server"] = "WebServer/0.0 (ait-server)";
 		_headers["Connection"] = "keep-alive";
+		_headers["Date"] = getDateHeader();
 }
 
 Response::~Response() { }
