@@ -88,13 +88,3 @@ bool isNumber(str& s) {
 	}
 	return true;
 }
-
-str fileOpen( str& source ) {
-	std::ifstream file(source.c_str());
-	sstream buffer;
-	if (file.is_open())
-		buffer << file.rdbuf();
-	else
-		return "";
-	return buffer.str();
-}
