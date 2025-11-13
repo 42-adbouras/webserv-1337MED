@@ -15,7 +15,6 @@
 !parser/
 !request/
 !response/
-!errors/
 !defaultErrorPages/
 !includes/
 !configs/
