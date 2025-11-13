@@ -71,10 +71,12 @@ void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, s
 void errorResponse( Response& response, int code);
 bool startsWith( const str& path, const str& start );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
-str fileOpen( const str& source );
 void redirResponse( Response& response, Location location );
 str getContentType( const str& path );
 void genResponse( Response& response, str& src );
 bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location );
+str getDateHeader( void );
+int fileStat( const str& src );
+bool isFileExist( str& src );
 
 #endif
