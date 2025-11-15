@@ -15,11 +15,12 @@
 #include "../includes/TypeDefs.hpp"
 #include "../includes/Config.hpp"
 #include "../includes/serverHeader/SocketManager.hpp"
+#include "ServerUtils.hpp"
 #include <fstream>
 #include <sstream>
 #include <vector> // IWYU pragma: keep
 #include "../includes/CGI.hpp"
-
+CONSOLE g_console;
 const char*	tokenTypeName( TokenType t )
 {
 	switch (t) {
@@ -65,6 +66,8 @@ int	main( int ac, char** av )
 		ConfigParser	p(tokens, av[1]);
 		Data	config = p.parseTokens();
 		// making a hash-table for all IP:PORT
+		// ----------------------------------------------------------
+		
 		std::vector<TableOfListen>	tableOfListen;
 		SocketManager	socketManager(config, tableOfListen);
 		socketManager.setTableOfListen(tableOfListen);
@@ -81,9 +84,11 @@ int	main( int ac, char** av )
 		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
 		socketManager.runCoreLoop();
 		// Server	server(data);
+//	-------------------------------------------------------------------
+		
 		// CGIContext	cgi;
-		// cgi._path = "www/cgi-scripts/env.js";
-		// cgi._name = "hello.py"; cgi._ntrp = "/opt/homebrew/bin/node";
+		// cgi._path = "www/cgi-scripts/hello.py";
+		// cgi._name = "hello.py"; cgi._ntrp = "/usr/bin/python3";
 		// cgi._method = "POST"; cgi._serverName = "ait-server";
 		// cgi._serverAddr = "0.0.0.0"; cgi._serverPort = "8080";
 		// cgi._contenType = "text/palin";

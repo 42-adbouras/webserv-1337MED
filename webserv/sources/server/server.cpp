@@ -2,6 +2,7 @@
 #include "../includes/serverHeader/Server.hpp"
 #include "Client.hpp"
 
+// CONSOLE g_console;
 Server::Server(CookiesSessionManager& sessionManager, int portOpen) : _sessionManager(sessionManager), _OpenPort(portOpen) {
     std::cout << BG_GREEN << "[INFO] Server started — config=config.conf" << RESET << std::endl;
 }
@@ -32,12 +33,14 @@ wsrv_timer_t Server::wsrv_find_next_timeout(void) {
     wsrv_timer_t lower;
 
     for (size_t i = 0; i < _client.size(); ++i) {
-        std::cout << "=========  " << _client[i].getTimeOut() << "  ========== " << std::endl;
+        // std::cout << "=========  " << _client[i].getTimeOut() << "  ========== " << std::endl;
         wsrv_timer_t elapsed = (now - _client[i].getStartTime());
         wsrv_timer_t timeout = _client[i].getTimeOut();
         wsrv_timer_t remaining = timeout - elapsed;
-        std::cout << BG_GREEN << std::endl;
-        std::cout << CYAN << "REMAINING FOR USER " << i+1 << ": " << remaining << RESET << std::endl;
+        std::stringstream   oss;
+        oss << "Remaining For User `" << i + 1 << "`: " << remaining << 's';
+        g_console.log(TIME_OUT, oss.str(), BG_GREEN);
+        // std::cout << CYAN << "REMAINING FOR USER " << i+1 << ": " << remaining << RESET << std::endl;
         if (remaining <= 0)
             return 0; // already timed out
         _client[i].setRemainingTime(remaining);
@@ -48,7 +51,9 @@ wsrv_timer_t Server::wsrv_find_next_timeout(void) {
         if (_client[i].getRemainingTime() < lower)
             lower = _client[i].getRemainingTime();
     }
-    std::cout << BG_BLUE << "[ TIME-OUT ] ——— remaining time-out => " << lower << "s" << RESET << std::endl;
+    std::stringstream   oss;
+    oss << "Remaining Time for Waiting events : " << lower << 's';
+    g_console.log(TIME_OUT, oss.str(), BG_BLUE);
     return (lower);
 }
 
@@ -58,6 +63,9 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     client.setStartTime(std::time(NULL));
     client.setTimeOut(CLIENT_HEADER_TIMEOUT);
     client.setClientState(CS_NEW);
+    client._alreadyExec = false;
+    client._cgiProc._readPipe = -1;
+    client._cgiProc._childPid = -1;
     temp.fd = client.getFd();
     temp.events = POLLIN;
     temp.revents = 0;
@@ -66,18 +74,28 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
 }
 
 Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t cltIndex, size_t& loopIndex) {
-    std::cout <<  CYAN << "REQUEST FROM USER WITH FD=" << GREEN << pollFd[loopIndex].fd << RESET << std::endl;
+    std::stringstream   oss;
+    oss << "User With `fd=" << pollFd[loopIndex].fd << "` sent s a request";
+    g_console.log(REQUEST, oss.str(), CYAN);
+    // std::cout <<  CYAN << "REQUEST FROM USER WITH FD=" << GREEN << pollFd[loopIndex].fd << RESET << std::endl;
     requestHandler(_client[cltIndex]);
     if (_client[cltIndex].getStatus() == CS_DISCONNECT)
     {
-        std::cout << RED << "[ NOTICE ] — recv returned 0 (connection closed by client) fd= " << pollFd[loopIndex].fd << RESET << std::endl;
+        std::stringstream   oss;
+        oss << "recv(): Return 0; Connection Closed By User `fd=" << pollFd[loopIndex].fd << "`!";
+        g_console.log(NOTICE, oss.str(), RED);
         handleDisconnect(loopIndex - cltIndex, pollFd);
-        std::cout << CYAN << "[ INFO ] — port and user fd that still en-ligne:" << YELLOW << std::endl;
+        oss.clear();
+        oss <<  "Ports and User's That Still En-Linge: ";
+        g_console.log(INFO, oss.str(), CYAN);
+        // std::cout << CYAN << "[ INFO ] — port and user fd that still en-ligne:" << YELLOW << std::endl;
         for (size_t k = 0; k < pollFd.size(); k++)
         {
-            std::cout << pollFd[k].fd << "-";
+            std::cout << pollFd[k].fd;
+            if (k + 1 < pollFd.size())
+                std::cout << '-';
         }
-        std::cout << RESET << std::endl;
+        std::cout << std::endl;
         loopIndex--;
         return S_CONTINUE;
     } 
@@ -85,12 +103,17 @@ Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t c
         pollFd[loopIndex].events |= POLLOUT;
     return NON;
 }
-
+ 
 void    Server::responsePart(size_t cltIndex) {
+    std::stringstream   oss;
     sendResponse(_client[cltIndex]);
+    oss << "Response For User `" << _client[cltIndex].getFd() << "` has been sent successfully."; 
+    g_console.log(INFO, oss.str(), GREEN);
+    // std::cout << GREEN << "[ INFO ] —— response for user " << _client[cltIndex].getFd() << " has been send with success!" << RESET << std::endl;  
     if (_client[cltIndex].getStatus() == CS_KEEPALIVE)
     {
-        std::cout << BLUE << "[ CONNECTION ] —— TCP connection still open to another request/response for USER fd = " << _client[cltIndex].getFd() << RESET << std::endl;
+        oss << "TCP Connection Still Open To Another Request/Response For User `fd=" << _client[cltIndex].getFd() << "`!";
+        g_console.log(NOTICE, oss.str(), ORANGE);
         int opt = 1;
         if (setsockopt(_client[cltIndex].getFd(), SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) != 0)
         {
@@ -101,7 +124,6 @@ void    Server::responsePart(size_t cltIndex) {
         _client[cltIndex].setStartTime(std::time(NULL));
         _client[cltIndex].setTimeOut(KEEPALIVE_TIMEOUT);
     }
-    std::cout << GREEN << "[ INFO ] —— response for user " << _client[cltIndex].getFd() << " has been send with success!" << RESET << std::endl;  
 }
 
 void    Server::response(Client& _clt) {
@@ -146,9 +168,12 @@ void    Server::request(Client& _clt){
 }
 
 void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd) {
-    
+    std::stringstream   oss;
+    std::cout << "----------- " << index + _client.size() << std::endl;
+    oss << "User With `fd=" << _client[index + _client.size() + 1].getFd() << "` Disconnected!";
     close(_client[index].getFd());
-    std::cout << RED << "USER WITH FD=" << _client[index].getFd() << " DISCONNECTED!" << std::endl;
+    g_console.log(DISCONNECTION, oss.str(), RED);
+    // std::cout << RED << "USER WITH FD=" << _client[index].getFd() << " DISCONNECTED!" << std::endl;
     _pollfd.erase(_pollfd.begin() + _OpenPort + index);
     _client.erase(_client.begin() + index);
     // std::cout << "existing sockets: " << std::endl;
