@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/08 11:46:46 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/07 12:18:04 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/08 11:18:23 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,9 +38,23 @@ struct CGIContext
 
 struct CGIProc
 {
+	bool		_error;
 	pid_t		_childPid;
 	int			_readPipe;
-	str			_out;
+	int			_statusCode;
+	CGIProc( bool err, int code )
+		: _error(err), _statusCode(code) {}
+	CGIProc( pid_t child, int rPipe, int code )
+		: _error(false), _childPid(child)
+		, _readPipe(rPipe), _statusCode(code) {}
+};
+
+struct CGIStatus
+{
+	bool	_error;
+	int		_statusCode;
+	CGIStatus( bool err, int code )
+		: _error(err), _statusCode(code) {}
 };
 
 struct CGIOutput
@@ -55,4 +69,5 @@ struct CGIOutput
 		, _output(output) {}
 };
 
-CGIOutput	cgiHandle( CGIContext& req );
+CGIProc		cgiHandle( CGIContext& req );
+CGIOutput	readChild( const CGIProc& proc );

@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/07 14:48:10 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/14 16:14:34 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,7 +75,7 @@ private:
 	bool			fetchAutoIndex( void );
 	void			fetchBodySize( size_t& size );
 	void			fetchErrorPages( std::map<int, str>& errors );
-	void			fetchCGI( CGIEntry& cgi );
+	void			fetchCGI( Location& loc );
 	void			fetchMethods( std::set<str>& methods );
 	void			fetchRedirect( Location& loc );
 	void			fetchTimeout( ServerEntry& serv, const str& type );
