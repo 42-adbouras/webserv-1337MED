@@ -3,9 +3,12 @@
 #include "Utils.hpp"
 #include "Client.hpp"
 #include "CookiesSessionManager.hpp"
+#include "../CGI.hpp"
+
+// CONSOLE g_console;
 
 SocketManager::SocketManager(Data& config, std::vector<TableOfListen>& tableOfListen) : _config(&config), _tableOfListen(tableOfListen) {
-    std::cout << BG_GREEN << "\n    [INFO] Start managing listening sockets...    \n" << RESET << std::endl;
+    g_console.log(INFO, str("Start managing listening sockets..."), BG_GREEN);
 }
 
 void    SocketManager::setTableOfListen(std::vector<TableOfListen>& table) {
@@ -59,7 +62,6 @@ void    SocketManager::initSockets(void) {
         bindSockets(counter);
         freeaddrinfo(results);
     }
-
 }
 
 bool    SocketManager::checkIfAlreadyBinded(size_t index) const {
@@ -88,7 +90,7 @@ void    SocketManager::bindSockets(size_t counter) {
         std::cout << "THIS: " << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << ", already binded" << std::endl;
     }
     else  if (status == 0)
-        std::cout << "socket " << _tableOfListen[counter]._fd << ": binded successfull" << std::endl;
+        std::cout << "socket fd " << _tableOfListen[counter]._fd << ": binded successfull" << std::endl;
 }
 
 void    SocketManager::hanldVirtualHost(TableOfListen& table, size_t index) {
@@ -111,7 +113,9 @@ void    SocketManager::listenToPorts(void) {
         std::cout << GREEN << "<< " << _tableOfListen[i]._ip << ", " << _tableOfListen[i]._port << " >>" << RESET << std::endl;
         if (!_tableOfListen[i].alreadyBinded && (status = listen(_tableOfListen[i]._fd, SOMAXCONN)) == 0)
         {
-            std::cout << "socket fd: " << _tableOfListen[i]._fd << " -> LISTENING!" << std::endl;
+            std::stringstream   oss;
+            oss << str("Socket with `fd=") << _tableOfListen[i]._fd << "` listening!";
+            g_console.log(LISTEN, oss.str(), CYAN);
         }
         else if(status != 0)
         {
@@ -127,7 +131,6 @@ void    SocketManager::listenToPorts(void) {
         }
     }
 }
-
 
 void    SocketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
     size_t  count = 0;
@@ -158,7 +161,9 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
             }
             _server.addClients(Client(clientFd, detectServerBlock(_pollfd[i].fd)), _pollfd);
             SocketManager::setNonBlocking(clientFd);
-            std::cout << YELLOW << "<<< client added with fd: " << clientFd << " >>>" << RESET << std::endl;
+            std::stringstream   oss;
+            oss << "New Client Connected with `fd=" << clientFd << "`!";
+            g_console.log(CONNECTION, oss.str(), YELLOW);
         }
     }
     return true;
@@ -204,11 +209,38 @@ void    SocketManager::runCoreLoop(void) {
     std::vector<Client>&    _clients = _server.getListOfClients(); 
     while (true)
     {
+        /* -------------------------------------------------------------------------------------
+        if (portCounter() + _clients.size() < _pollfd.size())
+        {
+            for (size_t i = 0; i < _clients.size(); i++)
+            {
+                if (_clients[i]._cgiProc._childPid != -1)
+                {
+                    int results, status = 0;
+                    results = waitpid(_clients[i]._cgiProc._childPid, &status, WNOHANG);
+                    if (results == _clients[i]._cgiProc._childPid)
+                    {
+                        std::cout << CYAN << "Child status has been changed" << RESET << std::endl;
+                    }
+                    else if (results == 0)
+                    {
+                        std::cout << GREEN << "Child still running!" << RESET << std::endl;
+                    }
+                    else {
+                        std::cerr << BG_RED << "Child process error" << std::endl;
+                    }
+                    // if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+                    //     out._code = 500;
+                }
+            }
+        } ---------------------------------------------------------------------------------------
+        */
         if (PollingForEvents(_pollfd, _server, _clients.size()) == S_TIMEDOUT)
             continue;
         checkForNewClients(_pollfd, _server);   // check listen sockets if there is new connections
         for (size_t i = clientStartIndex; i < _pollfd.size(); i++) {    // check for request/response from clients
             if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) ) {
+                
                 std::cout << RED << "[ INFO ] ——— connection closed: client=" << _pollfd[i].fd << " idx=" << (i - clientStartIndex) << RESET << std::endl;
                 _server.handleDisconnect(i - clientStartIndex, _pollfd);
                 i--;
@@ -216,20 +248,47 @@ void    SocketManager::runCoreLoop(void) {
             else {
                 if ( _pollfd[i].revents & POLLIN )
                 {
+                    // -------------------------------------------------------------------------------------
+                    // if (portCounter() + _clients.size() < _pollfd.size()) // ensure there is at least one cgi
+                    // {
+                    //     for (size_t cg = 0; cg < _clients.size(); cg++)
+                    //     {
+                    //         if (_pollfd[i].fd == _clients[cg]._cgiProc._readPipe)
+                    //         {
+                    //             CGIOutput   out = readChild(_clients[cg]._cgiProc);
+                    //             send(_pollfd[i].fd, out._output.c_str(), out._output.length(), 0);
+                    //             _pollfd.erase(_pollfd.begin() + portCounter() + _clients.size());
+                    //             continue ;
+                    //             // _server.responsePart(cg); // to response gene.
+                    //         }
+                    //     }
+                    // }
+                    // --------------------------------------------------------------------------------------
                     if (_server.readClientRequest(_pollfd, i - clientStartIndex, i) == S_CONTINUE)
                         continue ;
-                    }
-                    if ( _pollfd[i].revents & POLLOUT )
-                    // CGI handler
-                    // if (_clients[i-clientStartIndex].getStatus() == CS_CGI_REQ) {
-                    //     // before calling cgiHandle ,must check if already executed.
-                    //     cgiHandle(); // @param req and _client[i-clientStartIndex].getBool() ==> alreadyExec.
-                    //     // read from  pipe.
-
-                    // }
-                        // break;
-                        
+                }
+                if ( _pollfd[i].revents & POLLOUT )
                 {
+                    // CGI handler ------------------------------------------------
+                    // if (_clients[i-clientStartIndex].getStatus() == CS_CGI_REQ)
+                    // {
+                    //     std::cout << "REQUEST IS CGI" << std::endl;
+                    //     CGIProc proc;
+                    //     if (!_clients[i-clientStartIndex]._alreadyExec)
+                    //     {
+                    //         proc = cgiHandle(_clients[i-clientStartIndex].getCgiContext(), &_clients[i-clientStartIndex]._alreadyExec);
+                    //         struct  pollfd  pollPipe;
+                    //         pollPipe.fd = proc._readPipe;
+                    //         pollPipe.events = POLL_IN;
+                    //         pollPipe.revents = 0;
+                    //         _pollfd.push_back(pollPipe);
+                    //         _clients[i-clientStartIndex]._cgiProc = proc;
+                    //         _pollfd[i].events &= ~POLLOUT;
+                    //         continue;
+                    //     }
+                    //     // readChild(proc);
+                    // -------------------------------------------------------------
+                    // }
                     _server.responsePart(i - clientStartIndex);
                     _pollfd[i].events &= ~POLLOUT;
                 }
@@ -258,7 +317,8 @@ void    SocketManager::closeListenSockets(void) const {
         if (!_tableOfListen[i].alreadyBinded)
             close(_tableOfListen[i]._fd);
     }
-    std::cout << RED << "LISTENING SOCKETS CLOSED!" << RESET << std::endl;
+    g_console.log(DISCONNECTION, "Listening Sockets Closed", RED);
+    // std::cout << RED << "LISTENING SOCKETS CLOSED!" << RESET << std::endl;
 }
 
 //------ utils ------
