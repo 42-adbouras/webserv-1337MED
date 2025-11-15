@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/07 21:19:38 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/07 15:21:03 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/14 16:25:30 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ str		joinQuery( const QueryMap& query )
 	return (oss.str());
 }
 
-str		toUpper( const str& header )
+str		convertHeader( const str& header )
 {
 	str	out;
 
@@ -58,19 +58,19 @@ char**	buildEnv( const CGIContext& req )
 		envVect.push_back("CONTENT_LENGTH=" + oss.str());
 	}
 
-	HeadersMap::const_iterator it = req._headers.find("Content-Type");
-	if (it != req._headers.end() && !it->second.empty())
-		envVect.push_back("CONTENT-TYPE="+ it->second);
+	// HeadersMap::const_iterator it = req._headers.find("Content-Type");
+	// if (it != req._headers.end() && !it->second.empty())
+	envVect.push_back("CONTENT_TYPE="+ req._contenType);
 
 	if (!req._query.empty())
 		envVect.push_back("QUERY_STRING=" + joinQuery(req._query));
 
 	if (!req._headers.empty()) {
-		it = req._headers.begin();
+		HeadersMap::const_iterator it = req._headers.begin();
 		for (; it != req._headers.end(); ++it) {
-			if (it->first == "CONTENT_LENGTH")
+			if (it->first == "Content-Lenght" || it->first == "Content-Type")
 				continue;
-			envVect.push_back("HTTP_" + toUpper(it->first) + "=" + it->second);
+			envVect.push_back("HTTP_" + convertHeader(it->first) + "=" + it->second);
 		}
 	}
 	
@@ -86,48 +86,46 @@ char**	buildEnv( const CGIContext& req )
 	return (env);
 }
 
-CGIOutput	cgiHandle( CGIContext& req )
+CGIProc	cgiHandle( CGIContext& req )
 {
-	CGIOutput	out;
 	int			inPipe[2];
 	int			outPipe[2];
 
 	// try access first
-	if (access(req._path.c_str(), X_OK) < 0) {
+	if (access(req._path.c_str(), R_OK | X_OK) < 0) {
 		std::cerr << "access() denied" << std::endl;
-		return (CGIOutput(403, "")); 
+		return (CGIProc(true, 403)); 
 	}
 	(void) req;
 	if (pipe(inPipe) < 0 || pipe(outPipe) < 0) {
 		std::cerr << "pipe() failed" << std::endl;
-		return (CGIOutput(500, ""));
+		return (CGIProc(true, 500));
 	}
 
-	// SocketManager::setNonBlocking(outPipe[1]);
-	// SocketManager::setNonBlocking(outPipe[0]);
-	// SocketManager::setNonBlocking(inPipe[0]);
-	// SocketManager::setNonBlocking(inPipe[1]);
 	pid_t	pid = fork();
 	if (pid < 0) {
 		std::cerr << "fork() failed" << std::endl;
 		close(outPipe[0]); close(outPipe[1]);
 		close(inPipe[0]); close(inPipe[1]);
-		return (CGIOutput(500, ""));
+		return (CGIProc(true, 500));
 	}
 	if (pid == 0) {
 		char**	env = buildEnv(req);
 
-		char* av[3];
-		av[0] = const_cast<char*>(req._ntrp.c_str());
-		av[1] = const_cast<char*>(req._path.c_str());
-		av[2] = NULL;
+		char* av[2];
+		// av[0] = const_cast<char*>(req._ntrp.c_str());
+		av[0] = const_cast<char*>(req._path.c_str());
+		av[1] = NULL;
 
 		dup2(inPipe[0], STDIN_FILENO);
 		dup2(outPipe[1], STDOUT_FILENO);
+
 		close(outPipe[0]); close(outPipe[1]);
         close(inPipe[0]);  close(inPipe[1]);
+
 		execve(av[0], av, env);
 		std::cerr << "execve() failed" << std::endl;
+
 		for (int i = 0; env[i]; ++i)
 			delete[] env[i];
 		delete[] env;
@@ -140,17 +138,22 @@ CGIOutput	cgiHandle( CGIContext& req )
 		write(inPipe[1], body.c_str(), body.size());
 	}
 	close(inPipe[1]);
+	return (CGIProc(pid, outPipe[0], 200));
+}
 
-	char	buff[2048];
-	int		byte;
-	
-	while ((byte = read(outPipe[0], buff, sizeof(buff))) > 0) {
+CGIOutput	readChild( const CGIProc& proc )
+{
+	CGIOutput	out;
+	char		buff[2048];
+	int			byte;
+
+	while ((byte = read(proc._readPipe, buff, sizeof(buff))) > 0) {
 		// buff[byte] = '\0';
 		out._output.append(buff, byte);
 	}
-	close(outPipe[0]);
+	close(proc._readPipe);
 	int status = 0;
-	waitpid(pid, &status, 0);
+	waitpid(proc._childPid, &status, 0);
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		out._code = 500;
 	return(out);

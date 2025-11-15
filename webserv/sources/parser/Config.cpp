@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/05 15:03:57 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/14 16:54:55 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,7 @@ Location::Location( void )
 	: _autoIndexSet(false)
 	, _autoIndex(false)
 	, _redirSet(false)
+	, _isCGI(false)
 {
 	_allowedMethods.insert("GET");
 }
@@ -197,10 +198,11 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 	} else if (cur._token == "error_page") {
 		fetchErrorPages(serv._errorPages);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
-	} else if (cur._token == "cgi") {
+	} /*else if (cur._token == "cgi") {
 		fetchCGI(serv._cgi);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
-	} else if (isTimeout(cur._token)) {
+	} */
+	else if (isTimeout(cur._token)) {
 		fetchTimeout(serv, cur._token);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else {
@@ -239,7 +241,7 @@ void	ConfigParser::parseLocationDir ( Location& loc )
 		fetchRedirect(loc);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else if (cur._token == "cgi") {
-		fetchCGI(loc._cgi);
+		fetchCGI(loc);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else {
 		throw ParsingError(UNK_LOC_DIR_ERR + cur._token + "\"", _path, cur);
@@ -407,22 +409,24 @@ void	ConfigParser::fetchErrorPages( std::map<int, str>& errors )
 	errors[code] = cur._token;
 }
 
-void	ConfigParser::fetchCGI( CGIEntry& cgi )
+void	ConfigParser::fetchCGI( Location& loc )
 {
 	Token	cur = current();
 	if (!accept(T_STR))
 		throw ParsingError(EXP_FILE_EXT, _path, cur);
-		
-	str	ext = cur._token;
-	if (ext.size() < 2 || ext[0] != '.')
-		throw ParsingError(INV_CGI_EXT_ERR, _path, cur);
 
-	cur = current();
-	if (!accept(T_STR))
-		throw ParsingError(EXP_CGI_ITR_ERR, _path, cur);
-	str inter = cur._token;
-	cgi._extention = ext;
-	cgi._interpreter = inter;
+	loc._isCGI = true;
+	loc._cgi.push_back(cur._token);
+	// str	ext = cur._token;
+	// if (ext.size() < 2 || ext[0] != '.')
+	// 	throw ParsingError(INV_CGI_EXT_ERR, _path, cur);
+
+	// cur = current();
+	// if (!accept(T_STR))
+	// 	throw ParsingError(EXP_CGI_ITR_ERR, _path, cur);
+	// str inter = cur._token;
+	// cgi._extention = ext;
+	// cgi._interpreter = inter;
 }
 
 void	ConfigParser::fetchMethods( std::set<str>& methods )

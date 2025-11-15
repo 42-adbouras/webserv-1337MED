@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/07 14:56:38 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/14 16:49:15 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,11 +55,11 @@ typedef std::map<str, str>				QueryMap;
 #define M_MEGA 1024UL * 1024UL
 #define M_GEGA 1024UL * 1024UL * 1024UL
 
-struct CGIEntry
-{
-	str						_extention;
-	str						_interpreter;
-};
+// struct CGIEntry
+// {
+// 	str						_extention;
+// 	str						_interpreter;
+// };
 
 struct Location
 {
@@ -77,7 +77,10 @@ struct Location
 	bool					_redirSet;
 	int						_redirCode;
 	str						_redirTarget;
-	CGIEntry				_cgi;
+
+	bool					_isCGI;
+	std::vector<str>		_cgi;
+
 	Location( void );
 };
 
@@ -94,7 +97,6 @@ struct ServerEntry
 	size_t					_cltHeadTimeout;
 	size_t					_cltBodyTimeout;
 	size_t					_keepAliveTimeout;
-	CGIEntry				_cgi;
 	std::vector<Location>	_locations;
 	ServerEntry( void );
 };
