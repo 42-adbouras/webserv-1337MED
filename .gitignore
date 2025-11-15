@@ -7,6 +7,9 @@
 !*.conf
 !*.py
 !*.js
+!*.png
+!*.ico
+!*.jpg
 
 !server/
 !serverHeader/
@@ -20,6 +23,7 @@
 !configs/
 !www/
 !assets/
+!images/
 !cgi/
 !cgi-scripts/
 !Makefile
