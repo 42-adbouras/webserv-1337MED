@@ -1,7 +1,8 @@
 #include "../../includes/response.hpp"
 #include "../../includes/request.hpp"
 
-void deleteHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src) {
+void deleteHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client) {
+	(void)client;
 	Location location = getLocation(_srvEntry, request, response);
 	if (validateRequest(_srvEntry, request, response, location)) {
 		int type = fileStat(src);

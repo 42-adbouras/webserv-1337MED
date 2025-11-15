@@ -156,6 +156,44 @@ void Request::initBody( const char* input ) {
 		_body = raw.substr(pos + 4);
 }
 
+ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
+	serverBlockHint::iterator it = _srvBlockHint.begin();
+	while(it != _srvBlockHint.end()) {
+		if (it->first->_serverName == getHost(request.getHeaders()))
+			return it->second;
+		++it;
+	}
+	return _srvBlockHint.begin()->second;
+}
+
+void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client ) {
+	if (request.getMethod() == "DELETE")
+		deleteHandler(_srvEntry, request, response, src, client);
+	else if (request.getMethod() == "GET")
+		getHandler(_srvEntry, request, response, src, client);
+	else if (request.getMethod() == "POST")
+		postHandler(_srvEntry, request, response, src, client);
+}
+
+void processClientRequest( Client& client ) {
+	Response response;
+
+	Request request = client.getRequest();
+	bool reqFlg = request.parseReqline( request.getBuffer().c_str(), response );
+	initPath(request);
+	if (!reqFlg) {
+		client.setClientState(CS_KEEPALIVE);
+	} else {
+		if (requestErrors(request, response)) {
+			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
+			str source = getSource(request, _srvEntry, response);
+			std::cout << "--Source-- : " << source << std::endl;
+			checkMethod( _srvEntry, request, response, source, client );
+		}
+	}
+	client.setResponse(response);
+}
+
 void requestHandler( Client& client ) {
 	Request request;
 
@@ -177,49 +215,13 @@ void requestHandler( Client& client ) {
 	request.initHeaders( buffer );
 	request.initBody( buffer );
 	client.setRequest( request );
-}
-
-void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, str& src ) {
-	if (request.getMethod() == "DELETE")
-		deleteHandler(_srvEntry, request, response, src);
-	else if (request.getMethod() == "GET")
-		getHandler(_srvEntry, request, response, src);
-	else if (request.getMethod() == "POST")
-		postHandler(_srvEntry, request, response, src);
-}
-
-ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
-	serverBlockHint::iterator it = _srvBlockHint.begin();
-	while(it != _srvBlockHint.end()) {
-		if (it->first->_serverName == getHost(request.getHeaders()))
-			return it->second;
-		++it;
-	}
-	return _srvBlockHint.begin()->second;
+	processClientRequest(client);
 }
 
 void sendResponse( Client& client ) {
-	Response response;
-
-	Request request = client.getRequest();
-	str content;
-	bool reqFlg = request.parseReqline( request.getBuffer().c_str(), response );
-	initPath(request);
-	if (!reqFlg) {
-		content = response.generate();
-		send(client.getFd(), content.c_str(), content.length(), 0);
-		client.setClientState(CS_KEEPALIVE);
-		return;
-	} else {
-		if (requestErrors(request, response)) {
-			// get the client to work with
-			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
-			str source = getSource(request, _srvEntry, response);
-			std::cout << "--Source-- : " << source << std::endl;
-			checkMethod( _srvEntry, request, response, source );
-		}
-	}
-	content = response.generate();
+	Response response = client.getResponse();
+	
+	str content = response.generate();
 	send(client.getFd(), content.c_str(), content.length(), 0);
 	client.setClientState(CS_KEEPALIVE);
 }

@@ -59,7 +59,8 @@ void listDirectory( str& src, Response& response, Request& request, ServerEntry*
 	response.addHeaders("Content-Type", "text/html");
 }
 
-void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src) {
+void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client) {
+	(void)client;
 	Location location = getLocation(_srvEntry, request, response);
 	if (validateRequest(_srvEntry, request, response, location)) {
 		if (request.getPath() == "/") {
