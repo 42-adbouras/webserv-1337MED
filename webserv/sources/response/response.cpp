@@ -7,20 +7,30 @@ Response::Response( void )
 	, _body()
 	, _contentLength(0) {
 
-		_headers["Server"] = "webServer";
-		_headers["Content-Type"] = "text/plain";
-		_headers["Content-Length"] = "0";
+		_headers["Server"] = "WebServer/0.0 (ait-server)";
 		_headers["Connection"] = "keep-alive";
+		_headers["Date"] = getDateHeader();
 }
 
 Response::~Response() { }
+Response& Response::operator=( const Response& res ) {
+	if (this != &res) {
+		this->_statusCode = res._statusCode;
+		this->_statusText = res._statusText;
+		this->_version = res._version;
+		this->_body = res._body;
+		this->_contentLength = res._contentLength;
+		this->_headers = res._headers;
+	}
+	return *this;
+}
 
 const int& Response::getStatusCode( void ) const { return _statusCode; }
 const str& Response::getStatusText( void ) const { return _statusText; }
 const str& Response::getVersion( void ) const { return _version; }
 const str& Response::getBody( void ) const { return _body; }
-const int& Response::getContentLength( void ) const { return _contentLength; }
-const std::map<str, str>& Response::getHeaders( void ) const { return _headers; }
+const size_t& Response::getContentLength( void ) const { return _contentLength; }
+const HeadersMap& Response::getHeaders( void ) const { return _headers; }
 
 static const StatusEntry StatusEntries[] = {
 	{200, "OK"},
@@ -49,7 +59,7 @@ static const std::map<int, str>& getStatusMap() {
 
 std::map<int, str> statusMap = getStatusMap();
 
-void Response::setClientState( int code ) {
+void Response::setStatus( int code ) {
 	std::map<int, str>::const_iterator it = statusMap.find(code);
 	if ( it != statusMap.end() ) {
 		_statusCode = code;
@@ -71,7 +81,7 @@ str Response::generate( void ) const {
 	ss << _statusCode;
 
 	str HTTPresponse = _version + " " + ss.str() + " " + _statusText + "\r\n";
-	std::map<str, str>::const_iterator it = _headers.begin();
+	HeadersMap::const_iterator it = _headers.begin();
 	while( it != _headers.end() ) {
 		HTTPresponse += it->first + ": " + it->second + "\r\n";
 		++it; 

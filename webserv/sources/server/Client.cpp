@@ -20,9 +20,15 @@ void    Client::setClientState(ClientState clientState) {
 void	Client::setRequest( Request req ) {
 	_request = req;
 }
+void	Client::setResponse( Response res ) {
+	_response = res;
+}
 
 Request& Client::getRequest() {
 	return _request;
+}
+Response& Client::getResponse() {
+	return _response;
 }
 
 void    Client::setTimeOut(std::time_t timeout) {

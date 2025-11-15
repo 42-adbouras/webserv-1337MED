@@ -20,7 +20,6 @@ std::deque<str> splitPath( const str& path ) {
 
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response ) {
 	str path = request.getPath();
-	std::cout << "Path:    " << path << std::endl;
 
 	std::vector<Location> locations = _srvEntry->_locations;
 	std::vector<str> lcts;
