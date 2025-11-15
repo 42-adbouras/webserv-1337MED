@@ -5,7 +5,7 @@
 #include <cstring>
 #include "SocketManager.hpp"
 #include "ServerUtils.hpp"
-// #include "../CGI.hpp"
+#include "../CGI.hpp"
 #include "../request.hpp"
 // class Request;
 
@@ -35,7 +35,7 @@ class   Client {
         std::time_t     _remaining; // time-out
         // CGI
         ClientState     _requestType;
-        // CGIContext      *_cgiContext;
+        CGIContext      *_cgiContext;
         bool            _alreadyExec;
 
         Client();
