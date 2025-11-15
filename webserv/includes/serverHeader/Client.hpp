@@ -29,6 +29,7 @@ class   Client {
         int             _fd;
         ClientState     _clientState;
 		Request         _request;
+		Response		_response;
         std::time_t     _startTime;
         std::time_t     _timeOut;
         std::time_t     _remaining; // time-out
@@ -45,9 +46,11 @@ class   Client {
         int         getFd() const;
         void        setFd(int fd);
 		Request&    getRequest();
+		Response&   getResponse();
         ClientState getStatus() const;
         void        setClientState(ClientState clientState);
 		void	    setRequest( Request req );
+		void		setResponse( Response res );
         void        setRemainingTime(wsrv_timer_t remaining);
         wsrv_timer_t getRemainingTime(void) const;
         // Time-Out methode handler

@@ -3,12 +3,13 @@
 
 #include "./Utils.hpp" // IWYU pragma: keep
 #include "./TypeDefs.hpp"
+#include "../../includes/response.hpp"
 #include <sys/socket.h>
 #include <map>
 
 class Client;
 class Response;
-class	CookiesSessionManager;
+class CookiesSessionManager;
 
 class Request {
 private:
