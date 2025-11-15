@@ -38,6 +38,7 @@ private:
 public:
 	Response( void );
 	~Response();
+	Response& operator=( const Response& res );
 
 	class ResponseException : public std::exception {
 	private:
@@ -65,9 +66,9 @@ public:
 };
 
 str iToString(size_t n);
-void deleteHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src );
-void postHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src );
-void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src );
+void deleteHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
+void postHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
+void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
 void errorResponse( Response& response, int code);
 bool startsWith( const str& path, const str& start );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
