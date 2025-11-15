@@ -4,3 +4,25 @@
 #define CLIENT_HEADER_TIMEOUT 30 // second
 #define CLIENT_BODY_TIMEOUT 60 // second
 #define KEEPALIVE_TIMEOUT 75 // second
+
+/* macro for output messages */
+
+#define INFO "[ INFO ]"
+#define CONNECTION "[ CONNECTION ]"
+#define TIME_OUT    "[ TIME-OUT ]"
+#define DISCONNECTION "[ DISCONNECTION ]"
+#define LISTEN "[ LISTEN ]"
+#define REQUEST "[ REQUEST ]"
+#define NOTICE "[ NOTICE ]"
+
+struct  CONSOLE {
+    std::string message;
+    CONSOLE() {};
+    void    log(std::string tag, const std::string& mess, std::string color) {
+        std::cout << color << tag << " —— " << mess << RESET << std::endl;
+    }
+};
+
+// const std::string& toStrin
+
+extern CONSOLE g_console;
