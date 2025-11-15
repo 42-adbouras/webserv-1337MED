@@ -1,13 +1,22 @@
 #include "../../includes/response.hpp"
 #include "../../includes/request.hpp"
+#include "Client.hpp"
 
 void getIndex( ServerEntry *_srvEntry, Response& response ) {
 	str index;
 	str s;
-	if (!_srvEntry->_index.empty())
-		index = *_srvEntry->_index.begin();
-	if (index.length())
-		s = "." + _srvEntry->_root + "/" + index;
+	if (!_srvEntry->_index.empty()) {
+		std::vector<str>::iterator it = _srvEntry->_index.begin();
+		while (it != _srvEntry->_index.end()) {
+			index = *it;
+			s = "." + _srvEntry->_root + "/" + index;
+			if (isFileExist(s)) {
+				genResponse(response, s);
+				return;
+			}
+			++it;
+		}
+	}
 	genResponse(response, s);
 }
 
@@ -60,7 +69,6 @@ void listDirectory( str& src, Response& response, Request& request, ServerEntry*
 }
 
 void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client) {
-	(void)client;
 	Location location = getLocation(_srvEntry, request, response);
 	if (validateRequest(_srvEntry, request, response, location)) {
 		if (request.getPath() == "/") {
@@ -70,9 +78,22 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 
 		int type = fileStat(src);		
 		if (type == 1) {
-			// check if CGI
-
-			genResponse(response, src);
+			if (location._isCGI) {
+				str cgiFile = src.substr(src.find_last_of("/") + 1);
+				std::vector<str>::iterator it = location._cgi.begin();
+				while (it != location._cgi.end()) {
+					if (*it == cgiFile) {
+						client.setClientState(CS_CGI_REQ);
+					}
+					++it;
+				}
+				
+				response.setBody("CGI");
+				response.setStatus(OK);
+				response.addHeaders("Content-Length", iToString(response.getContentLength()));
+				response.addHeaders("Content-Type", getContentType(src));
+			} else
+				genResponse(response, src);
 			return;
 		} else if (type == 0) {
 			str path = request.getPath();
