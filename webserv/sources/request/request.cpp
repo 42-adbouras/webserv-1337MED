@@ -8,6 +8,8 @@ Request::Request( void )
 	, _path()
 	, _version()
 	, _body()
+	, _buffer()
+	,_location()
 	, _queryParams()
 	, _headers() { }
 
@@ -23,6 +25,7 @@ Request& Request::operator=( const Request& req ) {
 		this->_queryParams = req._queryParams;
 		this->_headers = req._headers;
 		this->_buffer = req._buffer;
+		this->_location = req._location;
 	}
 	return *this;
 }
@@ -30,8 +33,8 @@ Request& Request::operator=( const Request& req ) {
 const str& Request::getMethod( void ) const { return _method; }
 const str& Request::getreqTarget( void ) const { return _Uri; }
 const str& Request::getVersion( void ) const { return _version; }
-const std::map<str, str>& Request::getQueryParams( void ) const { return _queryParams; }
-const std::map<str, str>& Request::getHeaders( void ) const { return _headers; }
+const QueryMap& Request::getQueryParams( void ) const { return _queryParams; }
+const HeadersMap& Request::getHeaders( void ) const { return _headers; }
 const str& Request::getBody( void ) const { return _body; }
 const str& Request::getPath( void ) const { return _path; }
 const str& Request::getBuffer( void ) const { return _buffer; }
@@ -153,38 +156,6 @@ void Request::initBody( const char* input ) {
 		_body = raw.substr(pos + 4);
 }
 
-void requestHandler( Client& client ) {
-	Request request;
-
-	char buffer[30000];
-	ssize_t rByte;
-	client.setClientState(CS_READING);
-	std::cout << BG_BLUE << "recve fd " << client.getFd() << std::endl;
-
-	if((rByte = recv(client.getFd(), buffer, sizeof(buffer), 0)) > 0) {
-		buffer[rByte] = '\0';
-		client.setClientState(CS_READING_DONE);
-	}
-	if(rByte == 0)
-		client.setClientState(CS_DISCONNECT);
-	else if (rByte < 0)
-		std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
-
-	request.setBuffer( buffer );
-	request.initHeaders( buffer );
-	request.initBody( buffer );
-	client.setRequest( request );
-}
-
-void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, str& src ) {
-	if (request.getMethod() == "DELETE")
-		deleteHandler(_srvEntry, request, response, src);
-	else if (request.getMethod() == "GET")
-		getHandler(_srvEntry, request, response, src);
-	else if (request.getMethod() == "POST")
-		postHandler(_srvEntry, request, response, src);
-}
-
 ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
 	serverBlockHint::iterator it = _srvBlockHint.begin();
 	while(it != _srvBlockHint.end()) {
@@ -195,28 +166,62 @@ ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
 	return _srvBlockHint.begin()->second;
 }
 
-void sendResponse( Client& client ) {
+void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client ) {
+	if (request.getMethod() == "DELETE")
+		deleteHandler(_srvEntry, request, response, src, client);
+	else if (request.getMethod() == "GET")
+		getHandler(_srvEntry, request, response, src, client);
+	else if (request.getMethod() == "POST")
+		postHandler(_srvEntry, request, response, src, client);
+}
+
+void processClientRequest( Client& client ) {
 	Response response;
 
 	Request request = client.getRequest();
-	str content;
 	bool reqFlg = request.parseReqline( request.getBuffer().c_str(), response );
 	initPath(request);
 	if (!reqFlg) {
-		content = response.generate();
-		send(client.getFd(), content.c_str(), content.length(), 0);
 		client.setClientState(CS_KEEPALIVE);
-		return;
 	} else {
 		if (requestErrors(request, response)) {
-			// get the client to work with
 			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
 			str source = getSource(request, _srvEntry, response);
 			std::cout << "--Source-- : " << source << std::endl;
-			checkMethod( _srvEntry, request, response, source );
+			checkMethod( _srvEntry, request, response, source, client );
 		}
 	}
-	content = response.generate();
+	client.setResponse(response);
+}
+
+void requestHandler( Client& client ) {
+	Request request;
+
+	char buffer[30000];
+	ssize_t rByte;
+	client.setClientState(CS_READING);
+	std::cout << BG_BLUE << "recve fd " << client.getFd() << std::endl;
+
+	if((rByte = recv(client.getFd(), buffer, sizeof(buffer), 0)) > 0) {
+		buffer[rByte] = '\0';
+		client.setClientState(CS_KEEPALIVE);
+	}
+	if(rByte == 0)
+		client.setClientState(CS_DISCONNECT);
+	else if (rByte < 0)
+		std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
+
+	request.setBuffer( buffer );
+	request.initHeaders( buffer );
+	request.initBody( buffer );
+	client.setRequest( request );
+	processClientRequest(client);
+}
+
+void sendResponse( Client& client ) {
+	Response response = client.getResponse();
+	
+	str content = response.generate();
 	send(client.getFd(), content.c_str(), content.length(), 0);
 	client.setClientState(CS_KEEPALIVE);
 }

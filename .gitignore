@@ -7,6 +7,9 @@
 !*.conf
 !*.py
 !*.js
+!*.png
+!*.ico
+!*.jpg
 
 !server/
 !serverHeader/
@@ -15,11 +18,12 @@
 !parser/
 !request/
 !response/
-!errors/
 !defaultErrorPages/
 !includes/
 !configs/
 !www/
+!assets/
+!images/
 !cgi/
 !cgi-scripts/
 !Makefile

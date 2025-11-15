@@ -24,6 +24,10 @@
 #include <limits> // IWYU pragma: keep
 #include <algorithm>
 #include <deque>
+#include <cctype>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
 
 struct Token;
 typedef std::string						str;
