@@ -13,6 +13,17 @@ Response::Response( void )
 }
 
 Response::~Response() { }
+Response& Response::operator=( const Response& res ) {
+	if (this != &res) {
+		this->_statusCode = res._statusCode;
+		this->_statusText = res._statusText;
+		this->_version = res._version;
+		this->_body = res._body;
+		this->_contentLength = res._contentLength;
+		this->_headers = res._headers;
+	}
+	return *this;
+}
 
 const int& Response::getStatusCode( void ) const { return _statusCode; }
 const str& Response::getStatusText( void ) const { return _statusText; }
