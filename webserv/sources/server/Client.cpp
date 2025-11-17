@@ -55,3 +55,13 @@ void    Client::setRemainingTime(wsrv_timer_t  remaining) {
 wsrv_timer_t    Client::getRemainingTime(void) const {
     return _remaining;
 }
+
+void	Client::setCgiContext(str& name, ServerEntry *_srvEntry) {
+	_cgiContext._path = _request.getPath();
+	_cgiContext._name = name;
+	_cgiContext._body = _request.getBody();
+	_cgiContext._method = _request.getMethod();
+	_cgiContext._serverName = _srvEntry->_serverName;
+	_cgiContext._query = _request.getQueryParams();
+	_cgiContext._headers = _request.getHeaders();
+}

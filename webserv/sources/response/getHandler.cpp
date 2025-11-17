@@ -68,6 +68,25 @@ void listDirectory( str& src, Response& response, Request& request, ServerEntry*
 	response.addHeaders("Content-Type", "text/html");
 }
 
+bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry ) {
+	if (location._isCGI) {
+		if (location._cgi.empty())
+			return false;
+		str cgiFile = src.substr(src.find_last_of("/") + 1);
+		std::vector<str>::iterator it = location._cgi.begin();
+		while (it != location._cgi.end()) {
+			if (*it == cgiFile) {
+				client.setCgiContext(cgiFile, _srvEntry);
+				break;
+			}
+			++it;
+		}
+		if (it != location._cgi.end())
+			return true;
+	}
+	return false;
+}
+
 void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client) {
 	Location location = getLocation(_srvEntry, request, response);
 	if (validateRequest(_srvEntry, request, response, location)) {
@@ -76,22 +95,15 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 			return;
 		}
 
-		int type = fileStat(src);		
+		int type = fileStat(src);
 		if (type == 1) {
-			if (location._isCGI) {
-				str cgiFile = src.substr(src.find_last_of("/") + 1);
-				std::vector<str>::iterator it = location._cgi.begin();
-				while (it != location._cgi.end()) {
-					if (*it == cgiFile) {
-						client.setClientState(CS_CGI_REQ);
-					}
-					++it;
-				}
-				
-				response.setBody("CGI");
-				response.setStatus(OK);
-				response.addHeaders("Content-Length", iToString(response.getContentLength()));
-				response.addHeaders("Content-Type", getContentType(src));
+			if (isCgi(location, src, client, _srvEntry)) {
+				client.setClientState(CS_CGI_REQ);
+				// response.setBody("CGI");
+				// response.setStatus(OK);
+				// response.addHeaders("Content-Length", iToString(response.getContentLength()));
+				// response.addHeaders("Content-Type", "text/plain");
+				return;
 			} else
 				genResponse(response, src);
 			return;

@@ -60,7 +60,7 @@ char**	buildEnv( const CGIContext& req )
 
 	// HeadersMap::const_iterator it = req._headers.find("Content-Type");
 	// if (it != req._headers.end() && !it->second.empty())
-	envVect.push_back("CONTENT_TYPE="+ req._contenType);
+	// envVect.push_back("CONTENT_TYPE="+ req._contenType);
 
 	if (!req._query.empty())
 		envVect.push_back("QUERY_STRING=" + joinQuery(req._query));

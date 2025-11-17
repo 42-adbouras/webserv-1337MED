@@ -28,29 +28,31 @@ class   Client {
     private:
         int             _fd;
         ClientState     _clientState;
-		Request         _request;
-		Response		_response;
+        Request         _request;
+        Response        _response;
         std::time_t     _startTime;
         std::time_t     _timeOut;
         std::time_t     _remaining; // time-out
         // CGI
         ClientState     _requestType;
-        CGIContext      *_cgiContext;
-        bool            _alreadyExec;
-
+        CGIContext      _cgiContext;
         Client();
     public:
+        void            setCgiContext(str& name, ServerEntry *_srvEntry) ;
+        bool            _alreadyExec;
         serverBlockHint _serverBlockHint;
+        CGIProc         _cgiProc;
         Client(int fd, const serverBlockHint& server_block);
         ~Client();
         int         getFd() const;
         void        setFd(int fd);
-		Request&    getRequest();
-		Response&   getResponse();
+        CGIContext  getCgiContext(void) const;
+        Request&    getRequest();
+        Response&   getResponse();
         ClientState getStatus() const;
         void        setClientState(ClientState clientState);
-		void	    setRequest( Request req );
-		void		setResponse( Response res );
+        void        setRequest( Request req );
+        void        setResponse( Response res );
         void        setRemainingTime(wsrv_timer_t remaining);
         wsrv_timer_t getRemainingTime(void) const;
         // Time-Out methode handler
