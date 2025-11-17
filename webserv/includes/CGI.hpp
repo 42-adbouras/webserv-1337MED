@@ -25,13 +25,13 @@ struct CGIContext
 {
 	str			_path;
 	str			_name;
-	str			_ntrp;
+	// str			_ntrp;
 	str			_body;
 	str			_method;
 	str			_serverName;
-	str			_serverPort;
-	str			_serverAddr;
-	str			_contenType;
+	// str			_serverPort;
+	// str			_serverAddr;
+	// str			_contenType;
 	QueryMap	_query;
 	HeadersMap	_headers;
 };
@@ -47,6 +47,7 @@ struct CGIProc
 	CGIProc( pid_t child, int rPipe, int code )
 		: _error(false), _childPid(child)
 		, _readPipe(rPipe), _statusCode(code) {}
+	CGIProc() {}
 };
 
 struct CGIStatus

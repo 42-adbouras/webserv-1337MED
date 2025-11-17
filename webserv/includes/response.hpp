@@ -79,5 +79,6 @@ bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& respon
 str getDateHeader( void );
 int fileStat( const str& src );
 bool isFileExist( str& src );
+bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry );
 
 #endif
