@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block) {
+Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block), _cgiProc(CGIProc()) {
     // std::cout << "client connected" << std::endl;
 }
 
