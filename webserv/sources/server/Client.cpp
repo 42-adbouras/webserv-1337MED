@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block) {
+Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block), _cgiProc(CGIProc()) {
     // std::cout << "client connected" << std::endl;
 }
 
@@ -56,24 +56,49 @@ wsrv_timer_t    Client::getRemainingTime(void) const {
     return _remaining;
 }
 
-CGIContext&  Client::getCgiContext(void) const {
-    return *_cgiContext;
+CGIContext  Client::getCgiContext(void) const {
+    return _cgiContext;
 }
 
 void    Client::setCgiContext() {
-    _cgiContext->_path = "www/cgi-scripts/hello.py";
-    _cgiContext->_name = "hello.py"; _cgiContext->_ntrp = "/usr/bin/python3";
-    _cgiContext->_method = "POST"; _cgiContext->_serverName = "ait-server";
-    _cgiContext->_serverAddr = "0.0.0.0"; _cgiContext->_serverPort = "8080";
-    _cgiContext->_contenType = "text/palin";
-    _cgiContext->_query["name"] = "world"; _cgiContext->_query["lang"] = "en";
-    _cgiContext->_headers["Host"] = "0.0.0.0:8080";
-    _cgiContext->_headers["Content-Type"] = "text/plain";
-    _cgiContext->_headers["User-Agent"] = "webserv-dev/0.1";
-    _cgiContext->_headers["Accept"] = "*/*";
-    _cgiContext->_body = "<user>\n\t"
-                "<name>Jane Doe</name>\n\t"
-                "<email>jane.doe@example.com</email>\n\t"
-                "<age>25</age>\n"
-                "</user>";
+    _cgiContext._path = "www/cgi-scripts/hello.py";
+    _cgiContext._name = "hello.py"; _cgiContext._ntrp = "/usr/bin/python3";
+    _cgiContext._method = "POST"; _cgiContext._serverName = "ait-server";
+    _cgiContext._serverAddr = "0.0.0.0"; _cgiContext._serverPort = "8080";
+    _cgiContext._contenType = "text/palin";
+    _cgiContext._query["name"] = "world"; _cgiContext._query["lang"] = "en";
+    _cgiContext._headers["Host"] = "0.0.0.0:8080";
+    _cgiContext._headers["Content-Type"] = "text/plain";
+    _cgiContext._headers["User-Agent"] = "webserv-dev/0.1";
+    _cgiContext._headers["Accept"] = "*/*";
+    _cgiContext._body = "1234";
 }
+
+// ______________________ hello.py ______________________
+
+// CONTENT_LENGTH=4
+
+// CONTENT_TYPE=text/palin
+
+// GATEWAY_INTERFACE=CGI/1.1
+
+// HTTP_ACCEPT=*/*
+
+// HTTP_HOST=0.0.0.0:8080
+
+// HTTP_USER_AGENT=webserv-dev/0.1
+
+// LC_CTYPE=C.UTF-8
+
+// QUERY_STRING=lang=en&name=world
+
+// REQUEST_METHOD=POST
+
+// SCRIPT_FILENAME=hello.py
+
+// SERVER_PROTOCOL=HTTP/1.1
+
+// SERVER_SOFTWARE=ait-server/0.1
+
+// ______________________ BODY (raw) ______________________
+// 1234
