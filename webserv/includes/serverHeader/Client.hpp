@@ -37,12 +37,14 @@ class   Client {
         // CGI
         ClientState     _requestType;
         CGIContext      _cgiContext;
+        CGIContext      _cgiContext;
         Client();
     public:
         void    setCgiContext(str& name, ServerEntry *_srvEntry) ;
         CGIProc         _cgiProc;
         bool            _alreadyExec;
         serverBlockHint _serverBlockHint;
+        CGIProc         _cgiProc;
         Client(int fd, const serverBlockHint& server_block);
         ~Client();
         int         getFd() const;

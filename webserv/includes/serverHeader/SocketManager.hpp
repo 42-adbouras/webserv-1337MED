@@ -13,6 +13,7 @@ struct  TableOfListen;
 struct  ServerEntry;
 class   Server;
 struct  Data;
+class   Client;
 
 typedef std::vector<std::pair<TableOfListen*, ServerEntry*> >   serverBlockHint;
 
@@ -42,6 +43,12 @@ class   SocketManager {
         // static struct sockaddr_in  getSockaddr(void);
         static int  setNonBlocking(int fd);
         size_t      portCounter(void) const;
+        void        handlErrCloses(std::vector<struct pollfd>& _pollfd, Server& server , size_t cltSize);
+        // ---------------  CGI     ---------------------
+
+        void    readFromCgi(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, size_t coreIndex);
+        void    cgiEventsChecking(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd);
+        bool    isCgiRequest(std::vector<struct pollfd>& pollFd, Client& client, size_t index);
         ~SocketManager(){};
 };
 
@@ -54,7 +61,9 @@ struct TableOfListen
     std::string _serverName;
     unsigned int    _serverBlockId;
     bool    alreadyBinded;
-    bool    operator==(const TableOfListen& other) const {
+
+    bool    operator==(const TableOfListen& other) const
+    {
         if (_ip == other._ip && _port == other._port)
             return true;
         else if (_ip != other._ip && _port == other._port)

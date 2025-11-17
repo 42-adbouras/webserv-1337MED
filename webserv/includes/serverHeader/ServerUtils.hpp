@@ -14,12 +14,18 @@
 #define LISTEN "[ LISTEN ]"
 #define REQUEST "[ REQUEST ]"
 #define NOTICE "[ NOTICE ]"
+#define SERVER "[ SERVER ]"
+#define SOCKET_MANAGER "[ SOCKET_MANAGER ]"
+#define WARNING "[ WARNING ]"
+
+
+
 
 struct  CONSOLE {
     std::string message;
     CONSOLE() {};
     void    log(std::string tag, const std::string& mess, std::string color) {
-        std::cout << color << tag << " —— " << mess << RESET << std::endl;
+        std::cout << BG_CYAN << tag << RESET << color << " —— " << mess << RESET << "\n" << std::endl;
     }
 };
 
