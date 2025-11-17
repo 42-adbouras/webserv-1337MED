@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/14 16:49:15 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/17 15:51:07 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,9 +47,21 @@ typedef std::map<str, str>				QueryMap;
 
 // Background Color
 
+#define BLUE	"\033[1;34m"
+#define RED		"\033[1;31m"
+#define GREEN	"\033[1;32m"
+#define YELLOW	"\033[1;33m"
+#define CYAN	"\033[1;36m"
+#define WHITE	"\033[1;37m"
+#define MAGENTA	"\033[1;38m"
+#define RESET	"\033[0m"
+
+// Background Color
+
 #define BG_BLUE		"\033[44m"
 #define BG_GREEN	"\033[42m"
 #define BG_RED	"\033[41m"
+#define BG_CYAN	"\033[47m"
 
 #define PORT_MIN 1024
 #define PORT_MAX 65535
