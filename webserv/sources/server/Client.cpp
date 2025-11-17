@@ -56,24 +56,16 @@ wsrv_timer_t    Client::getRemainingTime(void) const {
     return _remaining;
 }
 
-CGIContext&  Client::getCgiContext(void) const {
-    return *_cgiContext;
+const CGIContext&  Client::getCgiContext(void) const {
+	return _cgiContext;
 }
 
-void    Client::setCgiContext() {
-    _cgiContext->_path = "www/cgi-scripts/hello.py";
-    _cgiContext->_name = "hello.py"; _cgiContext->_ntrp = "/usr/bin/python3";
-    _cgiContext->_method = "POST"; _cgiContext->_serverName = "ait-server";
-    _cgiContext->_serverAddr = "0.0.0.0"; _cgiContext->_serverPort = "8080";
-    _cgiContext->_contenType = "text/palin";
-    _cgiContext->_query["name"] = "world"; _cgiContext->_query["lang"] = "en";
-    _cgiContext->_headers["Host"] = "0.0.0.0:8080";
-    _cgiContext->_headers["Content-Type"] = "text/plain";
-    _cgiContext->_headers["User-Agent"] = "webserv-dev/0.1";
-    _cgiContext->_headers["Accept"] = "*/*";
-    _cgiContext->_body = "<user>\n\t"
-                "<name>Jane Doe</name>\n\t"
-                "<email>jane.doe@example.com</email>\n\t"
-                "<age>25</age>\n"
-                "</user>";
+void	Client::setCgiContext(str& name, ServerEntry *_srvEntry) {
+	_cgiContext._path = _request.getPath();
+	_cgiContext._name = name;
+	_cgiContext._body = _request.getBody();
+	_cgiContext._method = _request.getMethod();
+	_cgiContext._serverName = _srvEntry->_serverName;
+	_cgiContext._query = _request.getQueryParams();
+	_cgiContext._headers = _request.getHeaders();
 }

@@ -42,6 +42,7 @@ typedef std::map<str, str>				QueryMap;
 #define GREEN	"\033[1;32m"
 #define YELLOW	"\033[1;33m"
 #define CYAN	"\033[1;36m"
+#define ORANGE	"\033[1;37m"
 #define RESET	"\033[0m"
 
 // Background Color
