@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/07 21:19:38 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/14 16:25:30 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/17 16:15:57 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,7 +86,7 @@ char**	buildEnv( const CGIContext& req )
 	return (env);
 }
 
-CGIProc	cgiHandle( CGIContext& req )
+CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 {
 	int			inPipe[2];
 	int			outPipe[2];
@@ -121,7 +121,7 @@ CGIProc	cgiHandle( CGIContext& req )
 		dup2(outPipe[1], STDOUT_FILENO);
 
 		close(outPipe[0]); close(outPipe[1]);
-        close(inPipe[0]);  close(inPipe[1]);
+		close(inPipe[0]);  close(inPipe[1]);
 
 		execve(av[0], av, env);
 		std::cerr << "execve() failed" << std::endl;
@@ -131,6 +131,7 @@ CGIProc	cgiHandle( CGIContext& req )
 		delete[] env;
 		exit(EXIT_FAILURE);
 	}
+	*alreadyExec = true;
 	close(inPipe[0]);
 	close(outPipe[1]);
 	const str body = req._body; 

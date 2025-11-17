@@ -4,6 +4,7 @@
 
 // CONSOLE g_console;
 Server::Server(CookiesSessionManager& sessionManager, int portOpen) : _sessionManager(sessionManager), _OpenPort(portOpen) {
+    (void) _sessionManager;
     g_console.log(SERVER, str("Server started — config=config.conf ..."), BG_CYAN);
     // std::cout << BG_GREEN << "[INFO] Server started — config=config.conf" << RESET << std::endl;
 }
