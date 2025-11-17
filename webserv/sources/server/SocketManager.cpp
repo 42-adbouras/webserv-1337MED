@@ -217,11 +217,9 @@ void        SocketManager::handlErrCloses(std::vector<struct pollfd>& _pollfd, S
             g_console.log(WARNING, oss.str(), RED);
             server.handleDisconnect(i, _pollfd);
             i--;
-
         }
     }
 }
-
 
 void    SocketManager::runCoreLoop(void) {
     size_t                      cltStart = portCounter();
