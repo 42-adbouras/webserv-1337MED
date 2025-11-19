@@ -59,6 +59,14 @@ wsrv_timer_t    Client::getRemainingTime(void) const {
 const CGIContext&  Client::getCgiContext(void) const {
 	return _cgiContext;
 }
+/*	Client Cgi Status	*/
+void        Client::setCltCgiState(ClientCGIState cltCgiState) {
+	_cltCgiState = cltCgiState;
+}
+ClientCGIState  Client::getCltCgiState() const {
+	return _cltCgiState;
+}
+
 
 void	Client::setCgiContext(str& name, ServerEntry *_srvEntry) {
 	_cgiContext._path = _request.getPath();

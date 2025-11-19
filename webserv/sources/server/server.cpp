@@ -24,7 +24,6 @@ bool    Server::wsrv_timeout_closer(std::vector<struct pollfd>& pollFd) {
             oss << "User With `fd=" << _client[i].getFd() << "` Hors-Ligne!";
             g_console.log(TIME_OUT, oss.str(), BG_RED);
             state = true;
-            // std::cout << BG_RED << "[ TIME-OUT ]" << BG_BLUE << " __ user fd=" << _client[i].getFd() << " hors-ligne __" RESET << std::endl;
             handleDisconnect(i, pollFd);
         }
     }
@@ -75,22 +74,40 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     temp.events = POLLIN;
     temp.revents = 0;
     _client.push_back(client);
-    _pollfd.push_back(temp);
+    // _pollfd.push_back(temp);
+/**
+ *  My Pollfd Layout is [listen sockets] [clinets][Cgi Pipes];
+ *  So here i add new clinet after [listen sockets + clinet.size()-1]. (in the middle) 
+ */
+    size_t  insetPos = _OpenPort + (_client.size() - 1);
+    if (insetPos <= _pollfd.size())
+    {
+        _pollfd.insert(_pollfd.begin() + insetPos, temp);
+    }
+    else
+        _pollfd.push_back(temp);
 }
+// niki ys abd red ceb abl | anor  
 
 Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t cltIndex, size_t& loopIndex) {
     std::stringstream   oss;
 
     oss << "User With `fd=" << pollFd[loopIndex].fd << "` sent s a request";
     g_console.log(REQUEST, oss.str(), CYAN);
-    // std::cout <<  CYAN << "REQUEST FROM USER WITH FD=" << GREEN << pollFd[loopIndex].fd << RESET << std::endl;
+    _client[cltIndex]._alreadyExec = false;
     requestHandler(_client[cltIndex]);
-    if (_client[cltIndex].getStatus() == CS_DISCONNECT)
-    {
+    if (_client[cltIndex].getStatus() == CS_DISCONNECT) {
+
         std::stringstream   oss;
         oss << "recv(): Return 0; Connection Closed By User `fd=" << pollFd[loopIndex].fd << "`!";
         g_console.log(NOTICE, oss.str(), RED);
         handleDisconnect(cltIndex, pollFd);
+        // std::cout << BG_GREEN << "Lists Of Clients:\n";
+        // for (size_t i = 0; i < _client.size(); i++)
+        // {
+        //     std::cout << WHITE << _client[i].getFd() ;
+        // }
+        // std::cout << RESET << std::endl;
         oss.clear();
         oss.str("");
         oss <<  "Ports and User's That Still En-Linge: ";
@@ -103,9 +120,9 @@ Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t c
                 std::cout << '-';
         }
         std::cout << std::endl;
-        loopIndex--;
+        // loopIndex--;
         return S_CONTINUE;
-    } 
+    }
     else
         pollFd[loopIndex].events |= POLLOUT;
     return NON;
@@ -190,7 +207,6 @@ void    Server::closeClientConnection(void) {
     for (size_t i = 0; i < _client.size(); i++)
     {
         close(_client[i].getFd());
-        
     }
     _client.clear();
 }

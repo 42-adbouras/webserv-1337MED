@@ -54,13 +54,15 @@ class   SocketManager {
 
 struct TableOfListen
 {
-    int _fd;
-    struct sockaddr*    addr;
-    std::string _ip;
-    std::string _port;
-    std::string _serverName;
-    unsigned int    _serverBlockId;
-    bool    alreadyBinded;
+    int                 _fd;
+    // struct sockaddr*    addr;
+    struct sockaddr_storage addr; // own the address bytes (no dangling pointer)
+    socklen_t           addr_len;
+    std::string         _ip;
+    std::string         _port;
+    std::string         _serverName;
+    unsigned int        _serverBlockId;
+    bool                alreadyBinded;
 
     bool    operator==(const TableOfListen& other) const
     {

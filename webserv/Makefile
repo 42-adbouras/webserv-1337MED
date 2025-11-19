@@ -19,7 +19,7 @@ CLN		=	\033[K\r\c
 
 CXX		=	c++
 
-CFLAGS	=	-Wall -Wextra -Werror -std=c++98
+CFLAGS	=	-Wall -Wextra -Werror -g -std=c++98
 
 NAME	=	webserv
 
