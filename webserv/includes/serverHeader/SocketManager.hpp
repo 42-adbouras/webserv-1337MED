@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cerrno>
 #include <vector>
+#include <signal.h>
 #include "../Config.hpp"
 // #include "Client.hpp"
 
@@ -49,18 +50,24 @@ class   SocketManager {
         void    readFromCgi(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, size_t coreIndex);
         void    cgiEventsChecking(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd);
         bool    isCgiRequest(std::vector<struct pollfd>& pollFd, Client& client, size_t index);
+        // void    signalHandler(int sig) {
+        //     std::cout << "Signal is: " << sig  << std::endl;
+        //     exit(EXIT_SUCCESS);
+        // };
         ~SocketManager(){};
 };
 
 struct TableOfListen
 {
-    int _fd;
-    struct sockaddr*    addr;
-    std::string _ip;
-    std::string _port;
-    std::string _serverName;
-    unsigned int    _serverBlockId;
-    bool    alreadyBinded;
+    int                 _fd;
+    // struct sockaddr*    addr;
+    struct sockaddr_storage addr; // own the address bytes (no dangling pointer)
+    socklen_t           addr_len;
+    std::string         _ip;
+    std::string         _port;
+    std::string         _serverName;
+    unsigned int        _serverBlockId;
+    bool                alreadyBinded;
 
     bool    operator==(const TableOfListen& other) const
     {

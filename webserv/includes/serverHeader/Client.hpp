@@ -25,10 +25,17 @@ enum    ClientState {   // Enum for Clients state only
     // CS_CGI_PROCESSING // FOR CGI REQUEST
 };
 
+enum    ClientCGIState{
+    CCS_FAILLED,
+    CCS_RUNNING,
+    CCS_DONE
+};
+
 class   Client {
     private:
         int             _fd;
         ClientState     _clientState;
+        ClientCGIState  _cltCgiState;
         Request         _request;
         Response        _response;
         std::time_t     _startTime;
@@ -56,10 +63,12 @@ class   Client {
         void        setClientState(ClientState clientState);
         void        setRequest( Request req );
         void        setResponse( Response res );
-        void        setRemainingTime(wsrv_timer_t remaining);
-        wsrv_timer_t getRemainingTime(void) const;
+        void        setCltCgiState(ClientCGIState cltCgiState);
+        ClientCGIState  getCltCgiState() const;
         // Time-Out methode handler
         
+        void        setRemainingTime(wsrv_timer_t remaining);
+        wsrv_timer_t getRemainingTime(void) const;
         void        setStartTime(std::time_t start);
         void        setTimeOut(std::time_t timeout);
         std::time_t   getTimeOut() const;
