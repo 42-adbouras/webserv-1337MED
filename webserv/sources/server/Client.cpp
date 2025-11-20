@@ -60,12 +60,6 @@ const CGIContext&  Client::getCgiContext(void) const {
 	return _cgiContext;
 }
 
-void	Client::setCgiContext(str& name, ServerEntry *_srvEntry) {
-	_cgiContext._path = _request.getPath();
-	_cgiContext._name = name;
-	_cgiContext._body = _request.getBody();
-	_cgiContext._method = _request.getMethod();
-	_cgiContext._serverName = _srvEntry->_serverName;
-	_cgiContext._query = _request.getQueryParams();
-	_cgiContext._headers = _request.getHeaders();
+void	Client::setCgiContext(CGIContext& cgiContext) {
+	this->_cgiContext = cgiContext;
 }
