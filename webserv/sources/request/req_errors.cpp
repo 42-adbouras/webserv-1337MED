@@ -24,26 +24,26 @@ bool headersCheck( Request& request ) {
 	return true;
 }
 
-bool requestErrors( Request& request, Response& response ) {
+bool requestErrors( Request& request, Response& response, ServerEntry* _srvEntry ) {
 	const HeadersMap& headers = request.getHeaders();
 	HeadersMap::const_iterator te = headers.find("Transfer-Encoding");
 	HeadersMap::const_iterator cl = headers.find("Content-Length");
 	if (te != headers.end()) {
 		if(te->second != "chunked") {
-			errorResponse(response, NOT_IMPLEMENTED);
+			getSrvErrorPage(response, _srvEntry, NOT_IMPLEMENTED);
 			return false;
 		}
 	}
 	if (te == headers.end() && cl == headers.end() && request.getMethod() == "POST") {
-		errorResponse(response, BAD_REQUEST);
+		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
 		return false;
 	}
 	if (!headersCheck(request))
-		errorResponse(response, BAD_REQUEST);
+		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
 	return true;
 }
 
-void errorResponse( Response& response, int code) {
+void defErrorResponse( Response& response, int code) {
 	response.setStatus(code);
 	str f = "./www/defaultErrorPages/" + iToString(code) + ".html";
 	std::ifstream file(f.c_str());

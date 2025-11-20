@@ -28,9 +28,7 @@ Location getLocation( ServerEntry *_srvEntry, Request& request, Response& respon
 			lcts.push_back(locations[i]._path);
 	}
 	if (lcts.empty()) {
-		// set srv errors pages
-		// response.setBody(fileOpen(_srvEntry->_root + _srvEntry->_errorPages[404]));
-		errorResponse(response, NOT_FOUND);
+		getSrvErrorPage(response, _srvEntry, NOT_FOUND);
 		return Location();
 	}
 	std::vector<str>::iterator largest = std::max_element(lcts.begin(), lcts.end());
