@@ -110,16 +110,16 @@ Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t c
         // std::cout << RESET << std::endl;
         oss.clear();
         oss.str("");
-        oss <<  "Ports and User's That Still En-Linge: ";
-        g_console.log(INFO, oss.str(), CYAN);
+        // oss <<  "Ports and User's That Still En-Linge: ";
+        // g_console.log(INFO, oss.str(), CYAN);
         // std::cout << CYAN << "[ INFO ] — port and user fd that still en-ligne:" << YELLOW << std::endl;
-        for (size_t k = 0; k < pollFd.size(); k++)
-        {
-            std::cout << pollFd[k].fd;
-            if (k + 1 < pollFd.size())
-                std::cout << '-';
-        }
-        std::cout << std::endl;
+        // for (size_t k = 0; k < pollFd.size(); k++)
+        // {
+        //     std::cout << pollFd[k].fd;
+        //     if (k + 1 < pollFd.size())
+        //         std::cout << '-';
+        // }
+        // std::cout << std::endl;
         // loopIndex--;
         return S_CONTINUE;
     }

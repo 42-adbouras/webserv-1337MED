@@ -123,3 +123,6 @@ int	main( int ac, char** av )
 	
 	return (0);
 }
+
+
+// nik ys ab re ab ceb sim imad

@@ -231,9 +231,13 @@ void        SocketManager::handlErrCloses(std::vector<struct pollfd>& _pollfd, S
             oss << "Client `fd:" << _pollfd[i].fd << "` Closed The Connection Unexpectedly.";
             g_console.log(WARNING, oss.str(), RED);
             server.handleDisconnect(i, _pollfd);
-            i--;
         }
     }
+}
+
+void    signalHandler(int sig) {
+    std::cout << "\nSignal is: " << sig  << std::endl;
+    exit(EXIT_SUCCESS);
 }
 
 void    SocketManager::runCoreLoop(void) {
@@ -245,6 +249,7 @@ void    SocketManager::runCoreLoop(void) {
 
     setListenEvent(_pollfd);    // set listen socket to wait for POLLIN events
     std::vector<Client>&    _clients = _server.getListOfClients(); 
+    signal(SIGINT, signalHandler);
     while (true)
     {
 /* -------------------------------------------------------------------------------------
@@ -287,12 +292,12 @@ void    SocketManager::runCoreLoop(void) {
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */ 
-        std::cout << BG_CYAN << "All Pollfd: \n[";
-        for (size_t i = 0; i < _pollfd.size(); i++)
-        {
-            std::cout << _pollfd[i].fd << '|' << std::endl;
-        }
-        std::cout << ']' << RESET << std::endl;
+        // std::cout << BG_CYAN << "All Pollfd: \n[";
+        // for (size_t i = 0; i < _pollfd.size(); i++)
+        // {
+        //     std::cout << _pollfd[i].fd << '|' << std::endl;
+        // }
+        // std::cout << ']' << RESET << std::endl;
 /*
  ++++++++++++++++++            CGI Events Part:            ++++++++++++++++++
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -333,8 +338,8 @@ void    SocketManager::runCoreLoop(void) {
                             errorResponse(_clients[i-cltStart].getResponse(), _clients[i-cltStart]._cgiProc._statusCode);
                             _server.responsePart(i - cltStart);
                             _server.handleDisconnect(i - cltStart, _pollfd);
-                            continue;
                         }
+                        continue;
                     }
                 }  
                 _server.responsePart(i - cltStart);
@@ -351,14 +356,13 @@ bool    SocketManager::isCgiRequest(std::vector<struct pollfd>& pollFd, Client& 
 
     if (!client._alreadyExec)
     {
-        std::cout << "++++++ EXEC +++++++++++" << std::endl;
         proc = cgiHandle(client.getCgiContext(), &client._alreadyExec);
         if (proc._error)
         {
             g_console.log(WARNING, str("Unexpected Error On CGI!"), BG_RED);
             client._cgiProc = proc;
             client.setCltCgiState(CCS_FAILLED);
-            client._alreadyExec = true;
+            // client._alreadyExec = true;
             return true;
         }
         struct  pollfd  pollPipe;
@@ -368,6 +372,8 @@ bool    SocketManager::isCgiRequest(std::vector<struct pollfd>& pollFd, Client& 
         pollFd.push_back(pollPipe);
         client._cgiProc = proc;
         pollFd[index].events &= ~POLLOUT;
+        std::cout << "[[[[[[[[[[[[[[]]]]]]]]]]]]]]" << std::endl;
+
         return true;
     }
     return  false;
@@ -377,10 +383,12 @@ bool    SocketManager::isCgiRequest(std::vector<struct pollfd>& pollFd, Client& 
 void    SocketManager::cgiEventsChecking(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd){
     size_t  cgiScop = portCounter() + clients.size();
     
+
     for (size_t i = cgiScop; i < pollFd.size(); i++)
     {
         if ( pollFd[i].revents & POLLIN )
         {
+            std::cout << "====== ===== PIPE fd= " << pollFd[i].fd << std::endl;
             readFromCgi(clients, pollFd, i);
             pollFd[i].events |= POLLOUT;
             g_console.log(INFO, str("Response In CGI wait for Send"), BG_GREEN);

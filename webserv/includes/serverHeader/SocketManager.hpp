@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cerrno>
 #include <vector>
+#include <signal.h>
 #include "../Config.hpp"
 // #include "Client.hpp"
 
@@ -49,6 +50,10 @@ class   SocketManager {
         void    readFromCgi(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, size_t coreIndex);
         void    cgiEventsChecking(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd);
         bool    isCgiRequest(std::vector<struct pollfd>& pollFd, Client& client, size_t index);
+        // void    signalHandler(int sig) {
+        //     std::cout << "Signal is: " << sig  << std::endl;
+        //     exit(EXIT_SUCCESS);
+        // };
         ~SocketManager(){};
 };
 

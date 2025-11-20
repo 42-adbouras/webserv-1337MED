@@ -63,6 +63,7 @@ const CGIContext&  Client::getCgiContext(void) const {
 void        Client::setCltCgiState(ClientCGIState cltCgiState) {
 	_cltCgiState = cltCgiState;
 }
+
 ClientCGIState  Client::getCltCgiState() const {
 	return _cltCgiState;
 }
