@@ -69,16 +69,17 @@ str iToString(size_t n);
 void deleteHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
 void postHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
 void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
-void errorResponse( Response& response, int code);
+void defErrorResponse( Response& response, int code);
 bool startsWith( const str& path, const str& start );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
 void redirResponse( Response& response, Location location );
 str getContentType( const str& path );
-void genResponse( Response& response, str& src );
+void genResponse( Response& response, str& src, ServerEntry* _srvEntry );
 bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location );
 str getDateHeader( void );
 int fileStat( const str& src );
 bool isFileExist( str& src );
-bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry );
+bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry, Request& request );
+void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code );
 
 #endif

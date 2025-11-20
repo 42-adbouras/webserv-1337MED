@@ -94,28 +94,28 @@ void initPath( Request& request ) {
 		request.setPath(normalizePath(uri));
 }
 
-bool Request::parseReqline( const char* input, Response& response ) {
+bool Request::parseReqline( const char* input, Response& response, ServerEntry* _srvEntry ) {
 	str raw = str(input);
 
 	sstream stream(raw);
 	if(!(stream >> _method >> _Uri >> _version)) {
-		errorResponse(response, BAD_REQUEST);
+		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
 		return false;
 	}
 	if(!is_valid_method( _method )) {
-		errorResponse(response, NOT_IMPLEMENTED);
+		getSrvErrorPage(response, _srvEntry, NOT_IMPLEMENTED);
 		return false;
 	}
 	if(_version != "HTTP/1.1") {
-		errorResponse(response, HTTP_VERSION_NOT_SUPPORTED);
+		getSrvErrorPage(response, _srvEntry, HTTP_VERSION_NOT_SUPPORTED);
 		return false;
 	}
 	if (_Uri.length() > 2048) {
-		errorResponse(response, URI_TOO_LONG);
+		getSrvErrorPage(response, _srvEntry, URI_TOO_LONG);
 		return false;
 	}
 	if(!parse_query_params( _Uri ) || !UriAllowedChars( _Uri )) {
-		errorResponse(response, BAD_REQUEST);
+		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
 		return false;
 	}
 
@@ -179,15 +179,15 @@ void processClientRequest( Client& client ) {
 	Response response;
 
 	Request request = client.getRequest();
-	bool reqFlg = request.parseReqline( request.getBuffer().c_str(), response );
+	ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
+	bool reqFlg = request.parseReqline( request.getBuffer().c_str(), response, _srvEntry );
 	initPath(request);
 	if (!reqFlg) {
 		client.setClientState(CS_KEEPALIVE);
 	} else {
-		if (requestErrors(request, response)) {
-			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
+		if (requestErrors(request, response, _srvEntry)) {
 			str source = getSource(request, _srvEntry, response);
-			std::cout << "--Source-- : " << source << std::endl;
+			// std::cout << "--Source-- : " << source << std::endl;
 			checkMethod( _srvEntry, request, response, source, client );
 		}
 	}
