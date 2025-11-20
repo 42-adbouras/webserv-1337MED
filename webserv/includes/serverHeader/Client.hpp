@@ -38,7 +38,7 @@ class   Client {
         CGIContext      _cgiContext;
         Client();
     public:
-        void            setCgiContext(str& name, ServerEntry *_srvEntry) ;
+        void            setCgiContext(CGIContext& cgiContext) ;
         bool            _alreadyExec;
         serverBlockHint _serverBlockHint;
         CGIProc         _cgiProc;

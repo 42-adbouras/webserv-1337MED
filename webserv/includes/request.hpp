@@ -59,7 +59,7 @@ public:
 	void setPath( const str& path );
 	const str& getLocation( void ) const;
 
-	bool parseReqline( const char* input, Response& response );
+	bool parseReqline( const char* input, Response& response, ServerEntry* _srvEntry );
 	void initHeaders( const char* input );
 	void initBody( const char* input );
 };
@@ -70,7 +70,7 @@ void sendResponse( Client& client );
 str normalizePath( const str& path );
 str getHost( const HeadersMap& headers );
 str getSource( Request& request, ServerEntry* _srvEntry, Response& response );
-bool requestErrors( Request& request, Response& response );
+bool requestErrors( Request& request, Response& response, ServerEntry* _srvEntry );
 bool isNumber(str& s);
 std::deque<str> splitPath( const str& path );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
