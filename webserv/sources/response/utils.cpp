@@ -56,7 +56,7 @@ void redirResponse( Response& response, Location location ) {
 	response.addHeaders("Content-Length", iToString(response.getContentLength()));
 }
 
-void genResponse( Response& response, str& src ) {
+void genResponse( Response& response, str& src, ServerEntry* _srvEntry ) {
 	std::ifstream file(src.c_str());
 	sstream buffer;
 	if (file.is_open()) {
@@ -67,20 +67,20 @@ void genResponse( Response& response, str& src ) {
 		response.addHeaders("Content-Type", getContentType(src.substr(1)));
 		file.close();
 	} else {
-		errorResponse(response, NOT_FOUND);
+		getSrvErrorPage(response, _srvEntry, NOT_FOUND);
 	}
 }
 
 bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location ) {
 	if (request.getBody().length()) {
 		if (request.getBody().length() > _srvEntry->_maxBodySize) {
-			errorResponse(response, CONTENET_TOO_LARGE);
+			getSrvErrorPage(response, _srvEntry, CONTENET_TOO_LARGE);
 			return false;
 		}
 	}
 	else if (location._allowedMethods.find(request.getMethod())
 		== location._allowedMethods.end()) {
-		errorResponse(response, METHOD_NOT_ALLOWED);
+		getSrvErrorPage(response, _srvEntry, METHOD_NOT_ALLOWED);
 		return false;
 	}
 	else if (location._redirSet) {
@@ -115,8 +115,39 @@ int fileStat( const str& src ) {
 }
 
 bool isFileExist( str& src ) {
-	std::ifstream file(src.c_str());
-	if (file.is_open())
+	if (access(src.c_str(), F_OK) == 0)
 		return true;
 	return false;
+}
+
+bool genErrorResponse( Response& response, str& src, int code ) {
+	std::ifstream file(src.c_str());
+	sstream buffer;
+	if (file.is_open()) {
+		buffer << file.rdbuf();
+		response.setBody(buffer.str());
+		response.setStatus(code);
+		response.addHeaders("Content-Length", iToString(response.getContentLength()));
+		response.addHeaders("Content-Type", getContentType(src.substr(1)));
+		file.close();
+		return true;
+	} else
+		return false;
+}
+
+void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code ) {
+	std::map<int, str> errorPgs = _srvEntry->_errorPages;
+	if (!errorPgs.empty()) {
+		if (errorPgs.find(code) != errorPgs.end()) {
+			str src = "." + _srvEntry->_root + errorPgs.find(code)->second;
+			if (!genErrorResponse(response, src, code))
+				defErrorResponse(response, code);
+		} else {
+			defErrorResponse(response, code);
+			return;
+		}
+	} else {
+		defErrorResponse(response, code);
+		return;
+	}
 }
