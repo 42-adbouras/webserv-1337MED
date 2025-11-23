@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/17 15:51:07 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/23 15:44:05 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,6 +72,7 @@ typedef std::map<str, str>				QueryMap;
 #define M_MEGA 1024UL * 1024UL
 #define M_GEGA 1024UL * 1024UL * 1024UL
 
+#define CGI_R_BUFFER 1024
 // struct CGIEntry
 // {
 // 	str						_extention;
