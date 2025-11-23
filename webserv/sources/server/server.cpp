@@ -1,12 +1,11 @@
-// #include "SocketManager.hpp"
-#include "../includes/serverHeader/Server.hpp"
-#include "Client.hpp"
+#include "../../includes/serverHeader/Server.hpp"
+#include "../../includes/serverHeader/Client.hpp"
+#include "../../includes/serverHeader/ServerUtils.hpp"
+#include <cstddef>
 
-// CONSOLE g_console;
 Server::Server(CookiesSessionManager& sessionManager, int portOpen) : _sessionManager(sessionManager), _OpenPort(portOpen) {
     (void) _sessionManager;
     g_console.log(SERVER, str("Server started — config=config.conf ..."), BG_CYAN);
-    // std::cout << BG_GREEN << "[INFO] Server started — config=config.conf" << RESET << std::endl;
 }
 
 std::vector<Client>& Server::getListOfClients(void) {
@@ -74,20 +73,18 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     temp.events = POLLIN;
     temp.revents = 0;
     _client.push_back(client);
-    // _pollfd.push_back(temp);
 /**
  *  My Pollfd Layout is [listen sockets] [clinets][Cgi Pipes];
  *  So here i add new clinet after [listen sockets + clinet.size()-1]. (in the middle) 
  */
-    size_t  insetPos = _OpenPort + (_client.size() - 1);
-    if (insetPos <= _pollfd.size())
-    {
-        _pollfd.insert(_pollfd.begin() + insetPos, temp);
-    }
-    else
-        _pollfd.push_back(temp);
+    // size_t  insetPos = _OpenPort + (_client.size() - 1);
+    // if (insetPos <= _pollfd.size())
+    // {
+        _pollfd.insert(_pollfd.begin() + _OpenPort + (_client.size() - 1), temp);
+    // }
+    // else
+        // _pollfd.push_back(temp);
 }
-// niki ys abd red ceb abl | anor  
 
 Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t cltIndex, size_t& loopIndex) {
     std::stringstream   oss;
@@ -97,9 +94,8 @@ Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t c
     _client[cltIndex]._alreadyExec = false;
     requestHandler(_client[cltIndex]);
     if (_client[cltIndex].getStatus() == CS_DISCONNECT) {
-
         std::stringstream   oss;
-        oss << "recv(): Return 0; Connection Closed By User `fd=" << pollFd[loopIndex].fd << "`!";
+        oss << "peer closed connection, `fd=" << pollFd[loopIndex].fd << "`!";
         g_console.log(NOTICE, oss.str(), RED);
         handleDisconnect(cltIndex, pollFd);
         // std::cout << BG_GREEN << "Lists Of Clients:\n";
@@ -123,14 +119,18 @@ Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t c
         // loopIndex--;
         return S_CONTINUE;
     }
-    else
+    else if (_client[cltIndex].getStatus() != CS_READING) {
+        pollFd[loopIndex].revents = 0;
         pollFd[loopIndex].events |= POLLOUT;
+    }
     return NON;
 }
  
 void    Server::responsePart(size_t cltIndex) {
     std::stringstream   oss;
+
     sendResponse(_client[cltIndex]);
+    
     oss << "Response For User `" << _client[cltIndex].getFd() << "` has been sent successfully."; 
     g_console.log(INFO, oss.str(), GREEN);
     // std::cout << GREEN << "[ INFO ] —— response for user " << _client[cltIndex].getFd() << " has been send with success!" << RESET << std::endl;  
@@ -196,11 +196,22 @@ void    Server::request(Client& _clt){
 void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd) {
     std::stringstream   oss;
 
-    oss << "User With `fd=" << _client[index ].getFd() << "` Disconnected!";
     close(_client[index].getFd());
-    g_console.log(SERVER, oss.str(), RED);
+    oss << "User With `fd=" << _client[index ].getFd() << "` Disconnected!";
+    if (_client[index]._cgiProc._readPipe != -1) {
+        /* Close the CGI Pipe If that client request it and remove it from poll() */
+        for (size_t i = _OpenPort + _client.size(); i < _pollfd.size(); i++) {
+                if (_pollfd[i].fd == _client[index]._cgiProc._readPipe) {
+                    close(_pollfd[i].fd);
+                    _pollfd.erase(_pollfd.begin() + i);
+                    break;
+                }
+            }
+            // _client[index]._cgiProc._readPipe = -1;
+    }
     _pollfd.erase(_pollfd.begin() + _OpenPort + index);
     _client.erase(_client.begin() + index);
+    g_console.log(SERVER, oss.str(), RED);
 }
 
 void    Server::closeClientConnection(void) {
@@ -214,3 +225,6 @@ void    Server::closeClientConnection(void) {
 Server::~Server() {
     std::cout << "<<<<< Server Obj distroyed >>>>>" << std::endl;
 }
+
+// 284
+//
