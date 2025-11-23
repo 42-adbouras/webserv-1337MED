@@ -25,7 +25,7 @@ class Server
         std::vector<Client>		_client;
 		CookiesSessionManager	&_sessionManager;
 	public:
-		int						_OpenPort;
+		size_t						_OpenPort;
 		Server(CookiesSessionManager& sessionManager, int portOpen);
 		std::vector<Client>&	getListOfClients(void);
 		void	request(Client& _clt);

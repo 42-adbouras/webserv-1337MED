@@ -1,10 +1,11 @@
-#include "SocketManager.hpp"
-#include "ServerUtils.hpp"
-#include "Utils.hpp"
-#include "Client.hpp"
-#include "CookiesSessionManager.hpp"
+#include "../../includes/serverHeader/SocketManager.hpp"
+#include "../../includes/serverHeader/ServerUtils.hpp"
+#include "../../includes/serverHeader/Client.hpp"
+#include "../../includes/serverHeader/CookiesSessionManager.hpp"
 #include "../../includes/response.hpp"
-#include "../CGI.hpp"
+#include <iostream>
+// #include "../CGI.hpp"
+// #include "../../includes/Utils.hpp"
 
 // CONSOLE g_console;
 
@@ -223,14 +224,15 @@ Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Serv
 void        SocketManager::handlErrCloses(std::vector<struct pollfd>& _pollfd, Server& server, size_t cltSize){
     size_t  clientStart = portCounter();
     std::stringstream   oss;
-
-    for (size_t i = clientStart; i < cltSize; i++)
+    (void)cltSize;
+    for (size_t i = clientStart; i < server.getListOfClients().size(); i++)
     {
         if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) )
         {
+            // throw std::runtime_error("Client closed the connection unexpectedly");
             oss << "Client `fd:" << _pollfd[i].fd << "` Closed The Connection Unexpectedly.";
             g_console.log(WARNING, oss.str(), RED);
-            server.handleDisconnect(i, _pollfd);
+            server.handleDisconnect(i - portCounter(), _pollfd);
         }
     }
 }
@@ -279,7 +281,7 @@ void    SocketManager::runCoreLoop(void) {
         } 
 ---------------------------------------------------------------------------------------*/
         if (PollingForEvents(_pollfd, _server, _clients.size()) == S_TIMEDOUT)
-        continue;
+            continue;
         handlErrCloses(_pollfd, _server, _clients.size()); // handle close/error from client-side.
 /*
  ++++++++++++++++++  Check Listen Sockets For new Connect: ++++++++++++++++++
@@ -303,27 +305,38 @@ void    SocketManager::runCoreLoop(void) {
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */ 
-        if (portCounter() + _clients.size() < _pollfd.size()) { /*ensure there is at least one cgi*/
+        if (portCounter() + _clients.size() < _pollfd.size()) { /*ensure there is at least one cgi Running*/
             g_console.log(SERVER, str("CGI Events Parts"), BG_BLUE);
-            cgiEventsChecking(_clients, _pollfd);
+            cgiEventsChecking(_clients, _pollfd, _server);
+            // std::cout << "<<<<<<<<<<<< After Cheking Pipe: >>>>>>>>>>>>>>>" << std::endl;
+
+            // _server.responsePart(0);
+            // _pollfd[_clients.size() -1].events &= ~POLLOUT;
+            // _server.handleDisconnect(0, _pollfd);
         }
 /*
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  ++++++++++++++++++    Requests & Responses  From Users:   ++++++++++++++++++
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 */
-        size_t  cltScop = portCounter() + _clients.size();
-        for (size_t i = cltStart; i < cltScop; i++) {
-            cltScop = portCounter() + _clients.size();
+
+        // size_t  cltScop = portCounter() + _clients.size();
+        for (size_t i = cltStart; i < ( portCounter() + _clients.size() ); i++) {
+            // cltScop = portCounter() + _clients.size();
  
             /*          Request Part       */
+
             if ( _pollfd[i].revents & POLLIN ) {
 
                 g_console.log(SERVER, str("Request Handler"), BG_CYAN);
                 if (_server.readClientRequest(_pollfd, i - cltStart, i) == S_CONTINUE)
                     continue ;
             }
+            
             /*          Response Part       */
+            
             if ( _pollfd[i].revents & POLLOUT )
             {
                 g_console.log(SERVER, str("Response Handler"), BG_CYAN);
@@ -331,17 +344,17 @@ void    SocketManager::runCoreLoop(void) {
                  * If User req CGI, Run CGI Script and wait for results next polling!
                  * ```!_clients[i-cltStart]._alreadyExec``` == Script Of CGI Already Running.
                  * So prevent to run it multiple-time!
-*/
+                 */
                 if (!_clients[i-cltStart]._alreadyExec && _clients[i-cltStart].getStatus() == CS_CGI_REQ) {
                     if (isCgiRequest(_pollfd, _clients[i - cltStart], i)) {
                         if (_clients[i-cltStart].getCltCgiState() == CCS_FAILLED) {
-                            errorResponse(_clients[i-cltStart].getResponse(), _clients[i-cltStart]._cgiProc._statusCode);
+                            defErrorResponse(_clients[i-cltStart].getResponse(), _clients[i-cltStart]._cgiProc._statusCode);
                             _server.responsePart(i - cltStart);
                             _server.handleDisconnect(i - cltStart, _pollfd);
                         }
                         continue;
                     }
-                }  
+                }
                 _server.responsePart(i - cltStart);
                 _pollfd[i].events &= ~POLLOUT;
                 _pollfd[i].revents = 0;
@@ -359,10 +372,10 @@ bool    SocketManager::isCgiRequest(std::vector<struct pollfd>& pollFd, Client& 
         proc = cgiHandle(client.getCgiContext(), &client._alreadyExec);
         if (proc._error)
         {
+            std::cout << "<<<<<<<<<<<< CGI FAILLED HERE >>>>>>>>>>>>>>>" << std::endl;
             g_console.log(WARNING, str("Unexpected Error On CGI!"), BG_RED);
             client._cgiProc = proc;
             client.setCltCgiState(CCS_FAILLED);
-            // client._alreadyExec = true;
             return true;
         }
         struct  pollfd  pollPipe;
@@ -372,50 +385,74 @@ bool    SocketManager::isCgiRequest(std::vector<struct pollfd>& pollFd, Client& 
         pollFd.push_back(pollPipe);
         client._cgiProc = proc;
         pollFd[index].events &= ~POLLOUT;
-        std::cout << "[[[[[[[[[[[[[[]]]]]]]]]]]]]]" << std::endl;
+        client.setCltCgiState(CCS_RUNNING);
+        std::cout << BG_GREEN << "Client with fd<" << client.getFd() << "> has CGI Pipe<" << proc._readPipe << ">" << RESET << std::endl;
+        // g_console.log(SOCKET_MANAGER, , std::string color)
+        std::cout << "/////////> CGI Pipe Added To Poll(); <//////////////" << std::endl;
 
         return true;
     }
     return  false;
 }
 
+/*
+ * pipe = 16
+ */
 
-void    SocketManager::cgiEventsChecking(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd){
+void    SocketManager::cgiEventsChecking(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, Server& srvr){
     size_t  cgiScop = portCounter() + clients.size();
-    
 
     for (size_t i = cgiScop; i < pollFd.size(); i++)
     {
         if ( pollFd[i].revents & POLLIN )
         {
-            std::cout << "====== ===== PIPE fd= " << pollFd[i].fd << std::endl;
-            readFromCgi(clients, pollFd, i);
-            pollFd[i].events |= POLLOUT;
-            g_console.log(INFO, str("Response In CGI wait for Send"), BG_GREEN);
+            std::cout << "Data To Read From CGI PIPE=" << pollFd[i].fd << std::endl;
+            readFromCgi(clients, pollFd, srvr, &i);
+            // pollFd[i].events |= POLLOUT;
+            // g_console.log(INFO, str("Response In CGI wait for Send"), BG_GREEN);
         }
     }    
+    
+    // std::cout << "***********   Finish Reading  ******************" << std::endl;
 }
 
-void    SocketManager::readFromCgi(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, size_t coreIndex)
+void    SocketManager::readFromCgi(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, Server& srvr, size_t* coreIndex)
 {
     /**
      * Loop over all clients to get The CGI source === (Client that request for CGI )
     */
+    bool    found = false;
     for (size_t cg = 0; cg < clients.size(); cg++)
     {
-        if (pollFd[coreIndex].fd == clients[cg]._cgiProc._readPipe)
+        if (pollFd[(*coreIndex)].fd == clients[cg]._cgiProc._readPipe)
         {
-            CGIOutput   out = readChild(clients[cg]._cgiProc);
-            
-            Response    res = clients[cg].getResponse();
-            res.setStatus(out._code);
-            res.addHeaders("Content-Type", "text/palin");
-            res.setBody(out._output);
-            res.addHeaders("Content-Length", iToString(res.getContentLength()));
-            // res.addHeaders("Connection", "close");
-            clients[cg].setResponse(res);
-            pollFd.erase(pollFd.begin() + coreIndex);
+            found = true;
+		    std::cout << "Client fd=" << clients[cg].getFd() << " is ready to read from pipe=" << clients[cg]._cgiProc._readPipe <<std::endl;
+            CGIOutput   out = readChild(clients[cg]);
+            if (clients[cg].getCltCgiState() == CCS_DONE)
+            {
+                Response    res = clients[cg].getResponse();
+                res.setStatus(out._code);
+                res.addHeaders("Content-Type", "text/palin");
+                res.addHeaders("Content-Length", iToString(res.getContentLength()));
+                clients[cg].setResponse(res);
+                srvr.responsePart(cg);
+                g_console.log(INFO, str("********* CGI Response Sent ***********"), BG_BLUE);
+                pollFd.erase(pollFd.begin() + (*coreIndex));
+                // std::cout << BG_CYAN << "All Pollfd: \n[";
+                // for (size_t i = 0; i < pollFd.size(); i++)
+                // {
+                //     std::cout << pollFd[i].fd << '|' << std::endl;
+                // }
+                // std::cout << ']' << RESET << std::endl;
+                srvr.handleDisconnect(cg, pollFd);
+            }
+            else
+                pollFd[*coreIndex].revents = 0;
         }
+    }
+    if (!found) {
+        throw std::runtime_error("SocketManager::handleEvents: No socket found");
     }
 }
 
@@ -453,3 +490,4 @@ size_t SocketManager::portCounter(void) const {
     }
     return count;
 }
+

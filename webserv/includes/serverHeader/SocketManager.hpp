@@ -47,8 +47,8 @@ class   SocketManager {
         void        handlErrCloses(std::vector<struct pollfd>& _pollfd, Server& server , size_t cltSize);
         // ---------------  CGI     ---------------------
 
-        void    readFromCgi(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, size_t coreIndex);
-        void    cgiEventsChecking(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd);
+        void    readFromCgi(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, Server& srvr, size_t* coreIndex);
+        void    cgiEventsChecking(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, Server& srvr);
         bool    isCgiRequest(std::vector<struct pollfd>& pollFd, Client& client, size_t index);
         // void    signalHandler(int sig) {
         //     std::cout << "Signal is: " << sig  << std::endl;
