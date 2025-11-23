@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/08 11:46:46 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/17 16:14:33 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/23 15:18:04 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,4 +71,5 @@ struct CGIOutput
 };
 
 CGIProc		cgiHandle( CGIContext req, bool *alreadyExec );
-CGIOutput	readChild( const CGIProc& proc );
+// CGIOutput	readChild( const CGIProc& proc );
+CGIOutput	readChild( Client& client );

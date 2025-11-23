@@ -6,13 +6,18 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/07 21:19:38 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/17 16:15:57 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/11/23 15:48:49 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/CGI.hpp"
 #include "../../includes/serverHeader/SocketManager.hpp"
+#include "../../includes/serverHeader/Client.hpp"
+#include "../../includes/serverHeader/ServerUtils.hpp"
+
+#include <cstddef>
 #include <cstring>
+#include <iostream>
 
 str		joinQuery( const QueryMap& query )
 {
@@ -101,7 +106,6 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 		std::cerr << "pipe() failed" << std::endl;
 		return (CGIProc(true, 500));
 	}
-
 	pid_t	pid = fork();
 	if (pid < 0) {
 		std::cerr << "fork() failed" << std::endl;
@@ -139,23 +143,70 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 		write(inPipe[1], body.c_str(), body.size());
 	}
 	close(inPipe[1]);
+	g_console.log(SERVER, str(req._path) + str(" Executed!"), BG_GREEN);
 	return (CGIProc(pid, outPipe[0], 200));
 }
 
-CGIOutput	readChild( const CGIProc& proc )
+CGIOutput	readChild( Client& client )
 {
 	CGIOutput	out;
-	char		buff[2048];
-	int			byte;
+	char		buff[CGI_R_BUFFER];
+	ssize_t		byte;
 
-	while ((byte = read(proc._readPipe, buff, sizeof(buff))) > 0) {
-		// buff[byte] = '\0';
-		out._output.append(buff, byte);
+	byte = read(client._cgiProc._readPipe ,buff, sizeof(buff) - 1); /* -1: for null*/
+	if (byte == sizeof(buff) - 1)
+	{
+		buff[byte] = '\0';
+		client.getResponse().setBody(client.getResponse().getBody() + str(buff));
+		client.setCltCgiState(CCS_RUNNING);
 	}
-	close(proc._readPipe);
+	else if ((byte > 0 && static_cast<size_t>(byte) < (sizeof(buff) - 1)) || byte == 0)
+	{ /* To handle the case when all data in pipe and the buffer is not full; means the pipe it will be empty after this reading (child finished) */
+		if (byte > 0 && static_cast<size_t>(byte) < (sizeof(buff) - 1)) {
+		   	buff[byte] = '\0';
+		   	client.getResponse().setBody(client.getResponse().getBody() + str(buff));	
+		}
+		close(client._cgiProc._readPipe);
+		client.setCltCgiState(CCS_DONE);
+		return out;
+	}
+	else {
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+		{
+			client.setCltCgiState(CCS_RUNNING);
+		}
+		else {
+			out._code = 500;
+			if (client._cgiProc._readPipe >= 0) {
+				close(client._cgiProc._readPipe);
+				client._cgiProc._readPipe = -1;
+			}
+			client.setCltCgiState(CCS_DONE);
+			std::cout << "--->>Error: " << strerror(errno) << std::endl;
+			return out;
+		}	
+	}
 	int status = 0;
-	waitpid(proc._childPid, &status, 0);
-	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
-		out._code = 500;
+	int	result;
+	result = waitpid(client._cgiProc._childPid, &status, WNOHANG);
+	if (result == client._cgiProc._childPid) {
+		if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+			out._code = 500;
+		if (client._cgiProc._readPipe >= 0)
+		{
+			close(client._cgiProc._readPipe);
+			client._cgiProc._readPipe = -1;
+		}
+		client.setCltCgiState(CCS_DONE);
+		std::cout << BG_CYAN << "CGI is done, collect the output" << RESET << std::endl;
+	}
+	else if (result == 0)
+	{
+		client.setCltCgiState(CCS_RUNNING);
+        std::cout << GREEN << "The child is still running. Not finished yet." << RESET << std::endl;
+	}else if (result == -1){
+		std::cerr << "waitpid: " << strerror(errno) << std::endl;
+		client.setCltCgiState(CCS_FAILLED);
+	}
 	return(out);
 }
