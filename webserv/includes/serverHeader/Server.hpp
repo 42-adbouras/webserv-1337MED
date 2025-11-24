@@ -31,7 +31,7 @@ class Server
 		void	request(Client& _clt);
 		void	response(Client& _clt);
 		void	addClients(Client client, std::vector<struct pollfd> &_pollfd);
-		wsrv_timer_t	wsrv_find_next_timeout(void);	
+		wsrv_timer_t	wsrv_find_next_timeout(void);
 		bool			wsrv_timeout_closer(std::vector<struct pollfd>& pollFd);
 		Status			readClientRequest(std::vector<struct pollfd>& pollFd, size_t cltIndex, size_t& loopIndex);
 		void			responsePart(size_t cltIndex);
