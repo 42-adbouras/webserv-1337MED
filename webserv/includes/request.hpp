@@ -74,5 +74,6 @@ bool requestErrors( Request& request, Response& response, ServerEntry* _srvEntry
 bool isNumber(str& s);
 std::deque<str> splitPath( const str& path );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
+str urlDecode( const str& path );
 
 #endif
