@@ -335,7 +335,7 @@ void    SocketManager::runCoreLoop(void) {
                 if (!_clients[i-cltStart]._alreadyExec && _clients[i-cltStart].getStatus() == CS_CGI_REQ) {
                     if (isCgiRequest(_pollfd, _clients[i - cltStart], i)) {
                         if (_clients[i-cltStart].getCltCgiState() == CCS_FAILLED) {
-                            errorResponse(_clients[i-cltStart].getResponse(), _clients[i-cltStart]._cgiProc._statusCode);
+                            defErrorResponse(_clients[i-cltStart].getResponse(), _clients[i-cltStart]._cgiProc._statusCode);
                             _server.responsePart(i - cltStart);
                             _server.handleDisconnect(i - cltStart, _pollfd);
                         }

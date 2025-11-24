@@ -5,11 +5,13 @@ Response::Response( void )
 	, _statusText()
 	, _version("HTTP/1.1")
 	, _body()
-	, _contentLength(0) {
+	, _contentLength(0)
+	, _source() {
 
 		_headers["Server"] = "WebServer/0.0 (ait-server)";
 		_headers["Connection"] = "keep-alive";
 		_headers["Date"] = getDateHeader();
+		flag = false;
 }
 
 Response::~Response() { }
@@ -21,6 +23,9 @@ Response& Response::operator=( const Response& res ) {
 		this->_body = res._body;
 		this->_contentLength = res._contentLength;
 		this->_headers = res._headers;
+		this->_source = res._source;
+		this->_srvEntry = res._srvEntry;
+		this->flag = res.flag;
 	}
 	return *this;
 }
@@ -31,11 +36,25 @@ const str& Response::getVersion( void ) const { return _version; }
 const str& Response::getBody( void ) const { return _body; }
 const size_t& Response::getContentLength( void ) const { return _contentLength; }
 const HeadersMap& Response::getHeaders( void ) const { return _headers; }
+const str& Response::getSrc( void ) const { return _source; }
+ServerEntry* Response::getSrvEntry( void ) const { return _srvEntry; }
+bool Response::getFlag( void ) const { return flag; }
+
+void Response::setSrc( const str& source ) {
+	_source = source;
+}
+void Response::setSrvEntry( ServerEntry* srvEnt ) {
+	_srvEntry = srvEnt;
+}
+void Response::setFlag( bool flg ) {
+	flag = flg;
+}
 
 static const StatusEntry StatusEntries[] = {
 	{200, "OK"},
 	{201, "Created"},
 	{204, "No Content"},
+	{206, "Partial Content"},
 	{301, "Moved Permanently"},
 	{400, "Bad Request"},
 	{403, "Forbidden"},
@@ -44,8 +63,10 @@ static const StatusEntry StatusEntries[] = {
 	{409, "Conflict"},
 	{413, "Content Too Large"},
 	{414, "URI Too Long"},
+	{416, "Range Not Satisfiable"},
 	{500, "Internal Server Error"},
-	{501, "Not Implemented"}
+	{501, "Not Implemented"},
+	{505, "HTTP Version Not Supported"}
 };
 
 static const std::map<int, str>& getStatusMap() {
@@ -68,7 +89,7 @@ void Response::setStatus( int code ) {
 }
 
 void Response::addHeaders( const str& key, const str& value ) {
-	_headers[key] = value;	
+	_headers[key] = value;
 }
 
 void Response::setBody( const str& bodyData ) {
