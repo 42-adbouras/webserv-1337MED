@@ -92,6 +92,7 @@ void initPath( Request& request ) {
 		request.setPath(normalizePath(uri.substr(0, pos)));
 	else
 		request.setPath(normalizePath(uri));
+	request.setPath(urlDecode(uri));
 }
 
 bool Request::parseReqline( const char* input, Response& response, ServerEntry* _srvEntry ) {
@@ -187,6 +188,7 @@ void processClientRequest( Client& client ) {
 	} else {
 		if (requestErrors(request, response, _srvEntry)) {
 			str source = getSource(request, _srvEntry, response);
+			response.setSrc(source);
 			// std::cout << "--Source-- : " << source << std::endl;
 			checkMethod( _srvEntry, request, response, source, client );
 		}
@@ -206,10 +208,20 @@ void requestHandler( Client& client ) {
 		buffer[rByte] = '\0';
 		client.setClientState(CS_KEEPALIVE);
 	}
-	if(rByte == 0)
+	else if(rByte == 0) {
 		client.setClientState(CS_DISCONNECT);
-	else if (rByte < 0)
-		std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
+		return ;
+	}
+	else {
+		if (errno == EWOULDBLOCK || errno == EAGAIN) /* no data now in non-blocking socket; return to poll() */
+		{
+			client.setClientState(CS_READING);
+			return ;
+		}
+		std::cerr << "recv failed fd=" << client.getFd() << ": " << strerror(errno) << std::endl;
+		client.setClientState(CS_DISCONNECT);
+		return ;
+	}
 
 	request.setBuffer( buffer );
 	request.initHeaders( buffer );
@@ -218,10 +230,209 @@ void requestHandler( Client& client ) {
 	processClientRequest(client);
 }
 
+struct Range {
+	long long start;
+	long long end;
+	bool valid;
+	str error;
+};
+
+Range parse_range_header(const std::string& range_header, long long file_size)
+{
+	Range r = {-1, -1, false, ""};
+
+	if (range_header.size() < 7 || range_header.substr(0, 6) != "bytes=")
+	{
+		r.error = "Not bytes=";
+		return r;
+	}
+
+	std::string range_spec = range_header.substr(6);
+
+	size_t dash_pos = range_spec.find('-');
+	if (dash_pos == std::string::npos)
+	{
+		r.error = "No dash found";
+		return r;
+	}
+
+	std::string first  = range_spec.substr(0, dash_pos);
+	std::string second = range_spec.substr(dash_pos + 1);
+
+	char* endptr;
+
+	if (first.empty()) {
+		// Case: bytes=-500 → last 500 bytes
+		r.start = -1;  // means "suffix"
+	}
+	else {
+		long long val = strtoll(first.c_str(), &endptr, 10);
+		if (*endptr != '\0' || val < 0)
+		{
+			r.error = "Invalid start";
+			return r;
+		}
+		r.start = val;
+	}
+
+	if (second.empty()) {
+		// Case: bytes=500- → from 500 to end
+		r.end = -1;  // means "to EOF"
+	}
+	else {
+		long long val = strtoll(second.c_str(), &endptr, 10);
+		if (*endptr != '\0')
+		{
+			r.error = "Invalid end";
+			return r;
+		}
+		r.end = val;
+	}
+
+	if (r.start != -1 && r.end != -1 && r.start > r.end) {
+		r.error = "start > end";
+		return r;
+	}
+
+	if (r.start == -1 && r.end != -1) {
+		if (r.end <= 0 || r.end > file_size)
+		{
+			r.error = "Invalid suffix length";
+			return r;
+		}
+		r.start = file_size - r.end;
+		r.end   = file_size - 1;
+	}
+
+	if (r.start != -1 && r.start >= file_size) 	{
+		// Requested range not satisfiable → 416
+		r.valid = false;
+		r.error = "Start beyond EOF";
+		return r;
+	}
+
+	if (r.end == -1)
+		r.end = file_size - 1;
+
+	if (r.start == -1)
+		r.start = 0;
+
+	r.start = std::max(0LL, std::min(r.start, file_size - 1));
+	r.end   = std::min(r.end, file_size - 1);
+
+	r.valid = true;
+	return r;
+}
+
+long long getFileSize( const str& src ) {
+	struct stat st;
+
+	if (stat(src.c_str(), &st) == -1)
+		return -1;
+	if (!S_ISREG(st.st_mode))
+		return -1;
+
+	return (long long)st.st_size;
+}
+
+template<typename T>
+str toString(T n) {
+	std::ostringstream ss;
+	ss << n;
+	return ss.str();
+}
+
+bool send_file_chunk(int client_socket, const std::string& filepath, long long start, long long end)
+{
+	int fd = open(filepath.c_str(), O_RDONLY);
+	if (fd == -1) {
+		// File not found or permission denied
+		return false;
+	}
+
+	// Seek to the start position
+	if (lseek(fd, start, SEEK_SET) == (off_t)-1) {
+		close(fd);
+		return false;
+	}
+
+	long long bytes_to_send = end - start + 1;
+	long long bytes_sent_total = 0;
+
+	const int CHUNK_SIZE = 8192;  // 8 KB → perfect balance (don't change!)
+	char buffer[CHUNK_SIZE];
+
+	while (bytes_sent_total < bytes_to_send)
+	{
+		long long remaining = bytes_to_send - bytes_sent_total;
+		int to_read = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : (int)remaining;
+
+		ssize_t bytes_read = read(fd, buffer, to_read);
+		if (bytes_read <= 0) {
+			// EOF or error
+			if (bytes_read < 0) {
+				// real error
+				close(fd);
+				return false;
+			}
+			break; // EOF (should not happen if sizes are correct)
+		}
+
+		// Send the chunk
+		ssize_t bytes_sent = send(client_socket, buffer, bytes_read, 0);
+		if (bytes_sent != bytes_read) {
+			// Connection closed or error
+			close(fd);
+			return false;
+		}
+
+		bytes_sent_total += bytes_sent;
+	}
+
+	close(fd);
+	return true;
+}
+
+void send_response_headers(int client_socket, const Response& resp)
+{
+	std::string headers = resp.generate();
+	send(client_socket, headers.c_str(), headers.length(), 0);
+}
+
 void sendResponse( Client& client ) {
 	Response response = client.getResponse();
-	
-	str content = response.generate();
-	send(client.getFd(), content.c_str(), content.length(), 0);
-	client.setClientState(CS_KEEPALIVE);
+	Request request = client.getRequest();
+	HeadersMap hdrs = request.getHeaders();
+
+	if (response.getFlag()) {
+		long long fileSize = getFileSize(response.getSrc());
+
+		bool is_range = false;
+		Range r = {0, fileSize-1, true, ""};
+
+		if (hdrs.find("Range") != hdrs.end()) {
+			r = parse_range_header(hdrs.find("Range")->second, fileSize);
+			if (!r.valid || r.start >= fileSize) {
+				// response.setStatus(RANGE_NOT_SATISFIABLE);
+				response.addHeaders("Content-Range", "bytes */" + toString(fileSize));
+				getSrvErrorPage(response, response.getSrvEntry(), RANGE_NOT_SATISFIABLE);
+				return;
+			}
+		is_range = true;
+	}
+
+	response.setStatus(is_range ? PARTIAL_CONTENT : OK);
+	response.addHeaders("Content-Length", toString(r.end - r.start + 1));
+	response.addHeaders("Content-Type", getContentType(response.getSrc()));
+
+	if (is_range) {
+		response.addHeaders("Content-Range", "bytes " + toString(r.start) + "-" + toString(r.end) + "/" + toString(fileSize));
+	}
+	send_response_headers(client.getFd(), response);
+	send_file_chunk(client.getFd(), response.getSrc(), r.start, r.end);
+	} else {
+		str content = response.generate();
+		send(client.getFd(), content.c_str(), content.length(), 0);
+		client.setClientState(CS_KEEPALIVE);
+	}
 }

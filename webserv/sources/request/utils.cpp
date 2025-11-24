@@ -1,4 +1,5 @@
 #include "../../includes/request.hpp"
+#include <sstream>
 
 bool UriAllowedChars( str& uri ) {
 	str allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
@@ -87,4 +88,33 @@ bool isNumber(str& s) {
 			return false;
 	}
 	return true;
+}
+
+str urlDecode( const str& path ) {
+	str result;
+
+	for (str::size_type i=0; i<path.size(); ++i) {
+		char c = path[i];
+
+		if (c == '%') {
+			if (i + 2 < path.size()) {
+				str hex = path.substr(i + 1, 2);
+				std::istringstream hexStream(hex);
+				int value;
+				if ((hexStream >> std::hex >> value) && (value >= 0 && value <= 255)) {
+					result += static_cast<char>(value);
+					i += 2;
+				} else {
+					result += '%';
+				}
+			} else {
+				result += '%';
+			}
+		} else if (c == '+') {
+			result += ' ';
+		} else {
+			result += c;
+		}
+	}
+	return result;
 }
