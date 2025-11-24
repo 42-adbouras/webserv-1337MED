@@ -10,7 +10,7 @@ static str toLower( const str& s ) {
 static std::map<str, str> mimeMap() {
 	std::map<str, str> m;
 	if (m.empty()) {
-		m[".html"] = "text/html";
+		m[".html"] = "text/html; charset=UTF-8";
 		m[".htm"]  = "text/html";
 		m[".css"]  = "text/css";
 		m[".py"]   = "text/x-python";
@@ -28,6 +28,7 @@ static std::map<str, str> mimeMap() {
 		m[".zip"]  = "application/zip";
 		m[".mp3"]  = "audio/mpeg";
 		m[".mp4"]  = "video/mp4";
+		m[".mkv"] = "video/x-matroska";
 		m[".woff"] = "application/font-woff";
 		m[".woff2"]= "application/font-woff2";
 	}
@@ -151,3 +152,4 @@ void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code ) {
 		return;
 	}
 }
+
