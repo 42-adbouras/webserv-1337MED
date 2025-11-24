@@ -334,9 +334,9 @@ void    SocketManager::runCoreLoop(void) {
                 if (_server.readClientRequest(_pollfd, i - cltStart, i) == S_CONTINUE)
                     continue ;
             }
-            
+
             /*          Response Part       */
-            
+
             if ( _pollfd[i].revents & POLLOUT )
             {
                 g_console.log(SERVER, str("Response Handler"), BG_CYAN);
