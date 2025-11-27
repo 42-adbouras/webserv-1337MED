@@ -221,8 +221,11 @@ void requestHandler( Client& client ) {
 	if (client._reqInfo.reqStatus == CS_NEW)
 		client._reqInfo.reqStatus = CS_READING;
 	std::vector<char> newChunk = client.getRequest().getBuffer();
-	if (newChunk.empty())
+	if (newChunk.empty()) {
+		std::cout << "-----------------------" << std::endl;
+
 		return;
+	}
 
 	str leftover = client.getLeftover();
 	leftover.append(newChunk.begin(), newChunk.end());
@@ -230,6 +233,10 @@ void requestHandler( Client& client ) {
 
 	while (true)
 	{
+		std::cout << "---------------------" << std::endl;
+		std::cout << leftover << std::endl;
+		std::cout << "---------------------" << std::endl;
+
 		if (client._state == PARSING_HEADERS) {
 			size_t headersEndPos = leftover.find("\r\n\r\n");
 			if (headersEndPos == str::npos) {
@@ -284,6 +291,7 @@ void requestHandler( Client& client ) {
 	if (client._state == REQUEST_COMPLETE) {
 		client._reqInfo.reqStatus = CS_READING_DONE;
 		// client.setRequest(request);
+		std::cout << "-----------------------" << std::endl;
 		processClientRequest( client );
 
 		leftover.clear();

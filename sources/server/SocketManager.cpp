@@ -340,6 +340,7 @@ void    SocketManager::runCoreLoop(void) {
                     // requestHandler(_server.getListOfClients()[i - cltStart]);
                     _pollfd[i].revents = 0;
                     _pollfd[i].revents |= POLLOUT;
+
                 }
                 else if (state == CS_DISCONNECT || state == CS_FATAL)
                 {
@@ -375,7 +376,13 @@ void    SocketManager::runCoreLoop(void) {
                         continue;
                     }
                 }
-                sendResponse(_server.getListOfClients()[i - cltStart]);
+                if (_server.getListOfClients()[i - cltStart]._sendInfo.resStatus == CS_START_SEND)
+                {
+                    
+                    sendResponse(_server.getListOfClients()[i - cltStart]);
+
+                }
+                
                 /**
                  * generate Response here & save it in `sendInfo` struct of client as chunks,
                  * when response finish, set `sendInfo.resStatus = CS_WRITING_DONE`

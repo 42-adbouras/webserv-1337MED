@@ -105,10 +105,22 @@ ClientState Server::readRequest(size_t cltIndx) {
          * the parse of request must detect if the request is finished by setting ReqInfo to `CS_READING_DONE`
          * else `CS_READING`
          * */
-        buffer[rByte] = '\0';
-        req.setBuffer(buffer);
+            buffer[rByte] = '\0';
+            std::cout << "buffer: " << std::endl;
+
+        for (size_t i = 0; i < buffer.size(); i++)
+        {
+            std::cout << buffer[i] << std::endl;
+        }
+        
+        _client[cltIndx].getRequest().setBuffer(buffer);
+        // req.setBuffer(buffer);
+		std::cout << _client[cltIndx].getRequest().getBuffer().data() << std::endl;
+
         requestHandler(_client[cltIndx]);
         if (_client[cltIndx]._reqInfo.reqStatus == CS_READING_DONE) {
+            std::cout << "=====================" << std::endl;
+            std::cout << _client[cltIndx].getRequest().getBuffer().data() << std::endl;
             _client[cltIndx]._sendInfo.resStatus = CS_START_SEND; /* To track first try of send-response */
             return CS_READING_DONE;
         }

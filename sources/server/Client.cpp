@@ -1,6 +1,6 @@
 #include "../../includes/serverHeader/Server.hpp"
 #include "../../includes/serverHeader/Client.hpp"
-Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block), _cgiProc(CGIProc()) {
+Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block), _cgiProc(CGIProc()), _state(PARSING_HEADERS) {
     // std::cout << "client connected" << std::endl;
 }
 
