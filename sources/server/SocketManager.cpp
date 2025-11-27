@@ -347,7 +347,7 @@ void    SocketManager::runCoreLoop(void) {
                     std::stringstream   oss;
                     oss << "peer closed connection, `fd=" << _pollfd[i].fd << "`!";
                     g_console.log(NOTICE, oss.str(), RED);
-                    _server.handleDisconnect(i, _pollfd);
+                    _server.handleDisconnect(i - cltStart, _pollfd);
                     oss.clear();
                     oss.str("");
                     continue;
@@ -378,9 +378,7 @@ void    SocketManager::runCoreLoop(void) {
                 }
                 if (_server.getListOfClients()[i - cltStart]._sendInfo.resStatus == CS_START_SEND)
                 {
-                    
                     sendResponse(_server.getListOfClients()[i - cltStart]);
-
                 }
                 
                 /**
