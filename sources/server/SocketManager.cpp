@@ -378,9 +378,7 @@ void    SocketManager::runCoreLoop(void) {
                 }
                 if (_server.getListOfClients()[i - cltStart]._sendInfo.resStatus == CS_START_SEND)
                 {
-                    
                     sendResponse(_server.getListOfClients()[i - cltStart]);
-
                 }
                 
                 /**
