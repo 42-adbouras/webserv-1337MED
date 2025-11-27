@@ -2,6 +2,7 @@
 #include "../../includes/serverHeader/Client.hpp"
 #include "../../includes/serverHeader/ServerUtils.hpp"
 #include <cstddef>
+#include <vector>
 
 Server::Server(CookiesSessionManager& sessionManager, int portOpen) : _sessionManager(sessionManager), _OpenPort(portOpen) {
     (void) _sessionManager;
@@ -86,53 +87,84 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
         // _pollfd.push_back(temp);
 }
 
+
+ClientState Server::readRequest(size_t cltIndx) {
+    // char    buffer[SRV_READ_BUFFER];
+    std::vector<char>   buffer(SRV_READ_BUFFER);
+    ssize_t rByte;
+
+    if (_client[cltIndx].getStatus() == CS_NEW)
+        _client[cltIndx].setRequest(Request());
+    Request req = _client[cltIndx].getRequest();
+    std::cout << "Server: Read Request from User fd=" << _client[cltIndx].getFd() << std::endl;
+    rByte = recv(_client[cltIndx].getFd(), buffer.data(), buffer.size(), 0);
+    if (rByte > 0)
+    {
+        /**
+         * Read request chunks-chunks, every chunk past to parseRequest,
+         * the parse of request must detect if the request is finished by setting ReqInfo to `CS_READING_DONE`
+         * else `CS_READING`
+         * */
+        buffer[rByte] = '\0';
+        req.setBuffer(buffer);
+        requestHandler(_client[cltIndx]);
+        if (_client[cltIndx]._reqInfo.reqStatus == CS_READING_DONE) {
+            _client[cltIndx]._sendInfo.resStatus = CS_START_SEND; /* To track first try of send-response */
+            return CS_READING_DONE;
+        }
+        return CS_READING;
+    }
+    else if (rByte == 0)
+    {
+        _client[cltIndx].setClientState(CS_DISCONNECT);
+        return CS_DISCONNECT;
+    }
+    else
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            _client[cltIndx].setClientState(CS_READING);
+            return CS_READING;
+        }
+        std::cout << "Read Request: " << strerror(errno) << std::endl;
+    }
+    return CS_FATAL;
+}
+
 Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t cltIndex, size_t& loopIndex) {
     std::stringstream   oss;
-
+    // ????????????????????????????????????//
+    // don't use it anymore
     oss << "User With `fd=" << pollFd[loopIndex].fd << "` sent s a request";
     g_console.log(REQUEST, oss.str(), CYAN);
-    _client[cltIndex]._alreadyExec = false;
     requestHandler(_client[cltIndex]);
-    if (_client[cltIndex].getStatus() == CS_DISCONNECT) {
-        std::stringstream   oss;
-        oss << "peer closed connection, `fd=" << pollFd[loopIndex].fd << "`!";
-        g_console.log(NOTICE, oss.str(), RED);
-        handleDisconnect(cltIndex, pollFd);
-        // std::cout << BG_GREEN << "Lists Of Clients:\n";
-        // for (size_t i = 0; i < _client.size(); i++)
-        // {
-        //     std::cout << WHITE << _client[i].getFd() ;
-        // }
-        // std::cout << RESET << std::endl;
-        oss.clear();
-        oss.str("");
-        // oss <<  "Ports and User's That Still En-Linge: ";
-        // g_console.log(INFO, oss.str(), CYAN);
-        // std::cout << CYAN << "[ INFO ] — port and user fd that still en-ligne:" << YELLOW << std::endl;
-        // for (size_t k = 0; k < pollFd.size(); k++)
-        // {
-        //     std::cout << pollFd[k].fd;
-        //     if (k + 1 < pollFd.size())
-        //         std::cout << '-';
-        // }
-        // std::cout << std::endl;
-        // loopIndex--;
-        return S_CONTINUE;
-    }
-    else if (_client[cltIndex].getStatus() != CS_READING) {
-        pollFd[loopIndex].revents = 0;
-        pollFd[loopIndex].events |= POLLOUT;
-    }
+    _client[cltIndex]._alreadyExec = false; // for cgi
+    // if (_client[cltIndex].getStatus() == CS_DISCONNECT) {
+    //     std::stringstream   oss;
+    //     oss << "peer closed connection, `fd=" << pollFd[loopIndex].fd << "`!";
+    //     g_console.log(NOTICE, oss.str(), RED);
+    //     handleDisconnect(cltIndex, pollFd);
+    //     oss.clear();
+    //     oss.str("");
+    //     return S_CONTINUE;
+    // }
+    // else if (_client[cltIndex].getStatus() != CS_READING) {
+    //     pollFd[loopIndex].revents = 0;
+    //     pollFd[loopIndex].events |= POLLOUT;
+    // }
     return NON;
 }
  
 void    Server::responsePart(size_t cltIndex) {
     std::stringstream   oss;
 
-    sendResponse(_client[cltIndex]);
-    
-    oss << "Response For User `" << _client[cltIndex].getFd() << "` has been sent successfully."; 
-    g_console.log(INFO, oss.str(), GREEN);
+    if (_client[cltIndex]._sendInfo.resStatus == CS_WRITING_DONE)
+    {
+        oss << "Response For User `" << _client[cltIndex].getFd() << "` has been sent successfully.";
+        g_console.log(INFO, oss.str(), GREEN);
+        return;
+    }
+
     // std::cout << GREEN << "[ INFO ] —— response for user " << _client[cltIndex].getFd() << " has been send with success!" << RESET << std::endl;  
     if (_client[cltIndex].getStatus() == CS_KEEPALIVE)
     {
@@ -152,46 +184,6 @@ void    Server::responsePart(size_t cltIndex) {
     }
 }
 
-void    Server::response(Client& _clt) {
-    std::ostringstream  oss;
-    oss << _clt.getFd();
-    std::string sec(oss.str() + " </h1></body></html>");
-    std::string req("HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: 65\r\n"
-        "\r\n"
-        "<html><body><h1>fuck you mn hna l rachidiya ");
-    ssize_t sendByte;
-    std::string    data(req + sec); 
-    //     ;
-    if ((sendByte = send(_clt.getFd(), data.c_str(), data.size(), 0)) == -1)
-    {
-        std::cerr << strerror(errno) << "-> can't send data to " << _clt.getFd() << std::endl;
-    }
-    std::cout << YELLOW << "sizeof data: " << data.size() << ", sendByte: " << sendByte << RESET <<  std::endl;
-
-    std::cout << data << std::endl;
-}
-
-void    Server::request(Client& _clt){
-    ssize_t readByte;
-    char    buffer[1024];
-
-    if ((readByte = recv(_clt.getFd(), buffer, sizeof(buffer), 0)) > 0)
-    {
-        buffer[readByte] = '\0';
-        std::cout << "request ->\n" << buffer << std::endl;
-        _clt.setClientState(CS_KEEPALIVE);
-    }
-    if (readByte == 0) 
-    {
-        _clt.setClientState(CS_DISCONNECT);
-        std::cout << "connection is closed by the user ->" << _clt.getFd() << std::endl;
-    }
-    else if (readByte < 0) {
-        std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
-    }
-}
 
 void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd) {
     std::stringstream   oss;
@@ -226,5 +218,13 @@ Server::~Server() {
     std::cout << "<<<<< Server Obj distroyed >>>>>" << std::endl;
 }
 
-// 284
-//
+ClientState Server::sendResponse(Client& client) {
+    (void)client;
+    /**
+     * here 
+     * must send response ----------
+     * 
+     * 
+     */
+    return CS_WRITING_DONE;
+}

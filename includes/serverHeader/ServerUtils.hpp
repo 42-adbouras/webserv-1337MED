@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../TypeDefs.hpp"
 #define G_TIME_OUT 10000 // globale time-out for poll() events in ms
 #define CLIENT_HEADER_TIMEOUT 30 // second
 #define CLIENT_BODY_TIMEOUT 60 // second
@@ -17,7 +18,7 @@
 #define SERVER "[ SERVER ]"
 #define SOCKET_MANAGER "[ SOCKET_MANAGER ]"
 #define WARNING "[ WARNING ]"
-
+#include <iostream>
 
 
 

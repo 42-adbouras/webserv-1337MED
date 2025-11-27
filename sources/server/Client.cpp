@@ -1,5 +1,5 @@
-#include "Client.hpp"
-
+#include "../../includes/serverHeader/Server.hpp"
+#include "../../includes/serverHeader/Client.hpp"
 Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block), _cgiProc(CGIProc()) {
     // std::cout << "client connected" << std::endl;
 }
@@ -72,3 +72,17 @@ ClientCGIState  Client::getCltCgiState() const {
 void	Client::setCgiContext(CGIContext& cgiContext) {
 	this->_cgiContext = cgiContext;
 }
+
+void Client::setExpectedBodyLength( size_t lgth ) {
+	_expectedBodyLength = lgth;
+}
+void Client::setIsChunked( bool chunked ) {
+	_isChunked = chunked;
+}
+void Client::setLeftover( str& leftover ) {
+	_leftover = leftover;
+}
+
+size_t Client::getExpectedBodyLength( void ) const { return _expectedBodyLength; }
+bool Client::getIsChunked( void ) const { return _isChunked; }
+const str& Client::getLeftover( void ) const { return _leftover; }

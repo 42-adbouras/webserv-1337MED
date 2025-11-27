@@ -72,6 +72,9 @@ typedef std::map<str, str>				QueryMap;
 #define M_MEGA 1024UL * 1024UL
 #define M_GEGA 1024UL * 1024UL * 1024UL
 
+#define	SRV_READ_BUFFER 4096 // => 4KB
+#define	SRV_SEND_BUFFER 4096 // => 4KB
+
 #define CGI_R_BUFFER 1024
 // struct CGIEntry
 // {

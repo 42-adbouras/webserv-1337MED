@@ -1,9 +1,13 @@
+#include "../../includes/serverHeader/Server.hpp"
 #include "../../includes/serverHeader/SocketManager.hpp"
 #include "../../includes/serverHeader/ServerUtils.hpp"
 #include "../../includes/serverHeader/Client.hpp"
 #include "../../includes/serverHeader/CookiesSessionManager.hpp"
 #include "../../includes/response.hpp"
+#include <cerrno>
+#include <cstring>
 #include <iostream>
+#include <stdexcept>
 // #include "../CGI.hpp"
 // #include "../../includes/Utils.hpp"
 
@@ -56,7 +60,7 @@ void    SocketManager::initSockets(void) {
         int fd = socket(results->ai_family, results->ai_socktype, IPPROTO_TCP);
         if (fd == -1) {
             closeListenSockets();
-            throw ServerExcept(errno);
+            throw std::runtime_error(strerror(errno));
         }
         SocketManager::setNonBlocking(fd);
         _tableOfListen[counter]._fd = fd;
@@ -329,14 +333,30 @@ void    SocketManager::runCoreLoop(void) {
             /*          Request Part       */
 
             if ( _pollfd[i].revents & POLLIN ) {
-
-                g_console.log(SERVER, str("Request Handler"), BG_CYAN);
-                if (_server.readClientRequest(_pollfd, i - cltStart, i) == S_CONTINUE)
-                    continue ;
+                // checking if req Done first;
+                ClientState state = _server.readRequest(i - cltStart);
+                if (state == CS_READING_DONE)
+                {
+                    // requestHandler(_server.getListOfClients()[i - cltStart]);
+                    _pollfd[i].revents = 0;
+                    _pollfd[i].revents |= POLLOUT;
+                }
+                else if (state == CS_DISCONNECT || state == CS_FATAL)
+                {
+                    std::stringstream   oss;
+                    oss << "peer closed connection, `fd=" << _pollfd[i].fd << "`!";
+                    g_console.log(NOTICE, oss.str(), RED);
+                    _server.handleDisconnect(i, _pollfd);
+                    oss.clear();
+                    oss.str("");
+                    continue;
+                }
+                else if (state == CS_READING) /* means; it still reading ...*/
+                    continue;
             }
-            
+
             /*          Response Part       */
-            
+
             if ( _pollfd[i].revents & POLLOUT )
             {
                 g_console.log(SERVER, str("Response Handler"), BG_CYAN);
@@ -355,6 +375,13 @@ void    SocketManager::runCoreLoop(void) {
                         continue;
                     }
                 }
+                sendResponse(_server.getListOfClients()[i - cltStart]);
+                /**
+                 * generate Response here & save it in `sendInfo` struct of client as chunks,
+                 * when response finish, set `sendInfo.resStatus = CS_WRITING_DONE`
+                 * 
+                */
+
                 _server.responsePart(i - cltStart);
                 _pollfd[i].events &= ~POLLOUT;
                 _pollfd[i].revents = 0;

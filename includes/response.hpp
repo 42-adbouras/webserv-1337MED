@@ -1,9 +1,9 @@
 #ifndef __RESPONSE_HPP__
 #define __RESPONSE_HPP__
 
-#include "./Utils.hpp"
+// #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
-#include "SocketManager.hpp"
+#include "./serverHeader/SocketManager.hpp"
 
 #define OK 200
 #define CREATED 201
