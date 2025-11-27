@@ -331,23 +331,23 @@ void    SocketManager::runCoreLoop(void) {
             // cltScop = portCounter() + _clients.size();
  
             /*          Request Part       */
-
+			
             if ( _pollfd[i].revents & POLLIN ) {
-                // checking if req Done first;
+				// checking if req Done first;
                 ClientState state = _server.readRequest(i - cltStart);
                 if (state == CS_READING_DONE)
                 {
-                    // requestHandler(_server.getListOfClients()[i - cltStart]);
+					// requestHandler(_server.getListOfClients()[i - cltStart]);
                     _pollfd[i].revents = 0;
                     _pollfd[i].revents |= POLLOUT;
-
+					
                 }
                 else if (state == CS_DISCONNECT || state == CS_FATAL)
                 {
-                    std::stringstream   oss;
+					std::stringstream   oss;
                     oss << "peer closed connection, `fd=" << _pollfd[i].fd << "`!";
                     g_console.log(NOTICE, oss.str(), RED);
-                    _server.handleDisconnect(i, _pollfd);
+                    _server.handleDisconnect(i - cltStart, _pollfd);
                     oss.clear();
                     oss.str("");
                     continue;

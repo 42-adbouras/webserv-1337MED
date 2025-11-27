@@ -114,7 +114,7 @@ void initPath( Request& request ) {
 }
 
 bool Request::parseReqline( str& input, Response& response, ServerEntry* _srvEntry ) {
-	str raw = str(input);
+	str raw = input;
 
 	sstream stream(raw);
 	if(!(stream >> _method >> _Uri >> _version)) {
@@ -139,6 +139,12 @@ bool Request::parseReqline( str& input, Response& response, ServerEntry* _srvEnt
 	}
 
 	return true;
+}
+
+void Request::parseRequestLine( str& input ) {
+	sstream stream(input);
+
+	stream >> _method >> _Uri >> _version;
 }
 
 static str trim( const str& s ) {
@@ -198,6 +204,9 @@ void processClientRequest( Client& client ) {
 	Response response;
 
 	Request request = client.getRequest();
+	std::cout << "METHOD: " << request.getMethod() << std::endl;
+	std::cout << "URI: " << request.getPath() << std::endl;
+	std::cout << "VERSION: " << request.getVersion() << std::endl;
 	std::vector<char> bufferVec = request.getBuffer();
 	str buffer(bufferVec.begin(), bufferVec.end());
 	ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
@@ -233,10 +242,6 @@ void requestHandler( Client& client ) {
 
 	while (true)
 	{
-		std::cout << "---------------------" << std::endl;
-		std::cout << leftover << std::endl;
-		std::cout << "---------------------" << std::endl;
-
 		if (client._state == PARSING_HEADERS) {
 			size_t headersEndPos = leftover.find("\r\n\r\n");
 			if (headersEndPos == str::npos) {
@@ -248,7 +253,7 @@ void requestHandler( Client& client ) {
 			}
 			str rawHeaders = leftover.substr(0, headersEndPos + 4);
 
-			// request.initHeaders(rawHeaders);
+			client.getRequest().parseRequestLine(rawHeaders);
 			client.getRequest().initHeaders(rawHeaders);
 			HeadersMap headers = client.getRequest().getHeaders();
 			// HeadersMap headers = request.getHeaders();

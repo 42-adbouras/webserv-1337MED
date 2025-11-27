@@ -77,6 +77,7 @@ public:
 	const str& getLocation( void ) const;
 
 	bool parseReqline( str& input, Response& response, ServerEntry* _srvEntry );
+	void parseRequestLine( str& input );
 	void initHeaders( str& input );
 	void initBody( str& input );
 };
