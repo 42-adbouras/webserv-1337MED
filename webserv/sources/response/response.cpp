@@ -64,6 +64,7 @@ static const StatusEntry StatusEntries[] = {
 	{413, "Content Too Large"},
 	{414, "URI Too Long"},
 	{416, "Range Not Satisfiable"},
+	{431, "Request Header Fields Too Large"},
 	{500, "Internal Server Error"},
 	{501, "Not Implemented"},
 	{505, "HTTP Version Not Supported"}
