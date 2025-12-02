@@ -18,6 +18,7 @@
 #define CONTENET_TOO_LARGE 413
 #define URI_TOO_LONG 414
 #define RANGE_NOT_SATISFIABLE 416
+#define REQUEST_HEADER_FIELDS_TOO_LARGE 431
 #define INTERNAL_SERVER_ERROR 500
 #define NOT_IMPLEMENTED 501
 #define HTTP_VERSION_NOT_SUPPORTED 505
@@ -94,5 +95,7 @@ bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry
 void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code );
 template<typename T>
 str toString(T n);
+size_t sToSize_t( const str& str );
+str getFileType( const str& type );
 
 #endif
