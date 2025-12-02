@@ -24,8 +24,22 @@ Location getLocation( ServerEntry *_srvEntry, Request& request, Response& respon
 	std::vector<Location> locations = _srvEntry->_locations;
 	std::vector<str> lcts;
 	for(size_t i=0; i < locations.size(); ++i) {
-		if (startsWith(path, locations[i]._path))
-			lcts.push_back(locations[i]._path);
+		str loc = locations[i]._path;
+		if (loc.size() > 1 && loc[loc.size() - 1] == '/')
+			loc = loc.substr(0, loc.size() - 1);
+		if (loc == "/") {
+			lcts.push_back(loc);
+			continue;
+		}
+		if (path == loc) {
+			lcts.push_back(loc);
+			continue;
+		}
+		if (path.size() > loc.size() &&
+			path.compare(0, loc.size(), loc) == 0 &&
+			path[loc.size()] == '/') {
+			lcts.push_back(loc);
+		}
 	}
 	if (lcts.empty()) {
 		getSrvErrorPage(response, _srvEntry, NOT_FOUND);
@@ -34,7 +48,10 @@ Location getLocation( ServerEntry *_srvEntry, Request& request, Response& respon
 	std::vector<str>::iterator largest = std::max_element(lcts.begin(), lcts.end());
 	request.setLocation(*largest);
 	for(size_t i=0; i<locations.size(); ++i) {
-		if(locations[i]._path == *largest)
+		str loc = locations[i]._path;
+		if (loc.size() > 1 && loc[loc.size() - 1] == '/')
+			loc = loc.substr(0, loc.size() - 1);
+		if(loc == *largest)
 			return locations[i];
 	}
 	return Location();

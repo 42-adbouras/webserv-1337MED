@@ -7,11 +7,37 @@ static str toLower( const str& s ) {
 	return out;
 }
 
+static std::map<str, str> rMimeMape() {
+	std::map<str, str> rM;
+	if (rM.empty()) {
+		rM["text/html"] = ".html";
+		rM["text/css"] = ".css";
+		rM["text/x-python"] = ".py";
+		rM["application/x-httpd-php"] = ".php";
+		rM["application/javascript"] = ".js";
+		rM["application/json"] = ".json";
+		rM["application/xml"] = ".xml";
+		rM["text/plain"] = ".txt";
+		rM["image/png"] = ".png";
+		rM["image/jpeg"] = ".jpg";
+		rM["image/gif"] = ".gif";
+		rM["image/svg+xml"] = ".svg";
+		rM["application/pdf"] = ".pdf";
+		rM["application/zip"] = ".zip";
+		rM["audio/mpeg"] = ".mp3";
+		rM["video/mp4"] = ".mp4";
+		rM["video/x-matroska"] = ".mkv";
+		rM["application/font-woff"] = ".woff";
+		rM["application/font-woff2"] = ".woff2";
+	}
+	return rM;
+}
+
 static std::map<str, str> mimeMap() {
 	std::map<str, str> m;
 	if (m.empty()) {
 		m[".html"] = "text/html; charset=UTF-8";
-		m[".htm"]  = "text/html";
+		m[".htm"]  = "text/html; charset=UTF-8";
 		m[".css"]  = "text/css";
 		m[".py"]   = "text/x-python";
 		m[".php"]  = "application/x-httpd-php";
@@ -33,6 +59,14 @@ static std::map<str, str> mimeMap() {
 		m[".woff2"]= "application/font-woff2";
 	}
 	return m;
+}
+
+str getFileType( const str& type ) {
+	const std::map<str, str>& rM = rMimeMape();
+	std::map<str, str>::const_iterator it = rM.find(type);
+	str rMime = (it != rM.end()) ? it->second : ".txt";
+
+	return rMime;
 }
 
 str getContentType( const str& path ) {
@@ -153,3 +187,11 @@ void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code ) {
 	}
 }
 
+size_t sToSize_t( const str& str ) {
+	sstream ss(str);
+
+	size_t value = 0;
+	ss >> value;
+
+	return value;
+}
