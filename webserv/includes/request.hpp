@@ -18,7 +18,7 @@ private:
 	str _path;
 	str _version;
 	str _body;
-	str _buffer;
+	std::vector<char> _buffer;
 	str _location;
 	QueryMap _queryParams;
 	HeadersMap _headers;
@@ -52,16 +52,17 @@ public:
 	const HeadersMap& getHeaders( void ) const;
 	const str& getBody( void ) const;
 	const str& getPath( void ) const;
-	const str& getBuffer( void ) const;
+	const std::vector<char>& getBuffer( void ) const;
 	const str& getUri( void ) const;
-	void setBuffer( char* buffer );
+	void setBuffer( std::vector<char> buffer );
 	void setLocation( str& location );
 	void setPath( const str& path );
 	const str& getLocation( void ) const;
 
-	bool parseReqline( const char* input, Response& response, ServerEntry* _srvEntry );
-	void initHeaders( const char* input );
-	void initBody( const char* input );
+	bool requestLineErrors( Response& response, ServerEntry* _srvEntry );
+	void parseRequestLine( str& input );
+	void initHeaders( str& input );
+	void setBody( str& body );
 };
 
 bool UriAllowedChars( str& uri );

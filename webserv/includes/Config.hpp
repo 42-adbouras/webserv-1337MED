@@ -12,8 +12,6 @@
 
 #pragma once
 
-#include "Lexer.hpp"
-#include "serverHeader/Server.hpp"
 #include "TypeDefs.hpp"
 #include <cstddef>
 #include <map>
@@ -24,6 +22,8 @@
 #include <iostream> // IWYU pragma: keep
 #include <cstring>
 #include <cstdlib>
+#include "Lexer.hpp"
+// #include ""
 
 class ParsingError : public std::exception
 {
