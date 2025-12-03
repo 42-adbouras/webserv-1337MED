@@ -202,9 +202,7 @@ void requestHandler( Client& client ) {
 	if (newChunk.empty())
 		return;
 
-	// str leftover = client.getLeftover();
 	client.getLeftover().append(newChunk.begin(), newChunk.end());
-	// client.setLeftover(leftover);
 
 	while (true)
 	{
@@ -212,7 +210,6 @@ void requestHandler( Client& client ) {
 			size_t headersEndPos = client.getLeftover().find("\r\n\r\n");
 			if (headersEndPos == str::npos) {
 				if (client.getLeftover().size() > 8192) {
-					// 431 Fields ar too big; TO-DO
 					client.getResponse().setStatus(RANGE_NOT_SATISFIABLE);
 					// client.setClientState(CS_DISCONNECT);
 				}
@@ -238,30 +235,37 @@ void requestHandler( Client& client ) {
 
 		if (client._state == PARSING_BODY) {
 			if (client.getRequest().getMethod() == "POST") {
+				char templ[] = "/tmp/webserv_upload_XXXXX";
+				int fd = mkstemp(templ);
+				if (fd == -1) {
+					client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
+					client._state = REQUEST_COMPLETE;
+					return;
+				}
 				HeadersMap headers = client.getRequest().getHeaders();
 				if (!client.getIsChunked()) {
 					str ct = headers["Content-Type"];
 					if (ct.find("multipart/form-data") == str::npos) {
 						// single file TO-DO
 						if (client.getLeftover().size() >= client.getExpectedBodyLength()) {
-						str body = client.getLeftover().substr(0, client.getExpectedBodyLength());
-						client.getRequest().setBody(body);
-	
-						client.getLeftover().erase(0, client.getExpectedBodyLength());
-	
-						client._state = REQUEST_COMPLETE;
-						break;
-					} else {
-						// multipart
-						str multipartHeader = headers["Content-Type"];
-						str::size_type boundaryPos = multipartHeader.find("boundary=");
-						if (boundaryPos == str::npos) {
-							// BAD REQUEST
-							client.getResponse().setStatus(BAD_REQUEST);
-							return;
+							str body = client.getLeftover().substr(0, client.getExpectedBodyLength());
+							client.getRequest().setBody(body);
+
+							client.getLeftover().erase(0, client.getExpectedBodyLength());
+
+							client._state = REQUEST_COMPLETE;
+							break;
+						} else {
+							// multipart
+							str multipartHeader = headers["Content-Type"];
+							str::size_type boundaryPos = multipartHeader.find("boundary=");
+							if (boundaryPos == str::npos) {
+								client.getResponse().setStatus(BAD_REQUEST);
+								client._state = REQUEST_COMPLETE;
+								return;
+							}
+							str boundary = multipartHeader.substr(boundaryPos);
 						}
-						str boundary = multipartHeader.substr(boundaryPos);
-					}
 					std::cout << "CONTENT_TYPE: " << ct << std::endl;
 					} else {
 						// waiting for more bytes
@@ -446,7 +450,6 @@ bool send_file_chunk(int client_socket, const std::string& filepath, long long s
 			close(fd);
 			return false;
 		}
-
 		bytes_sent_total += bytes_sent;
 	}
 
@@ -466,10 +469,10 @@ void sendResponse( Client& client ) {
 
 	if (response.getFlag()) {
 		long long fileSize = getFileSize(response.getSrc());
-		
+
 		bool is_range = false;
 		Range r = {0, fileSize-1, true, ""};
-		
+
 		if (hdrs.find("Range") != hdrs.end()) {
 			r = parse_range_header(hdrs.find("Range")->second, fileSize);
 			if (!r.valid || r.start >= fileSize) {
