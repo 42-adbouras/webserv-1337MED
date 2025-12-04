@@ -211,7 +211,7 @@ void requestHandler( Client& client ) {
 			if (headersEndPos == str::npos) {
 				if (client.getLeftover().size() > 8192) {
 					client.getResponse().setStatus(RANGE_NOT_SATISFIABLE);
-					// client.setClientState(CS_DISCONNECT);
+					client._state = REQUEST_COMPLETE;
 				}
 				return;
 			}
@@ -220,6 +220,7 @@ void requestHandler( Client& client ) {
 			client.getRequest().parseRequestLine(rawHeaders);
 			client.getRequest().initHeaders(rawHeaders);
 			HeadersMap headers = client.getRequest().getHeaders();
+			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, client.getRequest() );
 
 			// set isChunked and content-length
 			str cl = headers["Content-Length"];
@@ -228,6 +229,11 @@ void requestHandler( Client& client ) {
 			client.setIsChunked(te.find("chunked") != str::npos);
 			client.setExpectedBodyLength(cl.empty() ? 0 : sToSize_t(cl));
 
+			if (client.getExpectedBodyLength() > _srvEntry->_maxBodySize) {
+				client.getResponse().setStatus(CONTENT_TOO_LARGE);
+				client._state = REQUEST_COMPLETE;
+				return;
+			}
 			client.getLeftover().erase(0, headersEndPos + 4);
 
 			client._state = PARSING_BODY;
@@ -242,6 +248,9 @@ void requestHandler( Client& client ) {
 					client._state = REQUEST_COMPLETE;
 					return;
 				}
+				client._uploadFd = fd;
+				client._uploadTmpPath = templ;
+				client._isStreamingUpload = true;
 				HeadersMap headers = client.getRequest().getHeaders();
 				if (!client.getIsChunked()) {
 					str ct = headers["Content-Type"];
@@ -290,6 +299,7 @@ void requestHandler( Client& client ) {
 							client._state = REQUEST_COMPLETE;
 							break;
 						}
+						// write(fd, client.getLeftover().substr(chunkSize + 2).c_str(), client.getLeftover().substr(chunkSize + 2).size());
 						body.append(client.getLeftover().substr(chunkSize + 2, x));
 						pos = chunkSize + 2 + x + 2;
 					}
