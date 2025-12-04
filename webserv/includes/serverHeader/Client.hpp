@@ -53,7 +53,6 @@ enum ParseState {
 	REQUEST_COMPLETE
 };
 
-
 class   Client {
     private:
         int             _fd;
@@ -109,5 +108,10 @@ class   Client {
 		void setExpectedBodyLength( size_t lgth );
 		void setIsChunked( bool chunked );
 		void setLeftover( str& leftover );
+
+		bool _isStreamingUpload;
+		int _uploadFd;
+		str _uploadTmpPath;
+		size_t _uploadedBytes;
 
 };

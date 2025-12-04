@@ -109,7 +109,7 @@ void genResponse( Response& response, str& src, ServerEntry* _srvEntry ) {
 bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location ) {
 	if (request.getBody().length()) {
 		if (request.getBody().length() > _srvEntry->_maxBodySize) {
-			getSrvErrorPage(response, _srvEntry, CONTENET_TOO_LARGE);
+			getSrvErrorPage(response, _srvEntry, CONTENT_TOO_LARGE);
 			return false;
 		}
 	}
