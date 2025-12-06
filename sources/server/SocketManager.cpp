@@ -376,20 +376,51 @@ void    SocketManager::runCoreLoop(void) {
                         continue;
                     }
                 }
-                if (_server.getListOfClients()[i - cltStart]._sendInfo.resStatus == CS_START_SEND)
-                {
-                    sendResponse(_server.getListOfClients()[i - cltStart]);
-                }
-                
+                // if (_server.getListOfClients()[i - cltStart]._sendInfo.resStatus == CS_START_SEND)
+                // {
+				// 	_pollfd[i].events &= ~POLLIN;
+				// 	// _pollfd[i].events = POLLOUT;
+                // }
+				if (_server.getListOfClients()[i - cltStart]._sendInfo.resStatus != CS_WRITING_DONE)
+				{
+					sendResponse(_server.getListOfClients()[i - cltStart]);
+					                std::cout << "---beforeeeeeeeeeee---------------" << std::endl;
+					std::cout << "|:"<< _server.getListOfClients()[i - cltStart]._sendInfo.buff.data() << "|" << std::endl;
+					ssize_t byte = send(_pollfd[i].fd, _server.getListOfClients()[i - cltStart]._sendInfo.buff.data(), _server.getListOfClients()[i - cltStart]._sendInfo.buff.size(), 0);
+					if (byte <= 0)
+					{
+						throw std::runtime_error(strerror(errno));
+					}
+					// if (_server.getListOfClients()[i - cltStart]._sendInfo.buff.empty())
+					// {
+						_server.getListOfClients()[i - cltStart]._sendInfo.buff.clear();
+						/* code */
+					// }
+					
+					                std::cout << "--- hereeeeeeeee----------------" << std::endl;
+					
+				}
+				// if (_server.getListOfClients()[i - cltStart]._sendInfo.resStatus == CS_WRITING_DONE)
+				// {
+                // std::cout << "Finish writing" << std::endl;
+
+				// 	_pollfd[i].events |= POLLIN;
+				// 	_pollfd[i].events &= ~POLLOUT;
+				// }
+				
+				// if (_server.getListOfClients()[i - cltStart]._sendInfo.resStatus == CS_WRITING_DONE) {
+				// 	_pollfd[i].events = POLLIN;
+				// }
+                std::cout << "---------------------------" << std::endl;
                 /**
                  * generate Response here & save it in `sendInfo` struct of client as chunks,
                  * when response finish, set `sendInfo.resStatus = CS_WRITING_DONE`
                  * 
                 */
 
-                _server.responsePart(i - cltStart);
-                _pollfd[i].events &= ~POLLOUT;
-                _pollfd[i].revents = 0;
+                // _server.responsePart(i - cltStart);
+                // _pollfd[i].events &= ~POLLOUT;
+                // _pollfd[i].revents = 0;
             }
         }
 	}

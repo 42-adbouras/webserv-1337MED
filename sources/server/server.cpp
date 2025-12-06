@@ -109,7 +109,6 @@ ClientState Server::readRequest(size_t cltIndx) {
         
         _client[cltIndx].getRequest().setBuffer(buffer);
         // req.setBuffer(buffer);
-		std::cout << _client[cltIndx].getRequest().getBuffer().data() << std::endl;
 
         requestHandler(_client[cltIndx]);
         if (_client[cltIndx]._reqInfo.reqStatus == CS_READING_DONE) {

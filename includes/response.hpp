@@ -1,9 +1,10 @@
 #ifndef __RESPONSE_HPP__
 #define __RESPONSE_HPP__
 
-// #include "./Utils.hpp"
+#include "./Utils.hpp"
 #include "./TypeDefs.hpp"
-#include "./serverHeader/SocketManager.hpp"
+#include "../sources/request/utils.tpp"
+#include "SocketManager.hpp"
 
 #define OK 200
 #define CREATED 201
@@ -15,9 +16,10 @@
 #define NOT_FOUND 404
 #define METHOD_NOT_ALLOWED 405
 #define CONFLICT 409
-#define CONTENET_TOO_LARGE 413
+#define CONTENT_TOO_LARGE 413
 #define URI_TOO_LONG 414
 #define RANGE_NOT_SATISFIABLE 416
+#define REQUEST_HEADER_FIELDS_TOO_LARGE 431
 #define INTERNAL_SERVER_ERROR 500
 #define NOT_IMPLEMENTED 501
 #define HTTP_VERSION_NOT_SUPPORTED 505
@@ -57,11 +59,17 @@ public:
 		}
 	};
 
+	bool _streamFile;
+	str _filePath;
+	off_t _fileOffset;
+	off_t _fileSize;
+	off_t _bytesSent;
+
 	const int& getStatusCode( void ) const;
 	const str& getStatusText( void ) const;
 	const str& getVersion( void ) const;
 	const str& getBody( void ) const;
-	const str& getSrc( void ) const;
+	str& getSrc( void );
 	bool getFlag( void ) const;
 	ServerEntry* getSrvEntry( void ) const;
 	const size_t& getContentLength( void ) const;
@@ -93,6 +101,8 @@ bool isFileExist( str& src );
 bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry, Request& request );
 void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code );
 template<typename T>
-str toString(T n);
+str toString(size_t n);
+size_t sToSize_t( const str& str );
+str getFileType( const str& type );
 
 #endif

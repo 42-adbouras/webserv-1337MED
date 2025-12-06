@@ -1,6 +1,9 @@
 #include "../../includes/serverHeader/Server.hpp"
 #include "../../includes/serverHeader/Client.hpp"
-Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block), _cgiProc(CGIProc()), _state(PARSING_HEADERS) {
+Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block),
+				_cgiProc(CGIProc()), _state(PARSING_HEADERS)
+				, _isStreamingUpload(false), _uploadFd(-1)
+				, _uploadPath(), _uploadedBytes(0) {
     // std::cout << "client connected" << std::endl;
 }
 
@@ -85,4 +88,4 @@ void Client::setLeftover( str& leftover ) {
 
 size_t Client::getExpectedBodyLength( void ) const { return _expectedBodyLength; }
 bool Client::getIsChunked( void ) const { return _isChunked; }
-const str& Client::getLeftover( void ) const { return _leftover; }
+str& Client::getLeftover( void ) { return _leftover; }

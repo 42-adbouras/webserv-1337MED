@@ -53,7 +53,6 @@ enum ParseState {
 	REQUEST_COMPLETE
 };
 
-
 class   Client {
     private:
         int             _fd;
@@ -103,11 +102,16 @@ class   Client {
         std::time_t   getTimeOut() const;
         std::time_t   getStartTime(void) const;
 
-		const str& getLeftover( void ) const;
+		str& getLeftover( void );
 		size_t getExpectedBodyLength( void ) const;
 		bool getIsChunked( void ) const;
 		void setExpectedBodyLength( size_t lgth );
 		void setIsChunked( bool chunked );
 		void setLeftover( str& leftover );
+
+		bool _isStreamingUpload;
+		int _uploadFd;
+		str _uploadPath;
+		size_t _uploadedBytes;
 
 };
