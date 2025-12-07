@@ -46,7 +46,7 @@ void listDirectory( str& src, Response& response, Request& request, ServerEntry*
 	str responseHtml = html.str();
 	response.setBody(responseHtml);
 	response.setStatus(OK);
-	response.addHeaders("Content-Length", iToString(response.getContentLength()));
+	// response.addHeaders("Content-Length", toString(response.getContentLength()));
 	response.addHeaders("Content-Type", "text/html; charset=UTF-8");
 }
 
@@ -116,7 +116,6 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 
 		int type = fileStat(src);
 		if (type == 1) {
-
 			if (isCgi(location, src, client, _srvEntry, request)) {
 				client.setClientState(CS_CGI_REQ);
 				return;
@@ -128,7 +127,7 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 			if (path[path.length() - 1] != '/') {
 				location._redirTarget = path += "/";
 				location._redirCode = MOVED_PERMANENTLY;
-				redirResponse(response, location);
+				redirectionResponse(response, location);
 				return;
 			}
 			if (!location._index.empty()) {
