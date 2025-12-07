@@ -3,6 +3,7 @@
 
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
+#include "../sources/request/utils.tpp"
 #include "SocketManager.hpp"
 
 #define OK 200
@@ -58,11 +59,19 @@ public:
 		}
 	};
 
+	ServerEntry* srvEntry;
+
+	bool _streamFile;
+	str _filePath;
+	off_t _fileOffset;
+	off_t _fileSize;
+	off_t _bytesSent;
+
 	const int& getStatusCode( void ) const;
 	const str& getStatusText( void ) const;
 	const str& getVersion( void ) const;
 	const str& getBody( void ) const;
-	const str& getSrc( void ) const;
+	str& getSrc( void );
 	bool getFlag( void ) const;
 	ServerEntry* getSrvEntry( void ) const;
 	const size_t& getContentLength( void ) const;
@@ -84,7 +93,7 @@ void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, s
 void defErrorResponse( Response& response, int code);
 bool startsWith( const str& path, const str& start );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
-void redirResponse( Response& response, Location location );
+void redirectionResponse( Response& response, Location location );
 str getContentType( const str& path );
 void genResponse( Response& response, str& src, ServerEntry* _srvEntry );
 bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location );
@@ -93,8 +102,6 @@ int fileStat( const str& src );
 bool isFileExist( str& src );
 bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry, Request& request );
 void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code );
-template<typename T>
-str toString(T n);
 size_t sToSize_t( const str& str );
 str getFileType( const str& type );
 
