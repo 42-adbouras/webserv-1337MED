@@ -49,14 +49,14 @@ bool requestErrors( Request& request, Response& response, ServerEntry* _srvEntry
 
 void defErrorResponse( Response& response, int code) {
 	response.setStatus(code);
-	str f = "./www/defaultErrorPages/" + iToString(code) + ".html";
+	str f = "./www/defaultErrorPages/" + toString(code) + ".html";
 	std::ifstream file(f.c_str());
-	str errorExpt = iToString(code) + " error default page not found!";
+	str errorExpt = toString(code) + " error default page not found!";
 	if (file.is_open()) {
 		sstream buffer;
 		buffer << file.rdbuf();
 		response.setBody(buffer.str());
-		response.addHeaders("Content-Length", iToString(response.getContentLength()));
+		// response.addHeaders("Content-Length", toString(response.getContentLength()));
 		response.addHeaders("Content-Type", getContentType(f.substr(1)));
 		file.close();
 	} else
