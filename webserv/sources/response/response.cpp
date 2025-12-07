@@ -1,4 +1,5 @@
 #include "../../includes/response.hpp"
+#include "Client.hpp"
 
 Response::Response( void )
 	: _statusCode(0)
@@ -6,11 +7,15 @@ Response::Response( void )
 	, _version("HTTP/1.1")
 	, _body()
 	, _contentLength(0)
-	, _source() {
+	, _source()
+	, _streamFile(false)
+	, _filePath()
+	, _fileOffset(0)
+	, _fileSize(0)
+	, _bytesSent(0) {
 
 		_headers["Server"] = "WebServer/0.0 (ait-server)";
 		_headers["Connection"] = "keep-alive";
-		_headers["Date"] = getDateHeader();
 		flag = false;
 }
 
@@ -26,6 +31,12 @@ Response& Response::operator=( const Response& res ) {
 		this->_source = res._source;
 		this->_srvEntry = res._srvEntry;
 		this->flag = res.flag;
+		this->_streamFile = res._streamFile;
+		this->_filePath = res._filePath;
+		this->_fileOffset = res._fileOffset;
+		this->_fileSize = res._fileSize;
+		this->_bytesSent = res._bytesSent;
+		this->srvEntry = res.srvEntry;
 	}
 	return *this;
 }
@@ -36,7 +47,7 @@ const str& Response::getVersion( void ) const { return _version; }
 const str& Response::getBody( void ) const { return _body; }
 const size_t& Response::getContentLength( void ) const { return _contentLength; }
 const HeadersMap& Response::getHeaders( void ) const { return _headers; }
-const str& Response::getSrc( void ) const { return _source; }
+str& Response::getSrc( void ) { return _source; }
 ServerEntry* Response::getSrvEntry( void ) const { return _srvEntry; }
 bool Response::getFlag( void ) const { return flag; }
 
@@ -99,7 +110,24 @@ void Response::setBody( const str& bodyData ) {
 }
 
 str Response::generate( void ) const {
-	sstream ss;
+	std::ostringstream ss;
+	ss << "HTTP/1.1 " << _statusCode << " " << _statusText << "\r\n";
+
+	ss << "Date: " << getDateHeader() << "\r\n";
+
+	for (HeadersMap::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
+		ss << it->first << ": " << it->second << "\r\n";
+
+	if (!_streamFile && !_body.empty()) {
+		ss << "Content-Length: " << _body.size() << "\r\n\r\n";
+		ss << _body;
+	} else {
+		ss << "\r\n";
+	}
+	return ss.str();
+
+
+	/* sstream ss;
 	ss << _statusCode;
 
 	str HTTPresponse = _version + " " + ss.str() + " " + _statusText + "\r\n";
@@ -110,5 +138,170 @@ str Response::generate( void ) const {
 	}
 	HTTPresponse += "\r\n" + _body;
 
-	return HTTPresponse;
+	return HTTPresponse; */
+}
+
+struct Range {
+	long long start;
+	long long end;
+	bool valid;
+	str error;
+};
+
+Range parse_range_header(const std::string& range_header, long long file_size) {
+	Range r = {-1, -1, false, ""};
+
+	if (range_header.size() < 7 || range_header.substr(0, 6) != "bytes=") {
+		r.error = "Not bytes=";
+		return r;
+	}
+
+	std::string range_spec = range_header.substr(6);
+
+	size_t dash_pos = range_spec.find('-');
+	if (dash_pos == std::string::npos) {
+		r.error = "No dash found";
+		return r;
+	}
+
+	std::string first  = range_spec.substr(0, dash_pos);
+	std::string second = range_spec.substr(dash_pos + 1);
+
+	char* endptr;
+
+	if (first.empty())
+		r.start = -1;
+	else {
+		long long val = strtoll(first.c_str(), &endptr, 10);
+		if (*endptr != '\0' || val < 0) {
+			r.error = "Invalid start";
+			return r;
+		}
+		r.start = val;
+	}
+
+	if (second.empty())
+		r.end = -1;
+	else {
+		long long val = strtoll(second.c_str(), &endptr, 10);
+		if (*endptr != '\0') {
+			r.error = "Invalid end";
+			return r;
+		}
+		r.end = val;
+	}
+
+	if (r.start != -1 && r.end != -1 && r.start > r.end) {
+		r.error = "start > end";
+		return r;
+	}
+
+	if (r.start == -1 && r.end != -1) {
+		if (r.end <= 0 || r.end > file_size) {
+			r.error = "Invalid suffix length";
+			return r;
+		}
+		r.start = file_size - r.end;
+		r.end   = file_size - 1;
+	}
+
+	if (r.start != -1 && r.start >= file_size) 	{
+		r.valid = false;
+		r.error = "Start beyond EOF";
+		return r;
+	}
+
+	if (r.end == -1)
+		r.end = file_size - 1;
+
+	if (r.start == -1)
+		r.start = 0;
+
+	r.start = std::max(0LL, std::min(r.start, file_size - 1));
+	r.end   = std::min(r.end, file_size - 1);
+
+	r.valid = true;
+	return r;
+}
+
+void sendResponse(Client& client)
+{
+	Response& response = client.getResponse();
+
+	if (client._sendInfo.resStatus == CS_START_SEND) {
+		str headers = response.generate();
+		client._sendInfo.buff.assign(headers.begin(), headers.end());
+		client._sendInfo.resStatus = CS_WRITING;
+	}
+
+	if (response._streamFile) {
+		if (response._bytesSent == 0) {
+			const HeadersMap& reqHeaders = client.getRequest().getHeaders();
+			if (reqHeaders.count("Range")) {
+				Range r = parse_range_header(reqHeaders.at("Range"), response._fileSize);
+				if (r.valid) {
+					response.setStatus(PARTIAL_CONTENT);
+					response.addHeaders("Content-Range",
+						"bytes " + toString(r.start) + "-" + toString(r.end) + "/" + toString(response._fileSize));
+					response.addHeaders("Content-Length", toString(r.end - r.start + 1));
+
+					str newHeaders = response.generate();
+					client._sendInfo.buff.assign(newHeaders.begin(), newHeaders.end());
+					response._fileOffset = r.start;
+					return;
+				}
+			}
+		}
+
+		if (client._sendInfo.fd <= 0) {
+			client._sendInfo.fd = open(response._filePath.c_str(), O_RDONLY);
+			if (client._sendInfo.fd == -1) {
+				getSrvErrorPage(response, response.srvEntry, INTERNAL_SERVER_ERROR);
+				client._sendInfo.resStatus = CS_WRITING_DONE;
+				return;
+			}
+		}
+
+		const size_t CHUNK_SIZE = SRV_SEND_BUFFER;
+		char buffer[CHUNK_SIZE];
+
+		off_t offset = response._fileOffset;
+		ssize_t toRead = CHUNK_SIZE;
+		if (response._fileSize - offset < (off_t)CHUNK_SIZE)
+			toRead = response._fileSize - offset;
+
+		ssize_t bytesRead = pread(client._sendInfo.fd, buffer, toRead, offset);
+		if (bytesRead <= 0) {
+			if (bytesRead == 0) {
+				close(client._sendInfo.fd);
+				client._sendInfo.fd = -1;
+				client._sendInfo.resStatus = CS_WRITING_DONE;
+			} else {
+				close(client._sendInfo.fd);
+				client._sendInfo.fd = -1;
+				getSrvErrorPage(response, response.srvEntry, INTERNAL_SERVER_ERROR);
+				client._sendInfo.resStatus = CS_WRITING_DONE;
+				return;
+			}
+			return;
+		}
+
+		client._sendInfo.buff.insert(client._sendInfo.buff.end(), buffer, buffer + bytesRead);
+		response._fileOffset += bytesRead;
+		response._bytesSent += bytesRead;
+
+		return;
+	}
+
+	if (!response._streamFile && !response.getBody().empty() && client._sendInfo.buff.empty()) {
+		str fullResponse = response.generate();
+		client._sendInfo.buff.assign(fullResponse.begin(), fullResponse.end());
+		client._sendInfo.resStatus = CS_WRITING_DONE;
+	}
+
+	// probably 204/304/201
+	if (client._sendInfo.buff.empty()) {
+		client._sendInfo.resStatus = CS_WRITING_DONE;
+		client.setClientState(CS_KEEPALIVE);
+	}
 }

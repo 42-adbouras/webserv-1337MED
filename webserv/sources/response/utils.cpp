@@ -84,26 +84,30 @@ str getContentType( const str& path ) {
 	return mime;
 }
 
-void redirResponse( Response& response, Location location ) {
+void redirectionResponse( Response& response, Location location ) {
 	response.setStatus(location._redirCode);
 	response.addHeaders("Location", location._redirTarget);
 	response.setBody("Moved Permanently. Redirecting to " + location._redirTarget);
-	response.addHeaders("Content-Length", iToString(response.getContentLength()));
+	// response.addHeaders("Content-Length", toString(response.getContentLength()));
 }
 
 void genResponse( Response& response, str& src, ServerEntry* _srvEntry ) {
-	std::ifstream file(src.c_str());
-	sstream buffer;
-	if (file.is_open()) {
-		buffer << file.rdbuf();
-		response.setBody(buffer.str());
-		response.setStatus(OK);
-		response.addHeaders("Content-Length", iToString(response.getContentLength()));
-		response.addHeaders("Content-Type", getContentType(src.substr(1)));
-		file.close();
-	} else {
+	struct stat st;
+
+	if (stat(src.c_str(), &st) != 0 || !S_ISREG(st.st_mode)) {
 		getSrvErrorPage(response, _srvEntry, NOT_FOUND);
+		return;
 	}
+
+	response.setStatus(OK);
+	response.addHeaders("Content-Type", getContentType(src));
+	response.addHeaders("Content-Length", toString((size_t)st.st_size));
+
+	response._streamFile = true;
+	response._filePath = src;
+	response._fileSize = st.st_size;
+	response._bytesSent = 0;
+	response._fileOffset = 0;
 }
 
 bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location ) {
@@ -119,7 +123,7 @@ bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& respon
 		return false;
 	}
 	else if (location._redirSet) {
-		redirResponse(response, location);
+		redirectionResponse(response, location);
 		return false;
 	}
 	return true;
@@ -162,7 +166,7 @@ bool genErrorResponse( Response& response, str& src, int code ) {
 		buffer << file.rdbuf();
 		response.setBody(buffer.str());
 		response.setStatus(code);
-		response.addHeaders("Content-Length", iToString(response.getContentLength()));
+		// response.addHeaders("Content-Length", toString(response.getContentLength()));
 		response.addHeaders("Content-Type", getContentType(src.substr(1)));
 		file.close();
 		return true;
