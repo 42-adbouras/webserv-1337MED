@@ -31,6 +31,13 @@ struct StatusEntry {
 	str message;
 };
 
+struct Range {
+	long long start;
+	long long end;
+	bool valid;
+	str error;
+};
+
 class Response {
 private:
 	int _statusCode;
@@ -104,5 +111,7 @@ bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry
 void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code );
 size_t sToSize_t( const str& str );
 str getFileType( const str& type );
+long long getFileSize( const str& src );
+Range parseRangeHeader(const std::string& rangeHeader, long long fileSize);
 
 #endif
