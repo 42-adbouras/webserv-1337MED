@@ -199,3 +199,14 @@ size_t sToSize_t( const str& str ) {
 
 	return value;
 }
+
+long long getFileSize( const str& src ) {
+	struct stat st;
+
+	if (stat(src.c_str(), &st) == -1)
+		return -1;
+	if (!S_ISREG(st.st_mode))
+		return -1;
+
+	return (long long)st.st_size;
+}

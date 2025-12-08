@@ -120,6 +120,9 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 				client.setClientState(CS_CGI_REQ);
 				return;
 			}
+			if (hdrs.count("Range")) {
+				response.setFlag(true);
+			}
 			genResponse(response, src, _srvEntry);
 			return;
 		} else if (type == 0) {
