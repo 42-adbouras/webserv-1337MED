@@ -179,15 +179,16 @@ void processClientRequest( Client& client ) {
 	Request request = client.getRequest();
 	std::vector<char> bufferVec = request.getBuffer();
 	str buffer(bufferVec.begin(), bufferVec.end());
-	ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, request );
+	ServerEntry* _srvEntry = client.getResponse().srvEntry;
 	bool reqFlg = request.requestLineErrors( response, _srvEntry );
+	initPath(request);
 	if (!reqFlg) {
 		client.setClientState(CS_KEEPALIVE);
 	} else {
 		if (requestErrors(request, response, _srvEntry)) {
 			str source = getSource(request, _srvEntry, response);
 			response.setSrc(source);
-			checkMethod( _srvEntry, request, response, source, client );
+			checkMethod( _srvEntry, client.getRequest(), response, source, client );
 		}
 	}
 	client.setResponse(response);
@@ -326,17 +327,6 @@ void requestHandler( Client& client ) {
 	}
 }
 
-long long getFileSize( const str& src ) {
-	struct stat st;
-
-	if (stat(src.c_str(), &st) == -1)
-		return -1;
-	if (!S_ISREG(st.st_mode))
-		return -1;
-
-	return (long long)st.st_size;
-}
-
 bool send_file_chunk(int client_socket, const std::string& filepath, long long start, long long end) {
 	int fd = open(filepath.c_str(), O_RDONLY);
 	if (fd == -1) {
@@ -347,6 +337,8 @@ bool send_file_chunk(int client_socket, const std::string& filepath, long long s
 		close(fd);
 		return false;
 	}
+
+
 
 	long long bytes_to_send = end - start + 1;
 	long long bytes_sent_total = 0;
@@ -379,7 +371,7 @@ bool send_file_chunk(int client_socket, const std::string& filepath, long long s
 	return true;
 }
 
-void send_response_headers(int client_socket, const Response& resp) {
+/* void send_response_headers(int client_socket, const Response& resp) {
 	std::string headers = resp.generate();
 	send(client_socket, headers.c_str(), headers.length(), 0);
-}
+} */
