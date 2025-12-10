@@ -1,6 +1,6 @@
 #include "../../includes/response.hpp"
 #include "../../includes/request.hpp"
-
+#include <algorithm>
 static str toLower( const str& s ) {
 	str out = s;
 	std::transform(out.begin(), out.end(), out.begin(), static_cast<int(*)(int)>(std::tolower));

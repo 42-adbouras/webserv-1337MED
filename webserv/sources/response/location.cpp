@@ -1,6 +1,6 @@
 #include "../../includes/response.hpp"
 #include "../../includes/request.hpp"
-
+#include <algorithm>
 std::deque<str> splitPath( const str& path ) {
 	std::deque<str> segments;
 	str::size_type pos = 0;
