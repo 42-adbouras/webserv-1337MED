@@ -415,7 +415,7 @@ void    SocketManager::runCoreLoop(void) {
                         }
                     }
                 } /* **************************************************** */
-                if (client.getStatus() != CS_CGI_REQ || client._sendInfo.resStatus != CS_WRITING_DONE)  /** Handle response for normal HTTP request */
+                if (client.getStatus() != CS_CGI_REQ && client._sendInfo.resStatus != CS_WRITING_DONE)  /** Handle response for normal HTTP request */
 				{
 					std::cout << "------ Start Sending ------" << std::endl;
 					sendResponse(client);
