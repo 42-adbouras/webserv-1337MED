@@ -1,9 +1,10 @@
 #ifndef __RESPONSE_HPP__
 #define __RESPONSE_HPP__
 
-#include "./Utils.hpp"
+// #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
-#include "SocketManager.hpp"
+#include "../sources/request/utils.tpp"
+#include "./serverHeader/SocketManager.hpp"
 
 #define OK 200
 #define CREATED 201
@@ -15,9 +16,10 @@
 #define NOT_FOUND 404
 #define METHOD_NOT_ALLOWED 405
 #define CONFLICT 409
-#define CONTENET_TOO_LARGE 413
+#define CONTENT_TOO_LARGE 413
 #define URI_TOO_LONG 414
 #define RANGE_NOT_SATISFIABLE 416
+#define REQUEST_HEADER_FIELDS_TOO_LARGE 431
 #define INTERNAL_SERVER_ERROR 500
 #define NOT_IMPLEMENTED 501
 #define HTTP_VERSION_NOT_SUPPORTED 505
@@ -27,6 +29,13 @@ class Request;
 struct StatusEntry {
 	int code;
 	str message;
+};
+
+struct Range {
+	long long start;
+	long long end;
+	bool valid;
+	str error;
 };
 
 class Response {
@@ -57,11 +66,19 @@ public:
 		}
 	};
 
+	ServerEntry* srvEntry;
+
+	bool _streamFile;
+	str _filePath;
+	off_t _fileOffset;
+	off_t _fileSize;
+	off_t _bytesSent;
+
 	const int& getStatusCode( void ) const;
 	const str& getStatusText( void ) const;
 	const str& getVersion( void ) const;
 	const str& getBody( void ) const;
-	const str& getSrc( void ) const;
+	str& getSrc( void );
 	bool getFlag( void ) const;
 	ServerEntry* getSrvEntry( void ) const;
 	const size_t& getContentLength( void ) const;
@@ -83,7 +100,7 @@ void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, s
 void defErrorResponse( Response& response, int code);
 bool startsWith( const str& path, const str& start );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
-void redirResponse( Response& response, Location location );
+void redirectionResponse( Response& response, Location location );
 str getContentType( const str& path );
 void genResponse( Response& response, str& src, ServerEntry* _srvEntry );
 bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location );
@@ -92,7 +109,10 @@ int fileStat( const str& src );
 bool isFileExist( str& src );
 bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry, Request& request );
 void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code );
-template<typename T>
-str toString(T n);
+size_t sToSize_t( const str& str );
+str getFileType( const str& type );
+long long getFileSize( const str& src );
+Range parseRangeHeader(const std::string& rangeHeader, long long fileSize);
+ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request);
 
 #endif

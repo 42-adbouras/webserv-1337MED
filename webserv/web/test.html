@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv | Test Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">WEB<span>SERV</span></div>
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/test.html" class="active">Test Dashboard</a></li>
+                    <li><a href="/about.html">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1 class="animate-fade-in">System Diagnostics</h1>
+
+        <div class="grid grid-2">
+            <!-- File Upload Test -->
+            <div class="card animate-fade-in delay-1">
+                <h3>📤 File Upload (POST)</h3>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">Test multipart/form-data handling.</p>
+                <form action="/upload" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="file">Select File</label>
+                        <input type="file" id="file" name="file" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload File</button>
+                </form>
+            </div>
+
+            <!-- CGI Test -->
+            <div class="card animate-fade-in delay-2">
+                <h3>⚙️ CGI Execution</h3>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">Run server-side scripts.</p>
+                <div class="flex flex-col">
+                    <a href="/cgi-scripts/hello.py" class="btn btn-secondary">Run Python Script</a>
+                    <a href="/cgi-scripts/info.php" class="btn btn-secondary">Run PHP Info (if setup)</a>
+                </div>
+            </div>
+
+            <!-- Method Tests -->
+            <div class="card animate-fade-in delay-1">
+                <h3>🎮 Method Testing</h3>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">Test different HTTP verbs.</p>
+                <div class="flex flex-col">
+                    <button onclick="testDelete()" class="btn btn-danger">Test DELETE Method</button>
+                </div>
+                <div id="method-output" style="margin-top: 1rem;"></div>
+            </div>
+
+            <!-- Error Handling -->
+            <div class="card animate-fade-in delay-2">
+                <h3>⚠️ Error Pages</h3>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">Verify custom error responses.</p>
+                <div class="grid grid-2" style="gap: 1rem;">
+                    <a href="/nonexistent.html" class="btn btn-secondary" style="text-align: center;">404 Not Found</a>
+                    <a href="/forbidden" class="btn btn-secondary" style="text-align: center;">403 Forbidden</a>
+                    <!-- Assuming /post-only is a route that only accepts POST -->
+                    <a href="/post-only" class="btn btn-secondary" style="text-align: center;">405 Method Not
+                        Allowed</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Console Output -->
+        <div class="card animate-fade-in delay-3" style="margin-top: 2rem;">
+            <h3>🖥️ Console Output</h3>
+            <pre id="console">Waiting for action...</pre>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 Webserv Project. Built with C++98.</p>
+        </div>
+    </footer>
+
+    <script>
+        const consoleEl = document.getElementById('console');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleEl.innerHTML = `[${timestamp}] ${message}\n` + consoleEl.innerHTML;
+        }
+
+        async function testDelete() {
+            log('Initiating DELETE request...', 'info');
+            try {
+                // Attempting to delete a dummy file. In a real scenario, you'd upload one first.
+                const response = await fetch('/uploads/test_delete.txt', { method: 'DELETE' });
+                log(`DELETE Response: ${response.status} ${response.statusText}`);
+            } catch (error) {
+                log(`DELETE Error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -22,8 +22,8 @@
 #include <exception> // IWYU pragma: keep
 #include <cstdlib>
 #include <limits> // IWYU pragma: keep
-#include <algorithm>
-#include <deque>
+// #include <algorithm>
+// #include <deque>
 #include <cctype>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -72,7 +72,13 @@ typedef std::map<str, str>				QueryMap;
 #define M_MEGA 1024UL * 1024UL
 #define M_GEGA 1024UL * 1024UL * 1024UL
 
-#define CGI_R_BUFFER 1024
+#define	SRV_READ_BUFFER 4096 // => 4KB
+#define	SRV_SEND_BUFFER 4096 // => 4KB
+#define CGI_SEND_BUFFER 4096 // => 4KB
+#define CGI_R_BUFFER 4096 // => 4KB
+
+#define CGI_TIME_OUT 3 // => 60seconde
+
 // struct CGIEntry
 // {
 // 	str						_extention;

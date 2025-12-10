@@ -1,14 +1,13 @@
 #pragma once
 
 #include <ctime>
-// #include <SocketManager.hpp>
 #include <cstring>
 #include "SocketManager.hpp"
-// #include "ServerUtils.hpp"
 #include "../CGI.hpp"
-// #include "../CGI.hpp"
 #include "../request.hpp"
+// class Server;
 // class Request;
+typedef	size_t	wsrv_timer_t;
 
 enum    ClientState {   // Enum for Clients state only
     CS_NEW,
@@ -21,14 +20,39 @@ enum    ClientState {   // Enum for Clients state only
     CS_WRITING_DONE,
     CS_KEEPALIVE,
     CS_DISCONNECT,
-    CS_NORM_REQ
+    CS_NORM_REQ,
+    CS_FATAL,
+    CS_START_SEND
     // CS_CGI_PROCESSING // FOR CGI REQUEST
+};
+
+enum    Connection{
+    CLOSED,
+    KEEP_ALIVE
 };
 
 enum    ClientCGIState{
     CCS_FAILLED,
     CCS_RUNNING,
     CCS_DONE
+};
+
+struct ReqInfo {
+    ClientState reqStatus;
+};
+
+struct  SendINfo /* */
+{
+    std::vector<char> buff;
+    ClientState resStatus;
+    int         fd;
+	Connection	connectionState;
+};
+
+enum ParseState {
+	PARSING_HEADERS,
+	PARSING_BODY,
+	REQUEST_COMPLETE
 };
 
 class   Client {
@@ -44,16 +68,23 @@ class   Client {
         // CGI
         ClientState     _requestType;
         CGIContext      _cgiContext;
+		str _leftover;
+		size_t _expectedBodyLength;
+		bool _isChunked;
         // CGIContext      _cgiContext;
         Client();
     public:
-        void    setCgiContext(CGIContext& cgiContexty) ;
+        CGIOutput   _cgiOut;
+        SendINfo    _sendInfo;
+        ReqInfo     _reqInfo;
+        void        setCgiContext(CGIContext& cgiContexty) ;
         serverBlockHint _serverBlockHint;
         CGIProc         _cgiProc;
         bool            _alreadyExec;
         // CGIProc         _cgiProc;
         Client(int fd, const serverBlockHint& server_block);
         ~Client();
+		ParseState _state;
         int         getFd() const;
         void        setFd(int fd);
         const CGIContext&  getCgiContext(void) const;
@@ -73,5 +104,17 @@ class   Client {
         void        setTimeOut(std::time_t timeout);
         std::time_t   getTimeOut() const;
         std::time_t   getStartTime(void) const;
+
+		str& getLeftover( void );
+		size_t getExpectedBodyLength( void ) const;
+		bool getIsChunked( void ) const;
+		void setExpectedBodyLength( size_t lgth );
+		void setIsChunked( bool chunked );
+		void setLeftover( str& leftover );
+
+		bool _isStreamingUpload;
+		int _uploadFd;
+		str _uploadPath;
+		size_t _uploadedBytes;
 
 };

@@ -13,7 +13,7 @@
 #pragma once
 
 #include "TypeDefs.hpp"
-#include "request.hpp" // IWYU pragma: keep
+#include "./request.hpp" // IWYU pragma: keep
 #include <iostream> // IWYU pragma: keep
 #include <poll.h>
 #include <sys/poll.h>
@@ -72,4 +72,5 @@ struct CGIOutput
 
 CGIProc		cgiHandle( CGIContext req, bool *alreadyExec );
 // CGIOutput	readChild( const CGIProc& proc );
-CGIOutput	readChild( Client& client );
+void	readChild( Client& client );
+void	generate_CGI_Response(Client& client);

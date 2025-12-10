@@ -22,6 +22,9 @@
 !includes/
 !configs/
 !www/
+!css/
+!errors/
+!web/
 !assets/
 !images/
 !cgi/
