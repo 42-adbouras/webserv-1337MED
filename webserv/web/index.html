@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv | Next Gen HTTP Server</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">WEB<span>SERV</span></div>
+            <nav>
+                <ul>
+                    <li><a href="/" class="active">Home</a></li>
+                    <li><a href="/test.html">Test Dashboard</a></li>
+                    <li><a href="/about.html">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero container animate-fade-in">
+            <div class="flex-col flex-center" style="text-align: center; padding: 4rem 0;">
+                <h1>The Future of<br>HTTP Serving</h1>
+                <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 600px; margin-bottom: 2rem;">
+                    A high-performance, non-blocking HTTP server built from scratch in C++. 
+                    Experience the power of custom networking.
+                </p>
+                <div class="flex">
+                    <a href="/test.html" class="btn btn-primary">Start Testing</a>
+                    <a href="/about.html" class="btn btn-secondary">Learn More</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="features container">
+            <h2 class="animate-fade-in delay-1">Core Features</h2>
+            <div class="grid grid-3">
+                <div class="card animate-fade-in delay-1">
+                    <h3>🚀 High Performance</h3>
+                    <p>Built with non-blocking I/O and `epoll` for maximum throughput and minimal latency.</p>
+                </div>
+                <div class="card animate-fade-in delay-2">
+                    <h3>⚙️ CGI Support</h3>
+                    <p>Full support for Common Gateway Interface. Run Python, PHP, and other scripts dynamically.</p>
+                </div>
+                <div class="card animate-fade-in delay-3">
+                    <h3>🛡️ Robust Error Handling</h3>
+                    <p>Customizable error pages and strict HTTP compliance to handle any request gracefully.</p>
+                </div>
+                <div class="card animate-fade-in delay-1">
+                    <h3>📂 Static File Serving</h3>
+                    <p>Efficiently serves static assets with proper MIME types and caching headers.</p>
+                </div>
+                <div class="card animate-fade-in delay-2">
+                    <h3>🔄 Multi-Port Listening</h3>
+                    <p>Configure multiple virtual servers on different ports and hostnames easily.</p>
+                </div>
+                <div class="card animate-fade-in delay-3">
+                    <h3>📤 File Uploads</h3>
+                    <p>Handle `multipart/form-data` requests to upload files directly to the server.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 Webserv Project. Built with C++98.</p>
+        </div>
+    </footer>
+</body>
+</html>
