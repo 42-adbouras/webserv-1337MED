@@ -30,6 +30,11 @@ enum    ClientState {   // Enum for Clients state only
     // CS_CGI_PROCESSING // FOR CGI REQUEST
 };
 
+enum    Connection{
+    CLOSED,
+    KEEP_ALIVE
+};
+
 enum    ClientCGIState{
     CCS_FAILLED,
     CCS_RUNNING,
@@ -45,6 +50,7 @@ struct  SendINfo /* */
     std::vector<char> buff;
     ClientState resStatus;
     int         fd;
+	Connection	connectionState;
 };
 
 enum ParseState {
@@ -111,7 +117,7 @@ class   Client {
 
 		bool _isStreamingUpload;
 		int _uploadFd;
-		str _uploadTmpPath;
+		str _uploadPath;
 		size_t _uploadedBytes;
 
 };
