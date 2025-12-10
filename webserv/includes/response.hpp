@@ -1,10 +1,10 @@
 #ifndef __RESPONSE_HPP__
 #define __RESPONSE_HPP__
 
-#include "./Utils.hpp"
+// #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
 #include "../sources/request/utils.tpp"
-#include "SocketManager.hpp"
+#include "./serverHeader/SocketManager.hpp"
 
 #define OK 200
 #define CREATED 201
@@ -113,5 +113,6 @@ size_t sToSize_t( const str& str );
 str getFileType( const str& type );
 long long getFileSize( const str& src );
 Range parseRangeHeader(const std::string& rangeHeader, long long fileSize);
+ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request);
 
 #endif

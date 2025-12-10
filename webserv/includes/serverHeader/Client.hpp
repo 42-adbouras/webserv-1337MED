@@ -1,13 +1,9 @@
 #pragma once
 
 #include <ctime>
-// #include <SocketManager.hpp>
-// #include "./Server.hpp"
 #include <cstring>
 #include "SocketManager.hpp"
-// #include "ServerUtils.hpp"
 #include "../CGI.hpp"
-// #include "../CGI.hpp"
 #include "../request.hpp"
 // class Server;
 // class Request;
@@ -78,6 +74,7 @@ class   Client {
         // CGIContext      _cgiContext;
         Client();
     public:
+        CGIOutput   _cgiOut;
         SendINfo    _sendInfo;
         ReqInfo     _reqInfo;
         void        setCgiContext(CGIContext& cgiContexty) ;
