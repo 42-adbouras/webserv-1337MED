@@ -220,15 +220,20 @@ Range parseRangeHeader(const std::string& rangeHeader, long long fileSize) {
 void sendResponse(Client& client) {
 	Response& response = client.getResponse();
 
+	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
 		str headers = response.generate();
 		client._sendInfo.buff.assign(headers.begin(), headers.end());
 		client._sendInfo.resStatus = CS_WRITING;
+		if (response.getFlag() && !reqHeaders.count("Range")) {
+			client._sendInfo.resStatus = CS_WRITING_DONE;
+			client._sendInfo.connectionState = CLOSED;
+			return;
+		}
 	}
 
 	if (response._streamFile) {
 		if (response._bytesSent == 0) {
-			const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 			if (reqHeaders.count("Range")) {
 				Range r = parseRangeHeader(reqHeaders.at("Range"), response._fileSize);
 				if (r.valid) {
@@ -240,7 +245,7 @@ void sendResponse(Client& client) {
 					str newHeaders = response.generate();
 					client._sendInfo.buff.assign(newHeaders.begin(), newHeaders.end());
 					response._fileOffset = r.start;
-					return;
+					// return;
 				} else {
 					getSrvErrorPage(response, response.srvEntry, RANGE_NOT_SATISFIABLE);
 					client._sendInfo.resStatus = CS_WRITING_DONE;
@@ -260,9 +265,9 @@ void sendResponse(Client& client) {
 
 		const size_t CHUNK_SIZE = SRV_SEND_BUFFER;
 		char buffer[CHUNK_SIZE];
-
 		off_t offset = response._fileOffset;
 		ssize_t toRead = CHUNK_SIZE;
+
 		if (response._fileSize - offset < (off_t)CHUNK_SIZE)
 			toRead = response._fileSize - offset;
 

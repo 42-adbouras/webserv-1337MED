@@ -106,7 +106,6 @@ bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry
 
 void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client) {
 	Location location = getLocation(_srvEntry, request, response);
-	response.addHeaders("Accept-Ranges", "bytes");
 	HeadersMap hdrs = request.getHeaders();
 	if (validateRequest(_srvEntry, request, response, location)) {
 		if (request.getPath() == "/") {
@@ -120,7 +119,7 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 				client.setClientState(CS_CGI_REQ);
 				return;
 			}
-			if (hdrs.count("Range")) {
+			if (getContentType(src) == "video/mp4" || getContentType(src) == "audio/mpeg") {
 				response.setFlag(true);
 			}
 			genResponse(response, src, _srvEntry);
