@@ -1,17 +1,43 @@
 #include "../../includes/response.hpp"
 #include "../../includes/request.hpp"
-
+#include <algorithm>
 static str toLower( const str& s ) {
 	str out = s;
 	std::transform(out.begin(), out.end(), out.begin(), static_cast<int(*)(int)>(std::tolower));
 	return out;
 }
 
+static std::map<str, str> rMimeMape() {
+	std::map<str, str> rM;
+	if (rM.empty()) {
+		rM["text/html"] = ".html";
+		rM["text/css"] = ".css";
+		rM["text/x-python"] = ".py";
+		rM["application/x-httpd-php"] = ".php";
+		rM["application/javascript"] = ".js";
+		rM["application/json"] = ".json";
+		rM["application/xml"] = ".xml";
+		rM["text/plain"] = ".txt";
+		rM["image/png"] = ".png";
+		rM["image/jpeg"] = ".jpg";
+		rM["image/gif"] = ".gif";
+		rM["image/svg+xml"] = ".svg";
+		rM["application/pdf"] = ".pdf";
+		rM["application/zip"] = ".zip";
+		rM["audio/mpeg"] = ".mp3";
+		rM["video/mp4"] = ".mp4";
+		rM["video/x-matroska"] = ".mkv";
+		rM["application/font-woff"] = ".woff";
+		rM["application/font-woff2"] = ".woff2";
+	}
+	return rM;
+}
+
 static std::map<str, str> mimeMap() {
 	std::map<str, str> m;
 	if (m.empty()) {
 		m[".html"] = "text/html; charset=UTF-8";
-		m[".htm"]  = "text/html";
+		m[".htm"]  = "text/html; charset=UTF-8";
 		m[".css"]  = "text/css";
 		m[".py"]   = "text/x-python";
 		m[".php"]  = "application/x-httpd-php";
@@ -35,6 +61,14 @@ static std::map<str, str> mimeMap() {
 	return m;
 }
 
+str getFileType( const str& type ) {
+	const std::map<str, str>& rM = rMimeMape();
+	std::map<str, str>::const_iterator it = rM.find(type);
+	str rMime = (it != rM.end()) ? it->second : ".txt";
+
+	return rMime;
+}
+
 str getContentType( const str& path ) {
 	str::size_type dot = path.find_last_of('.');
 	str ext;
@@ -50,32 +84,37 @@ str getContentType( const str& path ) {
 	return mime;
 }
 
-void redirResponse( Response& response, Location location ) {
+void redirectionResponse( Response& response, Location location ) {
 	response.setStatus(location._redirCode);
 	response.addHeaders("Location", location._redirTarget);
 	response.setBody("Moved Permanently. Redirecting to " + location._redirTarget);
-	response.addHeaders("Content-Length", iToString(response.getContentLength()));
+	// response.addHeaders("Content-Length", toString(response.getContentLength()));
 }
 
 void genResponse( Response& response, str& src, ServerEntry* _srvEntry ) {
-	std::ifstream file(src.c_str());
-	sstream buffer;
-	if (file.is_open()) {
-		buffer << file.rdbuf();
-		response.setBody(buffer.str());
-		response.setStatus(OK);
-		response.addHeaders("Content-Length", iToString(response.getContentLength()));
-		response.addHeaders("Content-Type", getContentType(src.substr(1)));
-		file.close();
-	} else {
+	struct stat st;
+
+	if (stat(src.c_str(), &st) != 0 || !S_ISREG(st.st_mode)) {
 		getSrvErrorPage(response, _srvEntry, NOT_FOUND);
+		return;
 	}
+
+	response.setStatus(OK);
+	response.addHeaders("Accept-Ranges", "bytes");
+	response.addHeaders("Content-Type", getContentType(src));
+	response.addHeaders("Content-Length", toString((size_t)st.st_size));
+
+	response._streamFile = true;
+	response._filePath = src;
+	response._fileSize = st.st_size;
+	response._bytesSent = 0;
+	response._fileOffset = 0;
 }
 
 bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& response, Location& location ) {
 	if (request.getBody().length()) {
 		if (request.getBody().length() > _srvEntry->_maxBodySize) {
-			getSrvErrorPage(response, _srvEntry, CONTENET_TOO_LARGE);
+			getSrvErrorPage(response, _srvEntry, CONTENT_TOO_LARGE);
 			return false;
 		}
 	}
@@ -85,7 +124,7 @@ bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& respon
 		return false;
 	}
 	else if (location._redirSet) {
-		redirResponse(response, location);
+		redirectionResponse(response, location);
 		return false;
 	}
 	return true;
@@ -128,7 +167,7 @@ bool genErrorResponse( Response& response, str& src, int code ) {
 		buffer << file.rdbuf();
 		response.setBody(buffer.str());
 		response.setStatus(code);
-		response.addHeaders("Content-Length", iToString(response.getContentLength()));
+		// response.addHeaders("Content-Length", toString(response.getContentLength()));
 		response.addHeaders("Content-Type", getContentType(src.substr(1)));
 		file.close();
 		return true;
@@ -153,3 +192,22 @@ void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code ) {
 	}
 }
 
+size_t sToSize_t( const str& str ) {
+	sstream ss(str);
+
+	size_t value = 0;
+	ss >> value;
+
+	return value;
+}
+
+long long getFileSize( const str& src ) {
+	struct stat st;
+
+	if (stat(src.c_str(), &st) == -1)
+		return -1;
+	if (!S_ISREG(st.st_mode))
+		return -1;
+
+	return (long long)st.st_size;
+}

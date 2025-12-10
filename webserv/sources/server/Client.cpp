@@ -1,6 +1,9 @@
-#include "Client.hpp"
-
-Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block), _cgiProc(CGIProc()) {
+#include "../../includes/serverHeader/Server.hpp"
+#include "../../includes/serverHeader/Client.hpp"
+Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block),
+				_cgiProc(CGIProc()), _state(PARSING_HEADERS)
+				, _isStreamingUpload(false), _uploadFd(-1)
+				, _uploadPath(), _uploadedBytes(0) {
     // std::cout << "client connected" << std::endl;
 }
 
@@ -72,3 +75,17 @@ ClientCGIState  Client::getCltCgiState() const {
 void	Client::setCgiContext(CGIContext& cgiContext) {
 	this->_cgiContext = cgiContext;
 }
+
+void Client::setExpectedBodyLength( size_t lgth ) {
+	_expectedBodyLength = lgth;
+}
+void Client::setIsChunked( bool chunked ) {
+	_isChunked = chunked;
+}
+void Client::setLeftover( str& leftover ) {
+	_leftover = leftover;
+}
+
+size_t Client::getExpectedBodyLength( void ) const { return _expectedBodyLength; }
+bool Client::getIsChunked( void ) const { return _isChunked; }
+str& Client::getLeftover( void ) { return _leftover; }
