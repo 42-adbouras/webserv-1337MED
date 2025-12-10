@@ -100,6 +100,7 @@ void genResponse( Response& response, str& src, ServerEntry* _srvEntry ) {
 	}
 
 	response.setStatus(OK);
+	response.addHeaders("Accept-Ranges", "bytes");
 	response.addHeaders("Content-Type", getContentType(src));
 	response.addHeaders("Content-Length", toString((size_t)st.st_size));
 
