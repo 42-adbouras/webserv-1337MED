@@ -4,6 +4,7 @@ Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBl
 				_cgiProc(CGIProc()), _state(PARSING_HEADERS)
 				, _isStreamingUpload(false), _uploadFd(-1)
 				, _uploadPath(), _uploadedBytes(0) {
+		_sendInfo.fd = -1;
     // std::cout << "client connected" << std::endl;
 }
 
