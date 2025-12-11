@@ -14,6 +14,14 @@
 // #include "../../includes/Utils.hpp"
 
 // CONSOLE g_console;
+bool    g_run = true;
+
+void    signalHandler(int sig) {
+    std::cout << "\nSignal is: " << sig  << std::endl;
+	g_run = false;
+    return;
+}
+
 
 SocketManager::SocketManager(Data& config, std::vector<TableOfListen>& tableOfListen) : _config(&config), _tableOfListen(tableOfListen) {
     g_console.log(SOCKET_MANAGER, str("Start managing listening sockets..."), BG_GREEN);
@@ -228,6 +236,9 @@ Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Serv
     }
     else if (totalEvent == -1)
     {
+        if (errno == EINTR) {
+            return S_TIMEDOUT;
+        }
         closeListenSockets();
         server.closeClientConnection();
         std::cerr << BG_RED << "Poll() faill (-1)" << RESET << std::endl;
@@ -253,11 +264,6 @@ void    SocketManager::handlErrCloses(std::vector<struct pollfd>& _pollfd, Serve
     }
 }
 
-void    signalHandler(int sig) {
-    std::cout << "\nSignal is: " << sig  << std::endl;
-    exit(EXIT_SUCCESS);
-}
-
 void    SocketManager::runCoreLoop(void) {
     size_t                      cltStart = portCounter();
     CookiesSessionManager       sessionManager;
@@ -268,7 +274,7 @@ void    SocketManager::runCoreLoop(void) {
     setListenEvent(_pollfd);    // set listen socket to wait for POLLIN events
     std::vector<Client>&    _clients = _server.getListOfClients(); 
     signal(SIGPIPE, SIG_IGN);
-    while (true)
+    while (g_run)
     {
 /* -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------*/
