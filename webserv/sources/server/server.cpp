@@ -253,4 +253,5 @@ void    CGI_errorResponse(Client& client, int statusCode) {
     getSrvErrorPage(res, _srvEntry, statusCode);
     str buffer = res.generate();
     send(client.getFd(), buffer.c_str(), buffer.size(), 0);
+    std::cout <<  "CGI error response: " << statusCode << std::endl;
 }
