@@ -10,6 +10,7 @@
 !*.png
 !*.ico
 !*.jpg
+!*.css
 
 !server/
 !serverHeader/
