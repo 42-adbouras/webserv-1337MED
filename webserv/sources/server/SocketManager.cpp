@@ -75,6 +75,8 @@ void    SocketManager::initSockets(void) {
         std::memcpy(&_tableOfListen[counter].addr, results->ai_addr, results->ai_addrlen);
         _tableOfListen[counter].addr_len = results->ai_addrlen;
         freeaddrinfo(results);
+        // if (_tableOfListen[counter]._ip == "127.0.0.1") /* prevent "127.0.0.1 != localhost" in binding part.  */
+        //     _tableOfListen[counter]._ip = "localhost";
         bindSockets(counter);
         /**
          * TODO:
