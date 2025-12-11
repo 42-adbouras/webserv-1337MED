@@ -211,7 +211,7 @@ void	generate_CGI_Response(Client& client) {
 	client._cgiProc._childPid = -1;
 	res.setStatus(client._cgiOut._code);
 	res.addHeaders("Content-Type", "text/plain");
-	res.addHeaders("Content-Length", iToString(res.getContentLength()));
+	// res.addHeaders("Content-Length", iToString(res.getContentLength()));
 	client.setResponse(res);
 	client._cgiOut._output = res.generate();
 }
