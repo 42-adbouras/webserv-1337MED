@@ -179,7 +179,7 @@ void processClientRequest( Client& client ) {
 	Request request = client.getRequest();
 	std::vector<char> bufferVec = request.getBuffer();
 	str buffer(bufferVec.begin(), bufferVec.end());
-	ServerEntry* _srvEntry = client.getResponse().srvEntry;
+	ServerEntry* _srvEntry = client.getResponse().getSrvEntry();
 	bool reqFlg = request.requestLineErrors( response, _srvEntry );
 	initPath(request);
 	if (!reqFlg) {
@@ -221,7 +221,7 @@ void requestHandler( Client& client ) {
 			client.getRequest().initHeaders(rawHeaders);
 			HeadersMap headers = client.getRequest().getHeaders();
 			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, client.getRequest() );
-			client.getResponse().srvEntry = _srvEntry;
+			client.getResponse().setSrvEntry(_srvEntry);
 			str source = getSource(client.getRequest(), _srvEntry, client.getResponse());
 			client.getResponse().setSrc(source);
 
