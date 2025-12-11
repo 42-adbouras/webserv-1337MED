@@ -1,4 +1,5 @@
 #include "../../includes/response.hpp"
+#include "../../includes/serverHeader/ServerUtils.hpp"
 #include "Client.hpp"
 
 Response::Response( void )
@@ -17,6 +18,7 @@ Response::Response( void )
 		_headers["Server"] = "WebServer/0.0 (ait-server)";
 		_headers["Connection"] = "keep-alive";
 		flag = false;
+		_srvEntry = NULL;
 }
 
 Response::~Response() { }
@@ -36,7 +38,6 @@ Response& Response::operator=( const Response& res ) {
 		this->_fileOffset = res._fileOffset;
 		this->_fileSize = res._fileSize;
 		this->_bytesSent = res._bytesSent;
-		this->srvEntry = res.srvEntry;
 	}
 	return *this;
 }
@@ -222,6 +223,8 @@ void sendResponse(Client& client) {
 
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
+		client.setStartTime(std::time(NULL));
+		client.setTimeOut(CLIENT_BODY_TIMEOUT);
 		str headers = response.generate();
 		client._sendInfo.buff.assign(headers.begin(), headers.end());
 		client._sendInfo.resStatus = CS_WRITING;
@@ -245,9 +248,8 @@ void sendResponse(Client& client) {
 					str newHeaders = response.generate();
 					client._sendInfo.buff.assign(newHeaders.begin(), newHeaders.end());
 					response._fileOffset = r.start;
-					// return;
 				} else {
-					getSrvErrorPage(response, response.srvEntry, RANGE_NOT_SATISFIABLE);
+					getSrvErrorPage(response, client.getResponse().getSrvEntry(), RANGE_NOT_SATISFIABLE);
 					client._sendInfo.resStatus = CS_WRITING_DONE;
 					return;
 				}
@@ -257,7 +259,7 @@ void sendResponse(Client& client) {
 		if (client._sendInfo.fd <= 0) {
 			client._sendInfo.fd = open(response._filePath.c_str(), O_RDONLY);
 			if (client._sendInfo.fd == -1) {
-				getSrvErrorPage(response, response.srvEntry, INTERNAL_SERVER_ERROR);
+				getSrvErrorPage(response, client.getResponse().getSrvEntry(), INTERNAL_SERVER_ERROR);
 				client._sendInfo.resStatus = CS_WRITING_DONE;
 				return;
 			}
@@ -280,7 +282,7 @@ void sendResponse(Client& client) {
 			} else {
 				close(client._sendInfo.fd);
 				client._sendInfo.fd = -1;
-				getSrvErrorPage(response, response.srvEntry, INTERNAL_SERVER_ERROR);
+				getSrvErrorPage(response, client.getResponse().getSrvEntry(), INTERNAL_SERVER_ERROR);
 				client._sendInfo.resStatus = CS_WRITING_DONE;
 				return;
 			}

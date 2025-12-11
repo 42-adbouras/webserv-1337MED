@@ -66,8 +66,6 @@ public:
 		}
 	};
 
-	ServerEntry* srvEntry;
-
 	bool _streamFile;
 	str _filePath;
 	off_t _fileOffset;
