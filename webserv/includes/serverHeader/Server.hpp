@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cerrno>
 typedef    size_t    wsrv_timer_t;
+
 #include "SocketManager.hpp"
 #include "CookiesSessionManager.hpp"
 #include <fcntl.h>
@@ -37,3 +38,4 @@ class Server
 };
 
 void    CGI_errorResponse(Client& client, int statusCode);
+void    signalHandler(int sig);

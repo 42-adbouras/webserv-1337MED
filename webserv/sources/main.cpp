@@ -54,8 +54,13 @@ void	displayHashTable(const std::vector<TableOfListen> &table) {
 	std::cout << RESET << std::endl;
 }
 
+void	leak() {
+	system("leaks webserv");
+}
+
 int	main( int ac, char** av )
 {
+	atexit(leak);
 	if (ac < 2) {
 		std::cerr << "Usage: ./webserv <config.conf>" << std::endl;
 		return (1);
@@ -82,7 +87,9 @@ int	main( int ac, char** av )
 		displayHashTable(tableOfListen);
 		socketManager.listenToPorts();
 		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
+		signal(SIGINT, signalHandler);
 		socketManager.runCoreLoop();
+		std::cout << "================== 888888 +++++++++" << std::endl;
 		// Server	server(data);
 //	-------------------------------------------------------------------
 		
