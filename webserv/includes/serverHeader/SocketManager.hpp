@@ -71,6 +71,7 @@ struct TableOfListen
 
     bool    operator==(const TableOfListen& other) const
     {
+
         if (_ip == other._ip && _port == other._port)
             return true;
         else if (_ip != other._ip && _port == other._port)
@@ -84,3 +85,4 @@ struct TableOfListen
 };
 void	displayHashTable(const std::vector<TableOfListen> &table);
 void    displayPOllList(const std::vector<pollfd>& list);
+

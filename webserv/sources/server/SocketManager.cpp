@@ -75,6 +75,8 @@ void    SocketManager::initSockets(void) {
         std::memcpy(&_tableOfListen[counter].addr, results->ai_addr, results->ai_addrlen);
         _tableOfListen[counter].addr_len = results->ai_addrlen;
         freeaddrinfo(results);
+        // if (_tableOfListen[counter]._ip == "127.0.0.1") /* prevent "127.0.0.1 != localhost" in binding part.  */
+        //     _tableOfListen[counter]._ip = "localhost";
         bindSockets(counter);
         /**
          * TODO:
@@ -104,11 +106,18 @@ void    SocketManager::bindSockets(size_t counter) {
         throw std::runtime_error(strerror(errno));
     }
     status = bind(_tableOfListen[counter]._fd, reinterpret_cast<struct sockaddr*>(&_tableOfListen[counter].addr), sizeof(struct sockaddr));
-    if (status != 0 && errno == EADDRINUSE) {
-        _tableOfListen[counter].alreadyBinded = true;
-        close(_tableOfListen[counter]._fd);
-        hanldVirtualHost(_tableOfListen[counter], counter);
-        std::cout << "THIS: " << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << ", already binded" << std::endl;
+    if (status != 0) {
+        if (errno == EADDRINUSE)
+        {
+            _tableOfListen[counter].alreadyBinded = true;
+            close(_tableOfListen[counter]._fd);
+            hanldVirtualHost(_tableOfListen[counter], counter);
+            std::cout << "THIS: " << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << ", already binded" << std::endl;
+        }
+        else {
+            std::cerr << _tableOfListen[counter]._ip << ":";
+            throw std::runtime_error(strerror(errno));
+        }
     }
     else  if (status == 0) {
         std::cout << "socket fd " << _tableOfListen[counter]._fd << ": binded successfull" << std::endl;
@@ -258,7 +267,7 @@ void    SocketManager::runCoreLoop(void) {
 
     setListenEvent(_pollfd);    // set listen socket to wait for POLLIN events
     std::vector<Client>&    _clients = _server.getListOfClients(); 
-    signal(SIGINT, signalHandler);
+    signal(SIGPIPE, SIG_IGN);
     while (true)
     {
 /* -------------------------------------------------------------------------------------
@@ -423,21 +432,26 @@ void    SocketManager::runCoreLoop(void) {
 					const char* dataPtr = client._sendInfo.buff.data();
 
 					ssize_t byte = send(_pollfd[i].fd, dataPtr, dataLen, 0);
-					if (byte < 0)
+					if (byte == 0 || errno == EPIPE || errno == ECONNRESET || errno == ENOTCONN)
 					{
-						if (errno == EAGAIN || EWOULDBLOCK)
+						std::cout << "CLose connection " << std::endl;
+						_server.handleDisconnect(i -cltStart, _pollfd);
+						errno = 0;
+
+						continue;
+					}
+					else if (byte < 0)
+					{
+						if (errno == EAGAIN || errno ==  EWOULDBLOCK)
 						{
 							std::cout << "Try again.." << std::endl;
 							continue;
 						}
-						else
+						else{
+
+							std::cout << "T------------------eee.." << std::endl;
 							throw std::runtime_error(strerror(errno));
-					}
-					else if (byte == 0)
-					{
-						std::cout << "CLose connection " << std::endl;
-						_server.handleDisconnect(i -cltStart, _pollfd);
-						continue;
+						}
 					}
 					else if (byte > 0) {
 					    // std::cout << "--- hereeeeeeeee----------------" << std::endl;
@@ -455,12 +469,12 @@ void    SocketManager::runCoreLoop(void) {
 					_pollfd[i].events &= ~POLLOUT;
 					// throw std::runtime_error("here");
 				}
+				errno = 0;
                 std::cout << "---------------------------" << std::endl;
             }
         }
 	}
 }
-
 bool    SocketManager::isCgiRequest(std::vector<struct pollfd>& pollFd, Client& client, size_t index)
 {
     std::cout << "REQUEST IS CGI" << std::endl;
