@@ -1,4 +1,5 @@
 #include "../../includes/response.hpp"
+#include "../../includes/serverHeader/ServerUtils.hpp"
 #include "Client.hpp"
 
 Response::Response( void )
@@ -222,6 +223,8 @@ void sendResponse(Client& client) {
 
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
+		client.setStartTime(std::time(NULL));
+		client.setTimeOut(CLIENT_BODY_TIMEOUT);
 		str headers = response.generate();
 		client._sendInfo.buff.assign(headers.begin(), headers.end());
 		client._sendInfo.resStatus = CS_WRITING;
@@ -245,7 +248,6 @@ void sendResponse(Client& client) {
 					str newHeaders = response.generate();
 					client._sendInfo.buff.assign(newHeaders.begin(), newHeaders.end());
 					response._fileOffset = r.start;
-					// return;
 				} else {
 					getSrvErrorPage(response, response.srvEntry, RANGE_NOT_SATISFIABLE);
 					client._sendInfo.resStatus = CS_WRITING_DONE;
