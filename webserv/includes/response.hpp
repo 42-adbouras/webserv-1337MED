@@ -80,7 +80,7 @@ public:
 	bool getFlag( void ) const;
 	ServerEntry* getSrvEntry( void ) const;
 	const size_t& getContentLength( void ) const;
-	const HeadersMap& getHeaders( void ) const;
+	HeadersMap& getHeaders( void );
 
 	void setStatus( int code );
 	void addHeaders( const str& key, const str& value );
@@ -88,7 +88,7 @@ public:
 	void setSrc( const str& source );
 	void setSrvEntry( ServerEntry* srvEnt );
 	void setFlag( bool flg );
-	str generate( void ) const;
+	str generate( void );
 };
 
 str iToString(size_t n);
