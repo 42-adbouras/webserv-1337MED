@@ -1,6 +1,7 @@
 #include "../../includes/response.hpp"
 #include "../../includes/request.hpp"
 #include <algorithm>
+
 static str toLower( const str& s ) {
 	str out = s;
 	std::transform(out.begin(), out.end(), out.begin(), static_cast<int(*)(int)>(std::tolower));
@@ -158,6 +159,23 @@ bool isFileExist( str& src ) {
 	if (access(src.c_str(), F_OK) == 0)
 		return true;
 	return false;
+}
+
+void defErrorResponse( Response& response, int code) {
+	response.setStatus(code);
+	str f = "./www/defaultErrorPages/" + toString(code) + ".html";
+	std::ifstream file(f.c_str());
+	str errorExpt = toString(code) + " error default page not found!";
+	if (file.is_open()) {
+		sstream buffer;
+		buffer << file.rdbuf();
+		response.setStatus(code);
+		response.setBody(buffer.str());
+		response.addHeaders("Content-Length", toString(response.getContentLength()));
+		response.addHeaders("Content-Type", getContentType(f.substr(1)));
+		file.close();
+	} else
+		throw Request::RequestException(errorExpt);
 }
 
 bool genErrorResponse( Response& response, str& src, int code ) {

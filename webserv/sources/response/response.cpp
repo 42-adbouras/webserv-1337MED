@@ -47,7 +47,7 @@ const str& Response::getStatusText( void ) const { return _statusText; }
 const str& Response::getVersion( void ) const { return _version; }
 const str& Response::getBody( void ) const { return _body; }
 const size_t& Response::getContentLength( void ) const { return _contentLength; }
-const HeadersMap& Response::getHeaders( void ) const { return _headers; }
+HeadersMap& Response::getHeaders( void ) { return _headers; }
 str& Response::getSrc( void ) { return _source; }
 ServerEntry* Response::getSrvEntry( void ) const { return _srvEntry; }
 bool Response::getFlag( void ) const { return flag; }
@@ -110,7 +110,7 @@ void Response::setBody( const str& bodyData ) {
 	_contentLength = _body.length();
 }
 
-str Response::generate( void ) const {
+str Response::generate( void ) {
 	std::ostringstream ss;
 	ss << "HTTP/1.1 " << _statusCode << " " << _statusText << "\r\n";
 
@@ -125,21 +125,8 @@ str Response::generate( void ) const {
 	} else {
 		ss << "\r\n";
 	}
+
 	return ss.str();
-
-
-	/* sstream ss;
-	ss << _statusCode;
-
-	str HTTPresponse = _version + " " + ss.str() + " " + _statusText + "\r\n";
-	HeadersMap::const_iterator it = _headers.begin();
-	while( it != _headers.end() ) {
-		HTTPresponse += it->first + ": " + it->second + "\r\n";
-		++it; 
-	}
-	HTTPresponse += "\r\n" + _body;
-
-	return HTTPresponse; */
 }
 
 Range parseRangeHeader(const std::string& rangeHeader, long long fileSize) {
@@ -221,6 +208,7 @@ Range parseRangeHeader(const std::string& rangeHeader, long long fileSize) {
 void sendResponse(Client& client) {
 	Response& response = client.getResponse();
 
+	ServerEntry* _srvEntry = getSrvBlock(client._serverBlockHint, client.getRequest());
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
 		client.setStartTime(std::time(NULL));
@@ -249,7 +237,11 @@ void sendResponse(Client& client) {
 					client._sendInfo.buff.assign(newHeaders.begin(), newHeaders.end());
 					response._fileOffset = r.start;
 				} else {
-					getSrvErrorPage(response, client.getResponse().getSrvEntry(), RANGE_NOT_SATISFIABLE);
+					getSrvErrorPage(response, _srvEntry, RANGE_NOT_SATISFIABLE);
+					response._streamFile = false;
+					response.getHeaders().erase("Content-Length");
+					str errorResponse = response.generate();
+					client._sendInfo.buff.assign(errorResponse.begin(), errorResponse.end());
 					client._sendInfo.resStatus = CS_WRITING_DONE;
 					return;
 				}
@@ -259,7 +251,11 @@ void sendResponse(Client& client) {
 		if (client._sendInfo.fd <= 0) {
 			client._sendInfo.fd = open(response._filePath.c_str(), O_RDONLY);
 			if (client._sendInfo.fd == -1) {
-				getSrvErrorPage(response, client.getResponse().getSrvEntry(), INTERNAL_SERVER_ERROR);
+				getSrvErrorPage(response, _srvEntry, INTERNAL_SERVER_ERROR);
+				response._streamFile = false;
+				response.getHeaders().erase("Content-Length");
+				str errorResponse = response.generate();
+				client._sendInfo.buff.assign(errorResponse.begin(), errorResponse.end());
 				client._sendInfo.resStatus = CS_WRITING_DONE;
 				return;
 			}
@@ -282,9 +278,13 @@ void sendResponse(Client& client) {
 			} else {
 				close(client._sendInfo.fd);
 				client._sendInfo.fd = -1;
-				getSrvErrorPage(response, client.getResponse().getSrvEntry(), INTERNAL_SERVER_ERROR);
+				getSrvErrorPage(response, _srvEntry, INTERNAL_SERVER_ERROR);
+				response._streamFile = false;
+				response.getHeaders().erase("Content-Length");
+				str errorResponse = response.generate();
+				client._sendInfo.buff.clear();
+				client._sendInfo.buff.assign(errorResponse.begin(), errorResponse.end());
 				client._sendInfo.resStatus = CS_WRITING_DONE;
-				return;
 			}
 			return;
 		}
