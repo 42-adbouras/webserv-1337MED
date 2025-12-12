@@ -90,7 +90,7 @@ ClientState Server::readRequest(size_t cltIndx) {
     // char    buffer[SRV_READ_BUFFER];
     std::vector<char>   buffer(SRV_READ_BUFFER);
     ssize_t rByte;
-    if (_client[cltIndx].getStatus() == CS_NEW){
+    if (_client[cltIndx].getStatus() == CS_NEW) {
         _client[cltIndx].setStartTime(std::time(NULL)); /* reset timeOut for reading request. */
         _client[cltIndx].setTimeOut(CLIENT_BODY_TIMEOUT);
         _client[cltIndx].setRequest(Request());
@@ -210,6 +210,11 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
                 break;
             }
         }
+    }
+    if (_client[index]._sendInfo.fd != -1)
+    {
+        close(_client[index]._sendInfo.fd);
+        _client[index]._sendInfo.fd = -1;
     }
     close(_client[index].getFd());
     _pollfd.erase(_pollfd.begin() + _OpenPort + index); /* remove user fd from pollfd{} */

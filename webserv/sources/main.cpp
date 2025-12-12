@@ -60,7 +60,7 @@ void	leak() {
 
 int	main( int ac, char** av )
 {
-	atexit(leak);
+	// atexit(leak);
 	if (ac < 2) {
 		std::cerr << "Usage: ./webserv <config.conf>" << std::endl;
 		return (1);
@@ -76,20 +76,39 @@ int	main( int ac, char** av )
 		std::vector<TableOfListen>	tableOfListen;
 		SocketManager	socketManager(config, tableOfListen);
 		socketManager.setTableOfListen(tableOfListen);
+
 		displayHashTable(tableOfListen);
-		// socketManager
-		socketManager.initSockets();
-		// if (errno == EADDRINUSE)
-		// {
-		// 	throw std::runtime_error("yessss! correct");
-		// }
+		for (size_t i = 0; i < tableOfListen.size(); i++)
+		{
+			for (size_t k = i; k < tableOfListen.size(); k++)
+			{
+				if (i == k || tableOfListen[i]._interfaceState.alreadyBinded == true)
+					continue ; /* prevent check the same table */
+				if (tableOfListen[i] == tableOfListen[k])
+				{
+					tableOfListen[k]._interfaceState.alreadyBinded = true;
+				}
+			}
+		}
+		for (size_t i = 0; i < tableOfListen.size(); i++)
+		{
+			if (tableOfListen[i]._interfaceState.alreadyBinded == false)
+			{
+				std::cout  << "IP:PORT that not binded: " << tableOfListen[i]._ip << ":" << tableOfListen[i]._port << std::endl;
+			}
+			else
+				std::cout  << "IP:PORT that already binded: " << tableOfListen[i]._ip << ":" << tableOfListen[i]._port << std::endl;
+		}
 		
+		// socketManager
+		std::cout << "================== 888888 +++++++++" << std::endl;
+		socketManager.initSockets();
 		displayHashTable(tableOfListen);
 		socketManager.listenToPorts();
 		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
+		// exit(0);
 		signal(SIGINT, signalHandler);
 		socketManager.runCoreLoop();
-		std::cout << "================== 888888 +++++++++" << std::endl;
 		// Server	server(data);
 //	-------------------------------------------------------------------
 		

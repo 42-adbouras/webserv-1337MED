@@ -57,27 +57,39 @@ class   SocketManager {
         ~SocketManager(){};
 };
 
+struct  InterfaceState
+{
+    bool    alreadyBinded;
+    int     fd;
+};
+
 struct TableOfListen
 {
     int                 _fd;
-    // struct sockaddr*    addr;
     struct sockaddr_storage addr; // own the address bytes (no dangling pointer)
     socklen_t           addr_len;
     std::string         _ip;
     std::string         _port;
     std::string         _serverName;
     unsigned int        _serverBlockId;
-    bool                alreadyBinded;
+    InterfaceState      _interfaceState;
 
     bool    operator==(const TableOfListen& other) const
     {
+        str localhost = str("localhost");
+        str digitHost = str("127.0.0.1");
 
-        if (_ip == other._ip && _port == other._port)
+        if (_ip == other._ip && _port == other._port) {
+
             return true;
+        }
         else if (_ip != other._ip && _port == other._port)
         {
+            if ((_ip == localhost || _ip == digitHost) && (other._ip == localhost || other._ip == digitHost))
+                return true;
             std::string anyAddr("0.0.0.0");
-            if (_ip == anyAddr || other._ip == anyAddr)
+
+            if ((_ip == anyAddr || other._ip == anyAddr) && (_ip == localhost || _ip == digitHost || other._ip == localhost || other._ip == digitHost))
                 return true;
         }
         return false;

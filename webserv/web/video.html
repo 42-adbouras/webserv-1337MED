@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv | Watch Video</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code&display=swap"
+        rel="stylesheet">
+    <style>
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            /* 16:9 Aspect Ratio */
+            background: #000;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+        }
+
+        .video-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: radial-gradient(circle at center, #1a1f35 0%, #000 100%);
+        }
+
+        .play-btn {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-main);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.6);
+        }
+
+        .play-icon {
+            width: 0;
+            height: 0;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-left: 25px solid white;
+            margin-left: 5px;
+        }
+
+        .video-grid {
+            margin-top: 3rem;
+        }
+
+        .thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .thumbnail::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, rgba(112, 0, 255, 0.2), transparent);
+        }
+
+        .duration {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">WEB<span>SERV</span></div>
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/video.html" class="active">Video</a></li>
+                    <li><a href="/music.html">Music</a></li>
+                    <li><a href="/test.html">Test Dashboard</a></li>
+                    <li><a href="/about.html">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Main Player -->
+        <section class="animate-fade-in">
+            <div class="flex justify-between flex-center" style="margin-bottom: 1.5rem;">
+                <h1>Featured Content</h1>
+            </div>
+
+            <div class="video-container">
+                <video id="main-video" controls style="position:absolute; width:100%; height:100%;">
+                    <source id="video-source" src="./assets/TearsOfSteel.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <h2 id="video-title">Volkswagen GTI Review</h2>
+                <div class="flex flex-center" style="gap: 1rem; margin-top: 0.5rem;">
+                    <span style="color: var(--text-secondary);">Assets Video</span>
+                    <div style="flex:1"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Up Next -->
+        <section class="video-grid animate-fade-in delay-1">
+            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 2rem;">Up Next
+            </h3>
+            <div class="grid grid-3">
+                <!-- Video Item 1 -->
+                <div class="card" style="padding: 1rem; cursor: pointer;"
+                    onclick="switchVideo('./assets/Sintel.mp4', 'Sintel')">
+                    <div class="thumbnail">
+                        <!-- Placeholder duration or extract if possible, but hardcoding for now -->
+                        <div class="duration">Movie</div>
+                    </div>
+                    <h4>Sintel</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Animation</p>
+                </div>
+
+                <!-- Video Item 2 -->
+                <div class="card" style="padding: 1rem; cursor: pointer;"
+                    onclick="switchVideo('./assets/VolkswagenGTIReview.mp4', 'Volkswagen GTI Review')">
+                    <div class="thumbnail">
+                        <div class="duration">Review</div>
+                    </div>
+                    <h4>Volkswagen GTI Review</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Cars</p>
+                </div>
+            </div>
+
+            <script>
+                function switchVideo(src, title) {
+                    const video = document.getElementById('main-video');
+                    const videoSource = document.getElementById('video-source');
+                    const titleElement = document.getElementById('video-title');
+
+                    videoSource.src = src;
+                    titleElement.textContent = title;
+
+                    video.load();
+                    video.play().catch(e => console.log('Auto-play prevented:', e));
+                }
+            </script>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 Webserv Project. Built with C++98.</p>
+        </div>
+    </footer>
+</body>
+
+</html>
