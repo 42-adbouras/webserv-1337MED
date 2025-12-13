@@ -13,7 +13,8 @@ Request::Request( void )
 	, _queryParams()
 	, _headers() { }
 
-Request::~Request() { }
+Request::~Request() { 
+}
 
 Request& Request::operator=( const Request& req ) {
 	if (this != &req) {

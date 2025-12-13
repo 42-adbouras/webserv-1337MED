@@ -21,7 +21,8 @@ Response::Response( void )
 		_srvEntry = NULL;
 }
 
-Response::~Response() { }
+Response::~Response() {
+ }
 Response& Response::operator=( const Response& res ) {
 	if (this != &res) {
 		this->_statusCode = res._statusCode;
@@ -223,8 +224,8 @@ void sendResponse(Client& client) {
 
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
-		client.setStartTime(std::time(NULL));
-		client.setTimeOut(CLIENT_BODY_TIMEOUT);
+		// client.setStartTime(std::time(NULL));
+		// client.setTimeOut(CLIENT_BODY_TIMEOUT);
 		str headers = response.generate();
 		client._sendInfo.buff.assign(headers.begin(), headers.end());
 		client._sendInfo.resStatus = CS_WRITING;
@@ -236,6 +237,7 @@ void sendResponse(Client& client) {
 	}
 
 	if (response._streamFile) {
+
 		if (response._bytesSent == 0) {
 			if (reqHeaders.count("Range")) {
 				Range r = parseRangeHeader(reqHeaders.at("Range"), response._fileSize);

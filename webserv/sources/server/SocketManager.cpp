@@ -93,15 +93,6 @@ void    SocketManager::initSockets(void) {
     }
 }
 
-// bool    SocketManager::checkIfAlreadyBinded(size_t index) const {
-//     for (size_t i = 0; i < index; i++)
-//     {
-//         if (_tableOfListen[i] == _tableOfListen[index])
-//             return true;
-//     }
-//     return false;
-// }
-
 void    SocketManager::bindSockets(size_t counter) {
     int status = 0;
 
@@ -116,18 +107,6 @@ void    SocketManager::bindSockets(size_t counter) {
     }
 }
 
-// void    SocketManager::hanldVirtualHost(TableOfListen& table, size_t index) {
-//     for (size_t i = 0; i < index; i++)
-//     {
-//         if (_tableOfListen[i] == table)
-//         {
-//             std::cout << "THE ACTUAL ONE: " << this->_tableOfListen[i]._ip << ":" << this->_tableOfListen[i]._port << std::endl;
-//             std::cout << RED << "IP:PORT that should be VIRTUAL => [ " << table._ip << ", " << table._port << " ] - [ " << _tableOfListen[i]._ip << ", " << _tableOfListen[i]._port << " ]" << RESET << std::endl;
-//             table._fd = _tableOfListen[i]._fd;
-//             break;
-//         }
-//     }
-// }
 void    SocketManager::listenToPorts(void) {
     int status;
 
@@ -239,7 +218,6 @@ void    SocketManager::handlErrCloses(std::vector<struct pollfd>& _pollfd, Serve
     {
         if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) )
         {
-
             oss << "Client `fd:" << _pollfd[i].fd << "` Closed The Connection Unexpectedly.";
             g_console.log(WARNING, oss.str(), RED);
             server.handleDisconnect(i - portCounter(), _pollfd);
@@ -307,7 +285,6 @@ void    SocketManager::runCoreLoop(void) {
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 */
-
         // size_t  cltScop = portCounter() + _clients.size();
         for (size_t i = cltStart; i < ( portCounter() + _clients.size() ); i++) {
 
@@ -316,6 +293,7 @@ void    SocketManager::runCoreLoop(void) {
             if ( _pollfd[i].revents & POLLIN ) {
                 
                 ClientState state = _server.readRequest(i - cltStart);
+                _clients[i-cltStart].setStartTime(std::time(NULL));
                 if (state == CS_READING_DONE)
                 {
 					std::cout << "request Done!" << std::endl;
@@ -347,7 +325,6 @@ void    SocketManager::runCoreLoop(void) {
                  * So prevent to run it multiple-time!
                  */
                 Client&	client = _server.getListOfClients()[i - cltStart];
-
                 if (client.getStatus() == CS_CGI_REQ) { /* ****** CGI Handler exec/response ****** */
                     if (!client._alreadyExec) /* run CGI-script for & add CGIproc{pipe-fd to pollfd, pid} to client-data */
                     {
@@ -361,9 +338,6 @@ void    SocketManager::runCoreLoop(void) {
                                 client.setClientState(CS_NEW);
                                 _pollfd[i].events |= POLLIN;
                                 _pollfd[i].events &= ~POLLOUT;
-                                // defErrorResponse(client.getResponse(), client._cgiProc._statusCode);
-                                // _server.responsePart(i - cltStart);
-                                // _server.handleDisconnect(i - cltStart, _pollfd);
                             }
                             client.setTimeOut(CGI_TIME_OUT); /* wait for CGI-script to finish */
                             continue;
@@ -415,53 +389,46 @@ void    SocketManager::runCoreLoop(void) {
                 } /* **************************************************** */
                 if (client.getStatus() != CS_CGI_REQ && client._sendInfo.resStatus != CS_WRITING_DONE)  /** Handle response for normal HTTP request */
 				{
+                    client.setStartTime(std::time(NULL));
 					std::cout << "------ Start Sending ------" << std::endl;
 					sendResponse(client);
 					size_t	dataLen = client._sendInfo.buff.size();
 					const char* dataPtr = client._sendInfo.buff.data();
 
 					ssize_t byte = send(_pollfd[i].fd, dataPtr, dataLen, 0);
-					if (byte == 0 || errno == EPIPE || errno == ECONNRESET || errno == ENOTCONN)
+					// if (byte == 0 || errno == EPIPE || errno == ECONNRESET || errno == ENOTCONN)
+					if (byte == 0)
 					{
 						std::cout << "CLose connection " << std::endl;
-                        // close(client._sendInfo.fd);
-                        // client._sendInfo.fd = -1;
-						_server.handleDisconnect(i -cltStart, _pollfd);
-						errno = 0;
+						_server.handleDisconnect(i - cltStart, _pollfd);
 						continue;
 					}
 					else if (byte < 0)
 					{
-						if (errno == EAGAIN || errno ==  EWOULDBLOCK)
-						{
-							std::cout << "Try again.." << std::endl;
-							continue;
-						}
-						else{
-                            std::cout << "2 send error" << std::endl; // error here fix it
-							throw std::runtime_error(strerror(errno));
-						}
+                        continue;
 					}
-					else if (byte > 0) {
+					else if (byte > 0)
 						client._sendInfo.buff.erase(client._sendInfo.buff.begin(), client._sendInfo.buff.begin() + byte);
-					}
 				}
 				if (client._sendInfo.resStatus == CS_WRITING_DONE)
 				{
                 	std::cout << "Finish writing" << std::endl;
-                    // if (client._sendInfo.fd == -1)
-                    // {
-                    //     close(client._sendInfo.fd);
-                    //     client._sendInfo.fd = -1;
-                    // }
                     if (client._sendInfo.connectionState == CLOSED) {
                         _server.handleDisconnect(i - cltStart, _pollfd);
                         continue;
                     }
+                    if (client._sendInfo.fd != -1)
+                    {
+                        close(client._sendInfo.fd);
+                        client._sendInfo.connectionState = NEW;
+                        client._sendInfo.fd = -1;
+                    }
+                    client._sendInfo.buff.clear();
+                    client.setClientState(CS_NEW);
+                    client._reqInfo.reqStatus = CS_NEW;
 					_pollfd[i].events |= POLLIN;
 					_pollfd[i].events &= ~POLLOUT;
 				}
-				errno = 0;
             }
         }
 	}
@@ -534,8 +501,8 @@ void    SocketManager::cgiEventsChecking(std::vector<Client>& clients, std::vect
                         clinet._cgiProc._readPipe = -1;
                     }
                     pollFd.erase(pollFd.begin() + i); /* remove pipe fd from pollfd{} */
-                    clinet.setStartTime(std::time(NULL)); /* reset time-out for sending response */
-                    clinet.setTimeOut(CLIENT_BODY_TIMEOUT);/* ********************************* */
+                    // clinet.setStartTime(std::time(NULL)); /* reset time-out for sending response */
+                    // clinet.setTimeOut(CLIENT_BODY_TIMEOUT);/* ********************************* */
                     generate_CGI_Response(clinet); // generate headers for CGI
                     continue;
                 }
