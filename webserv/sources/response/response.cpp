@@ -18,7 +18,6 @@ Response::Response( void )
 		_headers["Server"] = "WebServer/0.0 (ait-server)";
 		_headers["Connection"] = "keep-alive";
 		flag = false;
-		_srvEntry = NULL;
 }
 
 Response::~Response() { }
@@ -31,7 +30,6 @@ Response& Response::operator=( const Response& res ) {
 		this->_contentLength = res._contentLength;
 		this->_headers = res._headers;
 		this->_source = res._source;
-		this->_srvEntry = res._srvEntry;
 		this->flag = res.flag;
 		this->_streamFile = res._streamFile;
 		this->_filePath = res._filePath;
@@ -49,14 +47,10 @@ const str& Response::getBody( void ) const { return _body; }
 const size_t& Response::getContentLength( void ) const { return _contentLength; }
 HeadersMap& Response::getHeaders( void ) { return _headers; }
 str& Response::getSrc( void ) { return _source; }
-ServerEntry* Response::getSrvEntry( void ) const { return _srvEntry; }
 bool Response::getFlag( void ) const { return flag; }
 
 void Response::setSrc( const str& source ) {
 	_source = source;
-}
-void Response::setSrvEntry( ServerEntry* srvEnt ) {
-	_srvEntry = srvEnt;
 }
 void Response::setFlag( bool flg ) {
 	flag = flg;
@@ -208,7 +202,6 @@ Range parseRangeHeader(const std::string& rangeHeader, long long fileSize) {
 void sendResponse(Client& client) {
 	Response& response = client.getResponse();
 
-	ServerEntry* _srvEntry = getSrvBlock(client._serverBlockHint, client.getRequest());
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
 		client.setStartTime(std::time(NULL));
@@ -237,7 +230,7 @@ void sendResponse(Client& client) {
 					client._sendInfo.buff.assign(newHeaders.begin(), newHeaders.end());
 					response._fileOffset = r.start;
 				} else {
-					getSrvErrorPage(response, _srvEntry, RANGE_NOT_SATISFIABLE);
+					getSrvErrorPage(response, client.getRequest().getSrvEntry(), RANGE_NOT_SATISFIABLE);
 					response._streamFile = false;
 					response.getHeaders().erase("Content-Length");
 					str errorResponse = response.generate();
@@ -251,7 +244,7 @@ void sendResponse(Client& client) {
 		if (client._sendInfo.fd <= 0) {
 			client._sendInfo.fd = open(response._filePath.c_str(), O_RDONLY);
 			if (client._sendInfo.fd == -1) {
-				getSrvErrorPage(response, _srvEntry, INTERNAL_SERVER_ERROR);
+				getSrvErrorPage(response, client.getRequest().getSrvEntry(), INTERNAL_SERVER_ERROR);
 				response._streamFile = false;
 				response.getHeaders().erase("Content-Length");
 				str errorResponse = response.generate();
@@ -278,7 +271,7 @@ void sendResponse(Client& client) {
 			} else {
 				close(client._sendInfo.fd);
 				client._sendInfo.fd = -1;
-				getSrvErrorPage(response, _srvEntry, INTERNAL_SERVER_ERROR);
+				getSrvErrorPage(response, client.getRequest().getSrvEntry(), INTERNAL_SERVER_ERROR);
 				response._streamFile = false;
 				response.getHeaders().erase("Content-Length");
 				str errorResponse = response.generate();

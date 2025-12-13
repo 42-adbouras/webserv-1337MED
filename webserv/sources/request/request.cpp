@@ -11,7 +11,8 @@ Request::Request( void )
 	, _buffer()
 	, _location()
 	, _queryParams()
-	, _headers() { }
+	, _headers()
+	, _srvEntry(NULL) { }
 
 Request::~Request() { }
 
@@ -26,6 +27,7 @@ Request& Request::operator=( const Request& req ) {
 		this->_headers = req._headers;
 		this->_buffer = req._buffer;
 		this->_location = req._location;
+		this->_srvEntry = req._srvEntry;
 	}
 	return *this;
 }
@@ -40,6 +42,7 @@ const str& Request::getPath( void ) const { return _path; }
 const std::vector<char>& Request::getBuffer( void ) const { return _buffer; }
 const str& Request::getUri( void ) const { return _Uri; }
 const str& Request::getLocation( void ) const { return _location; }
+ServerEntry* Request::getSrvEntry( void ) const { return _srvEntry; }
 void Request::setBuffer( std::vector<char> buffer ) {
 	_buffer = buffer;
 }
@@ -48,6 +51,9 @@ void Request::setLocation( str& location ) {
 }
 void Request::setPath( const str& path ) {
 	_path = path;
+}
+void Request::setSrvEntry( ServerEntry* srvEnt ) {
+	_srvEntry = srvEnt;
 }
 void Request::parseRequestLine( str& input ) {
 	sstream stream(input);
@@ -179,7 +185,7 @@ void processClientRequest( Client& client ) {
 	Request request = client.getRequest();
 	std::vector<char> bufferVec = request.getBuffer();
 	str buffer(bufferVec.begin(), bufferVec.end());
-	ServerEntry* _srvEntry = client.getResponse().getSrvEntry();
+	ServerEntry* _srvEntry = client.getRequest().getSrvEntry();
 	bool reqFlg = request.requestLineErrors( response, _srvEntry );
 	initPath(request);
 	if (!reqFlg) {
@@ -197,14 +203,13 @@ void processClientRequest( Client& client ) {
 void requestHandler( Client& client ) {
 	if (client._reqInfo.reqStatus == CS_NEW)
 		client._reqInfo.reqStatus = CS_READING;
-	std::vector<char> newChunk = client.getRequest().getBuffer();
+	std::vector<char> newChunk = client._reqInfo.buffer;
 	if (newChunk.empty())
 		return;
 
 	client.getLeftover().append(newChunk.begin(), newChunk.end());
 
-	while (true)
-	{
+	// while (true) {
 		if (client._state == PARSING_HEADERS) {
 			size_t headersEndPos = client.getLeftover().find("\r\n\r\n");
 			if (headersEndPos == str::npos) {
@@ -221,7 +226,7 @@ void requestHandler( Client& client ) {
 			client.getRequest().initHeaders(rawHeaders);
 			HeadersMap headers = client.getRequest().getHeaders();
 			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, client.getRequest() );
-			client.getResponse().setSrvEntry(_srvEntry);
+			client.getRequest().setSrvEntry(_srvEntry);
 			str source = getSource(client.getRequest(), _srvEntry, client.getResponse());
 			client.getResponse().setSrc(source);
 
@@ -266,7 +271,7 @@ void requestHandler( Client& client ) {
 							client.getLeftover().erase(0, client.getExpectedBodyLength());
 
 							client._state = REQUEST_COMPLETE;
-							break;
+							// break;
 						} else {
 							// multipart
 							str multipartHeader = headers["Content-Type"];
@@ -278,7 +283,6 @@ void requestHandler( Client& client ) {
 							}
 							str boundary = multipartHeader.substr(boundaryPos);
 						}
-					std::cout << "CONTENT_TYPE: " << ct << std::endl;
 					} else {
 						// waiting for more bytes
 						return;
@@ -308,13 +312,13 @@ void requestHandler( Client& client ) {
 					}
 					client.getRequest().setBody(body);
 					client.getLeftover().erase(0, pos);
-					break;
+					// break;
 				}
 			}
 			client._state = REQUEST_COMPLETE;
-			break;
+			// break;
 		}
-	}
+	// }
 
 	if (client._state == REQUEST_COMPLETE) {
 		client._reqInfo.reqStatus = CS_READING_DONE;
