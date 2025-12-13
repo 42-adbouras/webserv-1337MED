@@ -1,7 +1,7 @@
 #ifndef __REQUEST_HPP__
 #define __REQUEST_HPP__
 
-#include "./Utils.hpp" // IWYU pragma: keep
+#include "./Utils.hpp"
 #include "./TypeDefs.hpp"
 #include "./response.hpp"
 #include <sys/socket.h>
@@ -22,6 +22,7 @@ private:
 	str _location;
 	QueryMap _queryParams;
 	HeadersMap _headers;
+	ServerEntry *_srvEntry;
 
 	static const char* valid_methods[];
 
@@ -58,6 +59,8 @@ public:
 	void setLocation( str& location );
 	void setPath( const str& path );
 	const str& getLocation( void ) const;
+	ServerEntry* getSrvEntry( void ) const;
+	void setSrvEntry( ServerEntry* srvEnt );
 
 	bool requestLineErrors( Response& response, ServerEntry* _srvEntry );
 	void parseRequestLine( str& input );
