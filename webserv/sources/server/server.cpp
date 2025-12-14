@@ -34,6 +34,7 @@ bool    Server::wsrv_timeout_closer(std::vector<struct pollfd>& pollFd) {
     }
     if (!state)
         std::cout << BG_GREEN << "[ INFO ]" << GREEN << "All Clients en-ligne" << RESET << std::endl;
+    oss.clear();
     return state;
 }
 
@@ -47,13 +48,13 @@ wsrv_timer_t Server::wsrv_find_next_timeout(void) {
         wsrv_timer_t timeout = _client[i].getTimeOut();
         ssize_t remaining = timeout - elapsed;
 
-        oss << "Remaining For User `" << i + 1 << "`: " << remaining << 's';
-        g_console.log(TIME_OUT, oss.str(), WHITE);
+        // oss << "Remaining For User `" << i + 1 << "`: " << remaining << 's';
+        // g_console.log(TIME_OUT, oss.str(), WHITE);
         if (remaining <= 0)
             return 0; // already timed out
         _client[i].setRemainingTime(remaining);
-        oss.clear();
-        oss.str("");
+        // oss.clear();
+        // oss.str("");
     }
     lower = _client[0].getRemainingTime();
     for (size_t i = 1; i < _client.size(); i++)
@@ -61,8 +62,8 @@ wsrv_timer_t Server::wsrv_find_next_timeout(void) {
         if (_client[i].getRemainingTime() < lower)
             lower = _client[i].getRemainingTime();
     }
-    oss << "Remaining Time for Waiting events : " << lower << 's';
-    g_console.log(TIME_OUT, oss.str(), MAGENTA);
+    // oss << "Remaining Time for Waiting events : " << lower << 's';
+    // g_console.log(TIME_OUT, oss.str(), MAGENTA);
     return (lower);
 }
 
@@ -88,14 +89,14 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
 
 
 ClientState Server::readRequest(size_t cltIndx) {
-    std::vector<char>   buffer(SRV_READ_BUFFER);
+    char    buff[SRV_READ_BUFFER];
     ssize_t rByte;
     if (_client[cltIndx].getStatus() == CS_NEW) {
         _client[cltIndx].setRequest(Request());
     }
     Request req = _client[cltIndx].getRequest();
     std::cout << "Server: Read Request from User fd=" << _client[cltIndx].getFd() << std::endl;
-    rByte = recv(_client[cltIndx].getFd(), buffer.data(), buffer.size(), 0);
+    rByte = recv(_client[cltIndx].getFd(), buff, SRV_READ_BUFFER, 0);
     if (rByte > 0)
     {
         /**
@@ -103,7 +104,8 @@ ClientState Server::readRequest(size_t cltIndx) {
          * the parse of request must detect if the request is finished by setting ReqInfo to `CS_READING_DONE`
          * else `CS_READING`
          * */
-        _client[cltIndx].getRequest().setBuffer(buffer);
+        // _client[cltIndx].getRequest().setBuffer(buffer);
+        _client[cltIndx]._reqInfo.buffer.insert(_client[cltIndx]._reqInfo.buffer.end(), buff, buff + rByte);
         requestHandler(_client[cltIndx]);
         if (_client[cltIndx]._reqInfo.reqStatus == CS_READING_DONE) {
             _client[cltIndx]._sendInfo.resStatus = CS_START_SEND; /* To track first try of send-response */

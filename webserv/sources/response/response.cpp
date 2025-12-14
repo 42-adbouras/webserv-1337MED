@@ -205,8 +205,6 @@ void sendResponse(Client& client) {
 
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
-		client.setStartTime(std::time(NULL));
-		client.setTimeOut(CLIENT_BODY_TIMEOUT);
 		str headers = response.generate();
 		client._sendInfo.buff.assign(headers.begin(), headers.end());
 		client._sendInfo.resStatus = CS_WRITING;

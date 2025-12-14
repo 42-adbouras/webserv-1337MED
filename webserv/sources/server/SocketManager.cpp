@@ -288,7 +288,7 @@ void    SocketManager::runCoreLoop(void) {
                 _clients[i-cltStart].setStartTime(std::time(NULL));
                 if (state == CS_READING_DONE)
                 {
-					std::cout << "request Done!" << std::endl;
+					// std::cout << "request Done!" << std::endl;
                     _pollfd[i].events |= POLLOUT;
                     _pollfd[i].events &= ~POLLIN;
                 }
@@ -311,7 +311,7 @@ void    SocketManager::runCoreLoop(void) {
 
             if ( _pollfd[i].revents & POLLOUT )
             {
-                g_console.log(SERVER, str("Response Handler"), BG_CYAN);
+                // g_console.log(SERVER, str("Response Handler"), BG_CYAN);
 /*
                  * If User req CGI, Run CGI Script and wait for results next polling!
                  * ```!_clients[i-cltStart]._alreadyExec``` == Script Of CGI Already Running.

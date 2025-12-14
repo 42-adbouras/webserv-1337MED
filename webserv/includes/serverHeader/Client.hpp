@@ -39,6 +39,7 @@ enum    ClientCGIState{
 
 struct ReqInfo {
     ClientState reqStatus;
+    std::vector<char> buffer;
 };
 
 struct  SendINfo /* */
