@@ -29,6 +29,7 @@ bool    Server::wsrv_timeout_closer(std::vector<struct pollfd>& pollFd) {
             g_console.log(TIME_OUT, oss.str(), BG_RED);
             state = true;
             handleDisconnect(i, pollFd);
+            i--;
         }
     }
     if (!state)
@@ -69,7 +70,7 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     struct pollfd   temp;
 
     client.setStartTime(std::time(NULL));
-    client.setTimeOut(CLIENT_HEADER_TIMEOUT);/* timeOut to wait for the first request */
+    client.setTimeOut(client._serverBlockHint[0].second->_cltHeadTimeout);/* timeOut to wait for the first request */
     client.setClientState(CS_NEW);
     client._alreadyExec = false;
     client._cgiProc._readPipe = -1;
@@ -165,6 +166,8 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
 void    Server::closeClientConnection(void) {
     for (size_t i = 0; i < _client.size(); i++)
     {
+        if (_client[i]._sendInfo.fd == -1)
+            close(_client[i]._sendInfo.fd);
         close(_client[i].getFd());
     }
     _client.clear();

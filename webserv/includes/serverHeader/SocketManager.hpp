@@ -32,9 +32,9 @@ class   SocketManager {
         void    listenToPorts(void) ;
         void    runCoreLoop(void);
         void    setListenEvent(std::vector<struct pollfd>& _pollfd);
-        bool    checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server );
-        void    hanldVirtualHost(TableOfListen& table, size_t index);
-        bool    checkIfAlreadyBinded(size_t index) const;
+        void    checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server );
+        // void    hanldVirtualHost(TableOfListen& table, size_t index);
+        // bool    checkIfAlreadyBinded(size_t index) const;
         void    closeListenSockets(void) const;
         void    closeClientsSockets();
         serverBlockHint   detectServerBlock(int sockFd) const;

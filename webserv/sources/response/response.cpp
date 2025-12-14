@@ -268,6 +268,8 @@ void sendResponse(Client& client) {
 		}
 
 		const size_t CHUNK_SIZE = SRV_SEND_BUFFER;
+		if (client._sendInfo.buff.size() >= CHUNK_SIZE) /* send buffer is full, send it first then try to read again */
+			return;
 		char buffer[CHUNK_SIZE];
 		off_t offset = response._fileOffset;
 		ssize_t toRead = CHUNK_SIZE;

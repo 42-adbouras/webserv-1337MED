@@ -144,7 +144,7 @@ void    SocketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
     }
 }
 
-bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server ) {
+void    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server ) {
     int 	clientFd;
 
     for (size_t	i = 0; i < portCounter(); i++)
@@ -162,8 +162,8 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
                 _server.closeClientConnection();
                 throw std::runtime_error(strerror(errno));
             }
-            int sigYes = 1;
-            setsockopt(clientFd, SOL_SOCKET, SO_NOSIGPIPE, &sigYes, sizeof(sigYes));
+            // int sigYes = 1;
+            // setsockopt(clientFd, SOL_SOCKET, SO_NOSIGPIPE, &sigYes, sizeof(sigYes));
             _server.addClients(Client(clientFd, detectServerBlock(_pollfd[i].fd)), _pollfd);
             SocketManager::setNonBlocking(clientFd);
             oss.clear();
@@ -172,7 +172,6 @@ bool    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
             g_console.log(CONNECTION, oss.str(), YELLOW);
         }
     }
-    return true;
 }
 
 void    SocketManager::rmClientFromPoll(std::vector<struct pollfd>& _pollfd, size_t  cltSize) {
@@ -190,22 +189,14 @@ Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Serv
     g_console.log(SERVER, str("POLLING For Events..."), BG_GREEN);
     displayPOllList(pollFd);
     totalEvent = poll(pollFd.data(), pollFd.size(), static_cast<int>(coreTimeOut));
-    if (totalEvent == 0 && cltSize > 0)
+    if (totalEvent == -1)
     {
-        server.wsrv_timeout_closer(pollFd);
-        std::cout << GREEN << "[ " << totalEvent << " ]" << RED<< " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
-        return S_TIMEDOUT;
-    }
-    else if (totalEvent == -1)
-    {
-        // if (errno == EINTR) {
-        //     return S_TIMEDOUT;
-        // }
         closeListenSockets();
         server.closeClientConnection();
         std::cerr << BG_RED << "Poll() faill (-1)" << RESET << std::endl;
         throw   std::runtime_error(strerror(errno));
     }
+    server.wsrv_timeout_closer(pollFd); /* remove client that timed-out */
     std::cout << GREEN << "[ " << totalEvent << " ]" << RED<< " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
     return NON;
 }
@@ -221,6 +212,7 @@ void    SocketManager::handlErrCloses(std::vector<struct pollfd>& _pollfd, Serve
             oss << "Client `fd:" << _pollfd[i].fd << "` Closed The Connection Unexpectedly.";
             g_console.log(WARNING, oss.str(), RED);
             server.handleDisconnect(i - portCounter(), _pollfd);
+            i--;
         }
     }
 }
