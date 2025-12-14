@@ -157,6 +157,11 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
     }
     if (_client[index]._sendInfo.buff.size() != 0)
         _client[index]._sendInfo.buff.clear();
+    if (_client[index]._uploadFd != -1) /* Close Upload Fd if exist */
+    {
+        close(_client[index]._uploadFd);
+        _client[index]._uploadFd = -1;
+    }
     close(_client[index].getFd());
     _pollfd.erase(_pollfd.begin() + _OpenPort + index); /* remove user fd from pollfd{} */
     _client.erase(_client.begin() + index); /* remove user fd from Client{} */
@@ -166,8 +171,10 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
 void    Server::closeClientConnection(void) {
     for (size_t i = 0; i < _client.size(); i++)
     {
-        if (_client[i]._sendInfo.fd == -1)
+        if (_client[i]._sendInfo.fd != -1)
             close(_client[i]._sendInfo.fd);
+        if (_client[i]._uploadFd != -1)
+            close(_client[i]._uploadFd);
         close(_client[i].getFd());
     }
     _client.clear();

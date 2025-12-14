@@ -19,7 +19,7 @@ CLN		=	\033[K\r\c
 
 CXX		=	c++
 
-CFLAGS	=	-Wall -Wextra -Werror -g -std=c++98 -fsanitize=address
+CFLAGS	=	-Wall -Wextra -Werror -g -std=c++98 -fsanitize=address -D_FILE_OFFSET_BITS=64
 
 NAME	=	webserv
 
