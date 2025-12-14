@@ -5,8 +5,7 @@
 #include "SocketManager.hpp"
 #include "../CGI.hpp"
 #include "../request.hpp"
-// class Server;
-// class Request;
+
 typedef	size_t	wsrv_timer_t;
 
 enum    ClientState {   // Enum for Clients state only
@@ -27,6 +26,7 @@ enum    ClientState {   // Enum for Clients state only
 };
 
 enum    Connection{
+    NEW,
     CLOSED,
     KEEP_ALIVE
 };

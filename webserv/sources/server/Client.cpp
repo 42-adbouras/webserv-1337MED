@@ -5,13 +5,15 @@ Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBl
 				, _isStreamingUpload(false), _uploadFd(-1)
 				, _uploadPath(), _uploadedBytes(0) {
 		_sendInfo.fd = -1;
-    // std::cout << "client connected" << std::endl;
 }
 
 int Client::getFd() const {
     return _fd;
 }
-Client::~Client() {}
+Client::~Client() {
+	_sendInfo.buff.clear();
+	_serverBlockHint.clear();
+}
 
 ClientState    Client::getStatus() const {
     return _clientState;

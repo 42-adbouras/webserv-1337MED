@@ -29,6 +29,7 @@ bool    Server::wsrv_timeout_closer(std::vector<struct pollfd>& pollFd) {
             g_console.log(TIME_OUT, oss.str(), BG_RED);
             state = true;
             handleDisconnect(i, pollFd);
+            i--;
         }
     }
     if (!state)
@@ -44,7 +45,7 @@ wsrv_timer_t Server::wsrv_find_next_timeout(void) {
     for (size_t i = 0; i < _client.size(); ++i) {
         wsrv_timer_t elapsed = (now - _client[i].getStartTime());
         wsrv_timer_t timeout = _client[i].getTimeOut();
-        wsrv_timer_t remaining = timeout - elapsed;
+        ssize_t remaining = timeout - elapsed;
 
         oss << "Remaining For User `" << i + 1 << "`: " << remaining << 's';
         g_console.log(TIME_OUT, oss.str(), WHITE);
@@ -69,7 +70,7 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     struct pollfd   temp;
 
     client.setStartTime(std::time(NULL));
-    client.setTimeOut(CLIENT_HEADER_TIMEOUT);/* timeOut to wait for the first request */
+    client.setTimeOut(client._serverBlockHint[0].second->_cltHeadTimeout);/* timeOut to wait for the first request */
     client.setClientState(CS_NEW);
     client._alreadyExec = false;
     client._cgiProc._readPipe = -1;
@@ -87,12 +88,9 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
 
 
 ClientState Server::readRequest(size_t cltIndx) {
-    // char    buffer[SRV_READ_BUFFER];
     std::vector<char>   buffer(SRV_READ_BUFFER);
     ssize_t rByte;
-    if (_client[cltIndx].getStatus() == CS_NEW){
-        _client[cltIndx].setStartTime(std::time(NULL)); /* reset timeOut for reading request. */
-        _client[cltIndx].setTimeOut(CLIENT_BODY_TIMEOUT);
+    if (_client[cltIndx].getStatus() == CS_NEW) {
         _client[cltIndx].setRequest(Request());
     }
     Request req = _client[cltIndx].getRequest();
@@ -115,74 +113,15 @@ ClientState Server::readRequest(size_t cltIndx) {
     }
     else if (rByte == 0)
     {
-        // _client[cltIndx].setClientState(CS_DISCONNECT);
         return CS_DISCONNECT;
     }
     else
     {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-        {
-            // _client[cltIndx].setClientState(CS_READING);
-            return CS_READING;
-        }
         std::cout << "Read Request: " << strerror(errno) << std::endl;
+        return CS_READING;
     }
     return CS_FATAL;
 }
-
-Status    Server::readClientRequest(std::vector<struct pollfd>& pollFd, size_t cltIndex, size_t& loopIndex) {
-    std::stringstream   oss;
-    // ????????????????????????????????????//
-    // don't use it anymore
-    oss << "User With `fd=" << pollFd[loopIndex].fd << "` sent s a request";
-    g_console.log(REQUEST, oss.str(), CYAN);
-    requestHandler(_client[cltIndex]);
-    _client[cltIndex]._alreadyExec = false; // for cgi
-    // if (_client[cltIndex].getStatus() == CS_DISCONNECT) {
-    //     std::stringstream   oss;
-    //     oss << "peer closed connection, `fd=" << pollFd[loopIndex].fd << "`!";
-    //     g_console.log(NOTICE, oss.str(), RED);
-    //     handleDisconnect(cltIndex, pollFd);
-    //     oss.clear();
-    //     oss.str("");
-    //     return S_CONTINUE;
-    // }
-    // else if (_client[cltIndex].getStatus() != CS_READING) {
-    //     pollFd[loopIndex].revents = 0;
-    //     pollFd[loopIndex].events |= POLLOUT;
-    // }
-    return NON;
-}
- 
-void    Server::responsePart(size_t cltIndex) {
-    std::stringstream   oss;
-
-    if (_client[cltIndex]._sendInfo.resStatus == CS_WRITING_DONE)
-    {
-        oss << "Response For User `" << _client[cltIndex].getFd() << "` has been sent successfully.";
-        g_console.log(INFO, oss.str(), GREEN);
-        return;
-    }
-
-    // std::cout << GREEN << "[ INFO ] —— response for user " << _client[cltIndex].getFd() << " has been send with success!" << RESET << std::endl;  
-    if (_client[cltIndex].getStatus() == CS_KEEPALIVE)
-    {
-        oss.clear();
-        oss.str("");
-        oss << "TCP Connection Still Open To Another Request/Response For User `fd=" << _client[cltIndex].getFd() << "`!";
-        g_console.log(NOTICE, oss.str(), MAGENTA);
-        int opt = 1;
-        if (setsockopt(_client[cltIndex].getFd(), SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) != 0)
-        {
-            // closeListenSockets();
-            closeClientConnection();
-            throw std::runtime_error(strerror(errno));
-        }
-        _client[cltIndex].setStartTime(std::time(NULL));
-        _client[cltIndex].setTimeOut(KEEPALIVE_TIMEOUT);
-    }
-}
-
 
 void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd) {
     std::stringstream   oss;
@@ -211,6 +150,18 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
             }
         }
     }
+    if (_client[index]._sendInfo.fd != -1)
+    {
+        close(_client[index]._sendInfo.fd);
+        _client[index]._sendInfo.fd = -1;
+    }
+    if (_client[index]._sendInfo.buff.size() != 0)
+        _client[index]._sendInfo.buff.clear();
+    if (_client[index]._uploadFd != -1) /* Close Upload Fd if exist */
+    {
+        close(_client[index]._uploadFd);
+        _client[index]._uploadFd = -1;
+    }
     close(_client[index].getFd());
     _pollfd.erase(_pollfd.begin() + _OpenPort + index); /* remove user fd from pollfd{} */
     _client.erase(_client.begin() + index); /* remove user fd from Client{} */
@@ -220,6 +171,10 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
 void    Server::closeClientConnection(void) {
     for (size_t i = 0; i < _client.size(); i++)
     {
+        if (_client[i]._sendInfo.fd != -1)
+            close(_client[i]._sendInfo.fd);
+        if (_client[i]._uploadFd != -1)
+            close(_client[i]._uploadFd);
         close(_client[i].getFd());
     }
     _client.clear();

@@ -20,7 +20,8 @@ Response::Response( void )
 		flag = false;
 }
 
-Response::~Response() { }
+Response::~Response() {
+ }
 Response& Response::operator=( const Response& res ) {
 	if (this != &res) {
 		this->_statusCode = res._statusCode;
@@ -217,6 +218,7 @@ void sendResponse(Client& client) {
 	}
 
 	if (response._streamFile) {
+
 		if (response._bytesSent == 0) {
 			if (reqHeaders.count("Range")) {
 				Range r = parseRangeHeader(reqHeaders.at("Range"), response._fileSize);

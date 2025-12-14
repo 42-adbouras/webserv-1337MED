@@ -14,7 +14,8 @@ Request::Request( void )
 	, _headers()
 	, _srvEntry(NULL) { }
 
-Request::~Request() { }
+Request::~Request() { 
+}
 
 Request& Request::operator=( const Request& req ) {
 	if (this != &req) {
