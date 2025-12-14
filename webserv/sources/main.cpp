@@ -108,6 +108,7 @@ int	main( int ac, char** av )
 		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
 		// exit(0);
 		signal(SIGINT, signalHandler);
+		tableOfListen.clear();
 		socketManager.runCoreLoop();
 		// Server	server(data);
 //	-------------------------------------------------------------------

@@ -162,8 +162,8 @@ void    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
                 _server.closeClientConnection();
                 throw std::runtime_error(strerror(errno));
             }
-            // int sigYes = 1;
-            // setsockopt(clientFd, SOL_SOCKET, SO_NOSIGPIPE, &sigYes, sizeof(sigYes));
+            int sigYes = 1;
+            setsockopt(clientFd, SOL_SOCKET, SO_NOSIGPIPE, &sigYes, sizeof(sigYes));
             _server.addClients(Client(clientFd, detectServerBlock(_pollfd[i].fd)), _pollfd);
             SocketManager::setNonBlocking(clientFd);
             oss.clear();
@@ -186,8 +186,8 @@ Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Serv
     wsrv_timer_t    coreTimeOut;
 
     (cltSize == 0 ? coreTimeOut = -1 : coreTimeOut = server.wsrv_find_next_timeout()*1000);
-    g_console.log(SERVER, str("POLLING For Events..."), BG_GREEN);
     displayPOllList(pollFd);
+    g_console.log(SERVER, str("POLLING For Events..."), BG_GREEN);
     totalEvent = poll(pollFd.data(), pollFd.size(), static_cast<int>(coreTimeOut));
     if (totalEvent == -1)
     {
@@ -298,6 +298,7 @@ void    SocketManager::runCoreLoop(void) {
                     oss << "peer closed connection, `fd=" << _pollfd[i].fd << "`!";
                     g_console.log(NOTICE, oss.str(), RED);
                     _server.handleDisconnect(i - cltStart, _pollfd);
+                    i--;
                     oss.clear();
                     oss.str("");
                     continue;
@@ -360,8 +361,11 @@ void    SocketManager::runCoreLoop(void) {
                         size_t  toSend = std::min<size_t>(buffer.size(), CGI_SEND_BUFFER);
                         std::cout << "ToSend is:" << toSend << std::endl;
                         ssize_t sendByte = send(client.getFd(), buffer.c_str(), toSend, 0);
-                        if (sendByte == 0)
+                        if (sendByte == 0) {
                             _server.handleDisconnect(i - cltStart, _pollfd);
+                            i--;
+
+                        }
                         else if (sendByte < 0)
                         {
                             if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -388,17 +392,15 @@ void    SocketManager::runCoreLoop(void) {
 					const char* dataPtr = client._sendInfo.buff.data();
 
 					ssize_t byte = send(_pollfd[i].fd, dataPtr, dataLen, 0);
-					// if (byte == 0 || errno == EPIPE || errno == ECONNRESET || errno == ENOTCONN)
 					if (byte == 0)
 					{
 						// std::cout << "CLose connection " << std::endl;
 						_server.handleDisconnect(i - cltStart, _pollfd);
+                        i--;
 						continue;
 					}
 					else if (byte < 0)
-					{
                         continue;
-					}
 					else if (byte > 0)
 						client._sendInfo.buff.erase(client._sendInfo.buff.begin(), client._sendInfo.buff.begin() + byte);
 				}
@@ -407,6 +409,7 @@ void    SocketManager::runCoreLoop(void) {
                 	// std::cout << "Finish writing" << std::endl;
                     if (client._sendInfo.connectionState == CLOSED) {
                         _server.handleDisconnect(i - cltStart, _pollfd);
+                        i--;
                         continue;
                     }
                     if (client._sendInfo.fd != -1)

@@ -224,8 +224,8 @@ void sendResponse(Client& client) {
 
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
-		// client.setStartTime(std::time(NULL));
-		// client.setTimeOut(CLIENT_BODY_TIMEOUT);
+		client.setStartTime(std::time(NULL));
+		client.setTimeOut(CLIENT_BODY_TIMEOUT);
 		str headers = response.generate();
 		client._sendInfo.buff.assign(headers.begin(), headers.end());
 		client._sendInfo.resStatus = CS_WRITING;
@@ -268,8 +268,6 @@ void sendResponse(Client& client) {
 		}
 
 		const size_t CHUNK_SIZE = SRV_SEND_BUFFER;
-		if (client._sendInfo.buff.size() >= CHUNK_SIZE) /* send buffer is full, send it first then try to read again */
-			return;
 		char buffer[CHUNK_SIZE];
 		off_t offset = response._fileOffset;
 		ssize_t toRead = CHUNK_SIZE;
