@@ -119,7 +119,9 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 				client.setClientState(CS_CGI_REQ);
 				return;
 			}
-			if (getContentType(src) == "video/mp4" || getContentType(src) == "audio/mpeg") {
+			if (getContentType(src) == "video/mp4"
+				|| getContentType(src) == "audio/mpeg"
+				|| getContentType(src) == "video/x-matroska") {
 				response.setFlag(true);
 			}
 			genResponse(response, src, _srvEntry);

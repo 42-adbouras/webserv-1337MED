@@ -249,15 +249,15 @@ void requestHandler( Client& client ) {
 
 		if (client._state == PARSING_BODY) {
 			if (client.getRequest().getMethod() == "POST") {
-				char templ[] = "/tmp/webserv_upload_XXXXX";
-				int fd = mkstemp(templ);
-				if (fd == -1) {
-					client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
-					client._state = REQUEST_COMPLETE;
-					return;
-				}
-				client._uploadFd = fd;
-				client._uploadPath = templ;
+				// char templ[] = "/tmp/webserv_upload_XXXXX";
+				// int fd = mkstemp(templ);
+				// if (fd == -1) {
+				// 	client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
+				// 	client._state = REQUEST_COMPLETE;
+				// 	return;
+				// }
+				// client._uploadFd = fd;
+				// client._uploadPath = templ;
 				client._isStreamingUpload = true;
 				HeadersMap headers = client.getRequest().getHeaders();
 				if (!client.getIsChunked()) {
