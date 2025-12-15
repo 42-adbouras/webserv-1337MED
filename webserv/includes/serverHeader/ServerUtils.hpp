@@ -8,6 +8,7 @@
 
 /* macro for output messages */
 
+#define CGI_SCRIPT "[ ./RUN-CGI ]"
 #define INFO "[ INFO ]"
 #define CONNECTION "[ CONNECTION ]"
 #define TIME_OUT    "[ TIME-OUT ]"
@@ -19,8 +20,6 @@
 #define SOCKET_MANAGER "[ SOCKET_MANAGER ]"
 #define WARNING "[ WARNING ]"
 #include <iostream>
-
-
 
 struct  CONSOLE {
     std::string message;

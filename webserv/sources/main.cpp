@@ -21,6 +21,7 @@
 #include <vector> // IWYU pragma: keep
 #include "../includes/CGI.hpp"
 CONSOLE g_console;
+
 const char*	tokenTypeName( TokenType t )
 {
 	switch (t) {
@@ -77,7 +78,7 @@ int	main( int ac, char** av )
 		SocketManager	socketManager(config, tableOfListen);
 		socketManager.setTableOfListen(tableOfListen);
 
-		displayHashTable(tableOfListen);
+		// displayHashTable(tableOfListen);
 		for (size_t i = 0; i < tableOfListen.size(); i++)
 		{
 			for (size_t k = i; k < tableOfListen.size(); k++)
@@ -89,27 +90,28 @@ int	main( int ac, char** av )
 					tableOfListen[k]._interfaceState.alreadyBinded = true;
 				}
 			}
-		}
-		for (size_t i = 0; i < tableOfListen.size(); i++)
-		{
-			if (tableOfListen[i]._interfaceState.alreadyBinded == false)
-			{
-				std::cout  << "IP:PORT that not binded: " << tableOfListen[i]._ip << ":" << tableOfListen[i]._port << std::endl;
-			}
-			else
-				std::cout  << "IP:PORT that already binded: " << tableOfListen[i]._ip << ":" << tableOfListen[i]._port << std::endl;
-		}
-		
-		// socketManager
-		std::cout << "================== 888888 +++++++++" << std::endl;
+		}/*****************************/
+		// for (size_t i = 0; i < tableOfListen.size(); i++)
+		// {
+		// 	if (tableOfListen[i]._interfaceState.alreadyBinded == false)
+		// 	{
+		// 		std::cout  << "IP:PORT that not binded: " << tableOfListen[i]._ip << ":" << tableOfListen[i]._port << std::endl;
+		// 	}
+		// 	else
+		// 		std::cout  << "IP:PORT that already binded: " << tableOfListen[i]._ip << ":" << tableOfListen[i]._port << std::endl;
+		// }
+		/*****************************/
+
 		socketManager.initSockets();
 		displayHashTable(tableOfListen);
 		socketManager.listenToPorts();
 		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
 		// exit(0);
 		signal(SIGINT, signalHandler);
-		// tableOfListen.clear();
 		socketManager.runCoreLoop();
+		tableOfListen.clear();
+		config._servers.clear();
+		tokens.clear();
 		// Server	server(data);
 //	-------------------------------------------------------------------
 		
