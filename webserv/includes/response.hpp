@@ -21,6 +21,7 @@
 #define REQUEST_HEADER_FIELDS_TOO_LARGE 431
 #define INTERNAL_SERVER_ERROR 500
 #define NOT_IMPLEMENTED 501
+#define GATEWAY_TIMEOUT 504
 #define HTTP_VERSION_NOT_SUPPORTED 505
 
 class Request;
@@ -108,5 +109,6 @@ str getFileType( const str& type );
 long long getFileSize( const str& src );
 Range parseRangeHeader(const std::string& rangeHeader, long long fileSize);
 ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request);
+const std::map<int, str>& getStatusMap();
 
 #endif

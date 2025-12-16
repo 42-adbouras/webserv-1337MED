@@ -93,8 +93,8 @@ class   Client {
 		Response&   getResponse();
         ClientState getStatus() const;
         void        setClientState(ClientState clientState);
-        void        setRequest( Request req );
-        void        setResponse( Response res );
+        void        setRequest( Request& req );
+        void        setResponse( Response& res );
         void        setCltCgiState(ClientCGIState cltCgiState);
         ClientCGIState  getCltCgiState() const;
         // Time-Out methode handler
@@ -113,7 +113,6 @@ class   Client {
 		void setIsChunked( bool chunked );
 		void setLeftover( str& leftover );
 
-		bool _isStreamingUpload;
 		int _uploadFd;
 		str _uploadPath;
 		size_t _uploadedBytes;

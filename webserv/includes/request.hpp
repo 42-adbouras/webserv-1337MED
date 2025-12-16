@@ -62,7 +62,7 @@ public:
 	ServerEntry* getSrvEntry( void ) const;
 	void setSrvEntry( ServerEntry* srvEnt );
 
-	bool requestLineErrors( Response& response, ServerEntry* _srvEntry );
+	bool requestLineErrors( Response& response );
 	void parseRequestLine( str& input );
 	void initHeaders( str& input );
 	void setBody( str& body );
@@ -75,7 +75,7 @@ str normalizePath( const str& path );
 str getHost( const HeadersMap& headers );
 str getSource( Request& request, ServerEntry* _srvEntry, Response& response );
 bool requestErrors( Request& request, Response& response, ServerEntry* _srvEntry );
-bool isNumber(str& s);
+bool isNumber(const str& s);
 std::deque<str> splitPath( const str& path );
 Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
 str urlDecode( const str& path );
