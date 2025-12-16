@@ -2,20 +2,20 @@
 #include "../../includes/response.hpp"
 
 bool headersCheck( Request& request ) {
-	HeadersMap headers = request.getHeaders();
-	HeadersMap::iterator it = headers.begin();
+	const HeadersMap& headers = request.getHeaders();
+	HeadersMap::const_iterator it = headers.begin();
 	while( it != headers.end() ) {
 		if (it->second == "")
 			return false;
 		++it;
 	}
-	HeadersMap::iterator hostIt = headers.find("Host");
+	HeadersMap::const_iterator hostIt = headers.find("Host");
 	if (hostIt == headers.end())
 		return false;
 	if (hostIt->second.empty())
 		return false;
 	if (request.getBody() != "") {
-		HeadersMap::iterator clIt = headers.find("Content-Length");
+		HeadersMap::const_iterator clIt = headers.find("Content-Length");
 		if (clIt == headers.end())
 			return false;
 		if (!isNumber(clIt->second))

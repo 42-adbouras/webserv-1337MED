@@ -107,7 +107,7 @@ void initPath( Request& request ) {
 	request.setPath(urlDecode(uri));
 }
 
-bool Request::requestLineErrors( Response& response, ServerEntry* _srvEntry ) {
+bool Request::requestLineErrors( Response& response ) {
 	if (!_method.length() || !_Uri.length() || !_version.length()) {
 		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
 		return false;
@@ -184,142 +184,163 @@ void processClientRequest( Client& client ) {
 	Response response;
 
 	Request request = client.getRequest();
-	std::vector<char> bufferVec = request.getBuffer();
-	str buffer(bufferVec.begin(), bufferVec.end());
-	ServerEntry* _srvEntry = client.getRequest().getSrvEntry();
-	bool reqFlg = request.requestLineErrors( response, _srvEntry );
+	// std::vector<char> bufferVec = request.getBuffer();
+	// str buffer(bufferVec.begin(), bufferVec.end());
+
+	bool reqFlg = request.requestLineErrors( response );
 	initPath(request);
 	if (!reqFlg) {
 		client.setClientState(CS_KEEPALIVE);
 	} else {
-		if (requestErrors(request, response, _srvEntry)) {
-			str source = getSource(request, _srvEntry, response);
+		// if (requestErrors(request, response, client.getRequest().getSrvEntry())) {
+			str source = getSource(request, client.getRequest().getSrvEntry(), response);
 			response.setSrc(source);
-			checkMethod( _srvEntry, client.getRequest(), response, source, client );
-		}
+			checkMethod( client.getRequest().getSrvEntry(), client.getRequest(), response, source, client );
+		// }
 	}
 	client.setResponse(response);
 }
 
+void multiPartParser( Client& client ) {
+	const HeadersMap& headers = client.getRequest().getHeaders();
+	HeadersMap::const_iterator ct = headers.find("Content-Type");
+	str multipartHeader = ct->second;
+	str::size_type boundaryPos = multipartHeader.find("boundary=");
+	if (boundaryPos == str::npos) {
+		client.getResponse().setStatus(BAD_REQUEST);
+		client._state = REQUEST_COMPLETE;
+		return;
+	}
+	str boundary = multipartHeader.substr(boundaryPos);
+}
+
 void requestHandler( Client& client ) {
-	if (client._reqInfo.reqStatus == CS_NEW)
+	if (client.getStatus() == CS_NEW) {
 		client._reqInfo.reqStatus = CS_READING;
-	std::vector<char> newChunk = client._reqInfo.buffer;
-	if (newChunk.empty())
+		client.setClientState(CS_READING);
+	}
+	if (client._reqInfo.buffer.empty())
 		return;
 
-	client.getLeftover().append(newChunk.begin(), newChunk.end());
+	client.getLeftover().append(client._reqInfo.buffer.begin(), client._reqInfo.buffer.end());
+	client._reqInfo.buffer.erase(client._reqInfo.buffer.begin(), client._reqInfo.buffer.end());
 
-	// while (true) {
-		if (client._state == PARSING_HEADERS) {
-			size_t headersEndPos = client.getLeftover().find("\r\n\r\n");
-			if (headersEndPos == str::npos) {
-				if (client.getLeftover().size() > 8192) {
-					client.getResponse().setStatus(RANGE_NOT_SATISFIABLE);
-					client._state = REQUEST_COMPLETE;
-				}
-				return;
-			}
-			str rawHeaders = client.getLeftover().substr(0, headersEndPos + 4);
-
-			client.getRequest().parseRequestLine(rawHeaders);
-			initPath(client.getRequest());
-			client.getRequest().initHeaders(rawHeaders);
-			HeadersMap headers = client.getRequest().getHeaders();
-			ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, client.getRequest() );
-			client.getRequest().setSrvEntry(_srvEntry);
-			str source = getSource(client.getRequest(), _srvEntry, client.getResponse());
-			client.getResponse().setSrc(source);
-
-			// set isChunked and content-length
-			str cl = headers["Content-Length"];
-			str te = headers["Transfer-Encoding"];
-
-			client.setIsChunked(te.find("chunked") != str::npos);
-			client.setExpectedBodyLength(cl.empty() ? 0 : sToSize_t(cl));
-
-			if (client.getExpectedBodyLength() > _srvEntry->_maxBodySize) {
-				client.getResponse().setStatus(CONTENT_TOO_LARGE);
+	if (client._state == PARSING_HEADERS) {
+		size_t headersEndPos = client.getLeftover().find("\r\n\r\n");
+		if (headersEndPos == str::npos) {
+			if (client.getLeftover().size() > 8192) {
+				client.getResponse().setStatus(RANGE_NOT_SATISFIABLE);
 				client._state = REQUEST_COMPLETE;
-				return;
 			}
-			client.getLeftover().erase(0, headersEndPos + 4);
+			return;
+		}
+		str rawHeaders = client.getLeftover().substr(0, headersEndPos + 4);
 
-			client._state = PARSING_BODY;
+		client.getRequest().parseRequestLine(rawHeaders);
+		initPath(client.getRequest());
+		client.getRequest().initHeaders(rawHeaders);
+
+		const HeadersMap& headers = client.getRequest().getHeaders();
+		ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, client.getRequest() );
+		client.getRequest().setSrvEntry(_srvEntry);
+		str source = getSource(client.getRequest(), _srvEntry, client.getResponse());
+		client.getResponse().setSrc(source);
+
+		if (!requestErrors(client.getRequest(), client.getResponse(), client.getRequest().getSrvEntry())) {
+			client._state = REQUEST_COMPLETE;
+			return;
 		}
 
-		if (client._state == PARSING_BODY) {
-			if (client.getRequest().getMethod() == "POST") {
-				// char templ[] = "/tmp/webserv_upload_XXXXX";
-				// int fd = mkstemp(templ);
-				// if (fd == -1) {
-				// 	client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
-				// 	client._state = REQUEST_COMPLETE;
-				// 	return;
-				// }
-				// client._uploadFd = fd;
-				// client._uploadPath = templ;
-				client._isStreamingUpload = true;
-				HeadersMap headers = client.getRequest().getHeaders();
-				if (!client.getIsChunked()) {
-					str ct = headers["Content-Type"];
-					if (ct.find("multipart/form-data") == str::npos) {
-						// single file TO-DO
-						if (client.getLeftover().size() >= client.getExpectedBodyLength()) {
-							str body = client.getLeftover().substr(0, client.getExpectedBodyLength());
-							client.getRequest().setBody(body);
+		// set isChunked and content-length
+		HeadersMap::const_iterator te = headers.find("Transfer-Encoding");
+		HeadersMap::const_iterator cl = headers.find("Content-Length");
 
-							client.getLeftover().erase(0, client.getExpectedBodyLength());
+		client.setIsChunked(te->second == "chunked");
+		client.setExpectedBodyLength(sToSize_t(cl->second));
 
-							client._state = REQUEST_COMPLETE;
-							// break;
-						} else {
-							// multipart
-							str multipartHeader = headers["Content-Type"];
-							str::size_type boundaryPos = multipartHeader.find("boundary=");
-							if (boundaryPos == str::npos) {
-								client.getResponse().setStatus(BAD_REQUEST);
-								client._state = REQUEST_COMPLETE;
-								return;
-							}
-							str boundary = multipartHeader.substr(boundaryPos);
-						}
-					} else {
-						// waiting for more bytes
+		if (client.getExpectedBodyLength() > _srvEntry->_maxBodySize) {
+			client.getResponse().setStatus(CONTENT_TOO_LARGE);
+			client._state = REQUEST_COMPLETE;
+			return;
+		}
+		client.getLeftover().erase(0, headersEndPos + 4);
+
+		client._state = PARSING_BODY;
+	}
+
+	if (client._state == PARSING_BODY) {
+		if (client.getRequest().getMethod() == "POST") {
+			client._uploadPath = client.getResponse().getSrc() + "/file";
+			if (client._uploadFd <= 0) {
+				client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+				if (client._uploadFd == -1) {
+					client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
+					client._state = REQUEST_COMPLETE;
+					return;
+				}
+			}
+			client._uploadPath = client.getResponse().getSrc();
+			const HeadersMap& headers = client.getRequest().getHeaders();
+			if (!client.getIsChunked()) {
+				HeadersMap::const_iterator ct = headers.find("Content-Type");
+				if (ct->second != "multipart/form-data") {
+					// single file TO-DO
+					int bytesWritten = write(client._uploadFd, client.getLeftover().c_str(), client.getLeftover().size());
+					if (bytesWritten < 0) {
+						client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
+						client._state = REQUEST_COMPLETE;
 						return;
 					}
-				} else {
-					size_t pos = 0;
-					str body;
-					while (true) {
-						str::size_type chunkSize = client.getLeftover().find("\r\n", pos);
-						if (chunkSize == str::npos)
-							return;
-						str hex = client.getLeftover().substr(pos, chunkSize - pos);
-						sstream ss;
-						ss << std::hex << hex;
-						size_t x = 0;
-						ss >> x;
-						if (client.getLeftover().size() < chunkSize + 2 + x + 2)
-							return;
-						if (x == 0) {
-							pos = chunkSize + 2;
-							client._state = REQUEST_COMPLETE;
-							break;
-						}
-						// write(fd, client.getLeftover().substr(chunkSize + 2).c_str(), client.getLeftover().substr(chunkSize + 2).size());
-						body.append(client.getLeftover().substr(chunkSize + 2, x));
-						pos = chunkSize + 2 + x + 2;
+					client._uploadedBytes += bytesWritten;
+					client.getLeftover().erase(0, bytesWritten);
+					if (client._uploadedBytes > client.getExpectedBodyLength()) {
+						client.getResponse().setStatus(BAD_REQUEST);
+						client._state = REQUEST_COMPLETE;
+						// return;
+					} else if (client._uploadedBytes < client.getExpectedBodyLength()) {
+						return;
+					} else {
+						client._state = REQUEST_COMPLETE;
 					}
-					client.getRequest().setBody(body);
-					client.getLeftover().erase(0, pos);
-					// break;
+				} else {
+					// multipart
+					str multipartHeader = ct->second;
+					str::size_type boundaryPos = multipartHeader.find("boundary=");
+					if (boundaryPos == str::npos) {
+						client.getResponse().setStatus(BAD_REQUEST);
+						client._state = REQUEST_COMPLETE;
+					}
+					str boundary = multipartHeader.substr(boundaryPos);
 				}
+			} else {
+				size_t pos = 0;
+				str body;
+				while (true) {
+					str::size_type chunkSize = client.getLeftover().find("\r\n", pos);
+					if (chunkSize == str::npos)
+						return;
+					str hex = client.getLeftover().substr(pos, chunkSize - pos);
+					sstream ss;
+					ss << std::hex << hex;
+					size_t x = 0;
+					ss >> x;
+					if (client.getLeftover().size() < chunkSize + 2 + x + 2)
+						return;
+					if (x == 0) {
+						pos = chunkSize + 2;
+						client._state = REQUEST_COMPLETE;
+						break;
+					}
+					// write(fd, client.getLeftover().substr(chunkSize + 2).c_str(), client.getLeftover().substr(chunkSize + 2).size());
+					body.append(client.getLeftover().substr(chunkSize + 2, x));
+					pos = chunkSize + 2 + x + 2;
+				}
+				client.getRequest().setBody(body);
+				client.getLeftover().erase(0, pos);
 			}
-			client._state = REQUEST_COMPLETE;
-			// break;
 		}
-	// }
+		client._state = REQUEST_COMPLETE;
+	}
 
 	if (client._state == REQUEST_COMPLETE) {
 		client._reqInfo.reqStatus = CS_READING_DONE;

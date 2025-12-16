@@ -33,7 +33,11 @@ str getSource( Request& request, ServerEntry* _srvEntry, Response& response ) {
 	str path = request.getPath();
 	Location lct = getLocation(_srvEntry, request, response);
 	str location = request.getLocation();
-	str root = lct._root;
+	str root;
+	if (lct._uploadStore.length())
+		root = lct._uploadStore;
+	else
+		root = lct._root;
 
 	if (!root.length())
 		root = _srvEntry->_root;
@@ -82,7 +86,7 @@ str getHost( const HeadersMap& headers ) {
 	return "";
 }
 
-bool isNumber(str& s) {
+bool isNumber(const str& s) {
 	for (size_t i=0; i<s.length(); ++i) {
 		if (!isdigit(s[i]))
 			return false;
