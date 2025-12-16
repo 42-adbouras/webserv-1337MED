@@ -74,10 +74,11 @@ static const StatusEntry StatusEntries[] = {
 	{431, "Request Header Fields Too Large"},
 	{500, "Internal Server Error"},
 	{501, "Not Implemented"},
+	{504, "Gateway Timeout"},
 	{505, "HTTP Version Not Supported"}
 };
 
-static const std::map<int, str>& getStatusMap() {
+const std::map<int, str>& getStatusMap() {
 	static std::map<int, str> StatusMap;
 	if (StatusMap.empty()) {
 		for (size_t i=0; i<sizeof(StatusEntries)/sizeof(StatusEntry); ++i)

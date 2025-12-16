@@ -161,6 +161,25 @@ bool isFileExist( str& src ) {
 	return false;
 }
 
+void HtmlDefaultErrorsPages( Response& response, int code ) {
+	std::map<int, str> statusMap = getStatusMap();
+	std::map<int, str>::const_iterator it = statusMap.find(code);
+	str statusText;
+	if ( it != statusMap.end() ) {
+		statusText = it->second;
+	}
+	std::ostringstream html;
+	html << "<!DOCTYPE html>\n"
+		 << "<html>\n"
+		 << "<head><title>Index of " << code << "</title></head>\n"
+		 << "<body>\n"
+		 << "<h1>" << code << " " << statusText << "</h1>\n"
+		 << "</body>\n";
+	
+	response.setBody(html.str());
+	response.addHeaders("Content-Type", "text/html; charset=UTF-8");
+}
+
 void defErrorResponse( Response& response, int code) {
 	response.setStatus(code);
 	str f = "./www/defaultErrorPages/" + toString(code) + ".html";
@@ -171,11 +190,11 @@ void defErrorResponse( Response& response, int code) {
 		buffer << file.rdbuf();
 		response.setStatus(code);
 		response.setBody(buffer.str());
-		response.addHeaders("Content-Length", toString(response.getContentLength()));
+		// response.addHeaders("Content-Length", toString(response.getContentLength()));
 		response.addHeaders("Content-Type", getContentType(f.substr(1)));
 		file.close();
 	} else
-		throw Request::RequestException(errorExpt);
+		HtmlDefaultErrorsPages( response, code );
 }
 
 bool genErrorResponse( Response& response, str& src, int code ) {
