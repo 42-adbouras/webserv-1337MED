@@ -202,13 +202,15 @@ void processClientRequest( Client& client ) {
 }
 
 void requestHandler( Client& client ) {
-	if (client._reqInfo.reqStatus == CS_NEW)
+	if (client.getStatus() == CS_NEW) {
+		client.setClientState(CS_READING);
 		client._reqInfo.reqStatus = CS_READING;
-	std::vector<char> newChunk = client._reqInfo.buffer;
-	if (newChunk.empty())
+	}
+	// std::vector<char> client._reqInfo.buffer = client._reqInfo.buffer;
+	if (client._reqInfo.buffer.empty())
 		return;
 
-	client.getLeftover().append(newChunk.begin(), newChunk.end());
+	client.getLeftover().append(client._reqInfo.buffer.begin(), client._reqInfo.buffer.end());
 
 	// while (true) {
 		if (client._state == PARSING_HEADERS) {

@@ -4,6 +4,7 @@
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
 #include "./response.hpp"
+// #include "./serverHeader/CookiesSessionManager.hpp" /*---------*/
 #include <sys/socket.h>
 #include <deque>
 
@@ -70,7 +71,7 @@ public:
 
 bool UriAllowedChars( str& uri );
 void requestHandler( Client& client );
-void sendResponse( Client& client );
+void sendResponse( Client& client, CookiesSessionManager& sessionManager ); /*---------*/
 str normalizePath( const str& path );
 str getHost( const HeadersMap& headers );
 str getSource( Request& request, ServerEntry* _srvEntry, Response& response );

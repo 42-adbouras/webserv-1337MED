@@ -1,4 +1,4 @@
-#!/home/mait-taj/.nvm/versions/node/v24.11.0/bin/node
+#!/usr/local/bin/node
 
 /* eslint-disable no-console */
 const { env, stdin, stdout } = process;

@@ -84,7 +84,10 @@ void    SocketManager::initSockets(void) {
             }
             /* set option for that socket */
             int addrYes = 1;
-            setsockopt(_tableOfListen[counter]._fd, SOL_SOCKET, SO_REUSEADDR, &addrYes, sizeof(addrYes));
+            std::cout << "->" << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << std::endl;
+            if (setsockopt(_tableOfListen[counter]._fd, SOL_SOCKET, SO_REUSEADDR, &addrYes, sizeof(addrYes)) != 0)
+                throw std::runtime_error("here");
+            // setsockopt(_tableOfListen[counter]._fd, SOL_SOCKET, SO_REUSEADDR, &addrYes, sizeof(addrYes));
             std::memcpy(&_tableOfListen[counter].addr, results->ai_addr, results->ai_addrlen);
             _tableOfListen[counter].addr_len = results->ai_addrlen;
             freeaddrinfo(results);
@@ -182,10 +185,8 @@ Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Serv
     totalEvent = poll(pollFd.data(), pollFd.size(), static_cast<int>(coreTimeOut));
     if (totalEvent == -1)
     {
-        closeListenSockets();
-        server.closeClientConnection();
-        std::cerr << BG_RED << "Poll() faill (-1)" << RESET << std::endl;
-        throw   std::runtime_error(strerror(errno));
+        std::cerr << RED << "Poll: " << strerror(errno) << RESET << std::endl;
+        return NON;
     }
     server.wsrv_timeout_closer(pollFd); /* remove client that timed-out */
     // std::cout << GREEN << "[ " << totalEvent << " ]" << RED << " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
@@ -267,9 +268,9 @@ void    SocketManager::runCoreLoop(void) {
 			
             if ( _pollfd[i].revents & POLLIN ) {
                 
-					std::cout << "--- Reading Request---" << std::endl;
+				std::cout << "--- Reading Request---" << std::endl;
                 ClientState state = _server.readRequest(i - cltStart);
-                _clients[i-cltStart].setStartTime(std::time(NULL));
+                _clients[i - cltStart].setStartTime(std::time(NULL));
                 if (state == CS_READING_DONE)
                 {
                     _pollfd[i].events |= POLLOUT;
@@ -336,6 +337,7 @@ void    SocketManager::runCoreLoop(void) {
                         ssize_t sendByte = send(client.getFd(), client._cgiOut._output.c_str(), toSend, 0);
                         if (sendByte > 0)
                         {
+                            std::cout << client._cgiOut._output << std::endl;
                             client._cgiOut._output.erase(client._cgiOut._output.begin(), client._cgiOut._output.begin() + sendByte);
                             continue;
                         }
@@ -351,15 +353,15 @@ void    SocketManager::runCoreLoop(void) {
                 if (client.getStatus() != CS_CGI_REQ && client._sendInfo.resStatus != CS_WRITING_DONE)  /** Handle response for normal HTTP request */
 				{
                     client.setStartTime(std::time(NULL));
-					// std::cout << "------ Start Sending ------" << std::endl;
-					sendResponse(client);
+					std::cout << "------ Start Sending ------" << std::endl;
+					sendResponse(client, sessionManager);
 					size_t	dataLen = client._sendInfo.buff.size();
 					const char* dataPtr = client._sendInfo.buff.data();
 
 					ssize_t byte = send(_pollfd[i].fd, dataPtr, dataLen, 0);
 					if (byte == 0)
 					{
-						// std::cout << "CLose connection " << std::endl;
+						std::cout << "CLose connection " << std::endl;
 						_server.handleDisconnect(i - cltStart, _pollfd);
                         i--;
 						continue;
@@ -371,7 +373,7 @@ void    SocketManager::runCoreLoop(void) {
 				}
 				if (client._sendInfo.resStatus == CS_WRITING_DONE)
 				{
-                	// std::cout << "Finish writing" << std::endl;
+                	std::cout << "Finish writing" << std::endl;
                     if (client._sendInfo.connectionState == CLOSED) {
                         std::cout << "Flag Set" << std::endl;
                         _server.handleDisconnect(i - cltStart, _pollfd);
@@ -393,6 +395,8 @@ void    SocketManager::runCoreLoop(void) {
             }
         }
 	}
+    closeClientsSockets(_clients);
+    closeListenSockets();
 }
 
 bool    SocketManager::isCgiRequest(std::vector<struct pollfd>& pollFd, Client& client, size_t index)
@@ -513,3 +517,30 @@ void    displayPOllList(const std::vector<pollfd>& list) {
     }
     std::cout << GREEN << " -|" << RESET << std::endl;
 }
+
+void    SocketManager::closeClientsSockets(std::vector<Client>& clients) {
+    for (size_t i = 0; i < clients.size(); i++)
+    {
+        if (clients[i]._cgiProc._readPipe != -1)
+            close(clients[i]._cgiProc._readPipe);
+        if (clients[i]._cgiProc._childPid != -1)
+        {
+            kill(clients[i]._cgiProc._childPid, SIGKILL);
+            int status;
+            waitpid(clients[i]._cgiProc._childPid, &status, 0);
+        }
+        if (clients[i]._sendInfo.fd != -1)
+            close(clients[i]._sendInfo.fd);
+        if (clients[i]._sendInfo.buff.size() != 0)
+            clients[i]._sendInfo.buff.clear();
+        if (clients[i]._uploadFd != -1) /* Close Upload Fd if exist */
+            close(clients[i]._uploadFd);
+        if (clients[i]._reqInfo.buffer.size() != 0)
+            clients[i]._reqInfo.buffer.clear();
+        close(clients[i].getFd());
+    }
+    std::cout << INFO << GREEN << "Clients Resources are Cleanned" << RESET << std::endl;
+}
+
+
+// Changes: /*---------*/

@@ -131,6 +131,7 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 		close(inPipe[0]);  close(inPipe[1]);
 
 		execve(av[0], av, env);
+		
 		std::cerr << "execve() failed" << std::endl;
 
 		for (int i = 0; env[i]; ++i)

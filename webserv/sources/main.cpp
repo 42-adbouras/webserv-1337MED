@@ -136,7 +136,6 @@ int	main( int ac, char** av )
 
 		
 	} catch (std::exception& e) {
-		// std::cerr << "Server " << std::endl;
 		std::cerr << RED << e.what() << RESET << std::endl;
 		return (1);
 	}

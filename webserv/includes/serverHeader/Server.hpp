@@ -7,6 +7,8 @@
 #include <poll.h>
 #include <cstring>
 #include <cerrno>
+#include <csignal>
+
 typedef    size_t    wsrv_timer_t;
 
 #include "SocketManager.hpp"

@@ -1,7 +1,6 @@
 #include "../../includes/serverHeader/Server.hpp"
 #include "../../includes/serverHeader/Client.hpp"
 #include "../../includes/serverHeader/ServerUtils.hpp"
-#include <csignal>
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
@@ -67,6 +66,8 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     client._alreadyExec = false;
     client._cgiProc._readPipe = -1;
     client._cgiProc._childPid = -1;
+    client._reqInfo.reqStatus = CS_NEW;
+    client._sendInfo.resStatus = CS_NEW;
     temp.fd = client.getFd();
     temp.events = POLLIN;
     temp.revents = 0;
@@ -85,8 +86,6 @@ ClientState Server::readRequest(size_t cltIndx) {
     if (_client[cltIndx].getStatus() == CS_NEW) {
         _client[cltIndx].setRequest(Request());
     }
-    Request req = _client[cltIndx].getRequest();
-    // std::cout << "Server: Read Request from User fd=" << _client[cltIndx].getFd() << std::endl;
     rByte = recv(_client[cltIndx].getFd(), buff, SRV_READ_BUFFER, 0);
     if (rByte > 0)
     {
@@ -124,7 +123,8 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
         for (size_t i = _OpenPort + _client.size(); i < _pollfd.size(); i++) {
             if (_pollfd[i].fd == _client[index]._cgiProc._readPipe) {
                 if (_client[index]._cgiProc._childPid != -1) {
-                    CGI_errorResponse(_client[index], 504);
+                    _client[index]._cgiOut._code = 504;
+                    CGI_errorResponse(_client[index], _client[index]._cgiOut._code);
                     std::cout << "Time-out Response .." << std::endl;
                     g_console.log(INFO, str("Child process killed with success."), BLUE);
                     std::cout << "PID:" << _client[index]._cgiProc._childPid << std::endl;
@@ -189,6 +189,7 @@ Client& Server::getClientReqCGI(int pipeFd) {
 
 void    CGI_errorResponse(Client& client, int statusCode) {
     Request&    req = client.getRequest();
+    std::cout << "Code : " << statusCode << std::endl;
     // Response    res = client.getResponse();
     ServerEntry* _srvEntry = getSrvBlock( client._serverBlockHint, req );
     

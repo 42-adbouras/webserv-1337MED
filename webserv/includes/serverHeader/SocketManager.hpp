@@ -36,7 +36,7 @@ class   SocketManager {
         // void    hanldVirtualHost(TableOfListen& table, size_t index);
         // bool    checkIfAlreadyBinded(size_t index) const;
         void    closeListenSockets(void) const;
-        void    closeClientsSockets();
+        void    closeClientsSockets(std::vector<Client>& clients);
         serverBlockHint   detectServerBlock(int sockFd) const;
         void    rmClientFromPoll(std::vector<struct pollfd>& _pollfd, size_t  cltSize);
         // std::vector<ServerEntry>&    retrieveServerBlock(size_t index);

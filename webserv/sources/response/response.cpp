@@ -1,5 +1,6 @@
 #include "../../includes/response.hpp"
 #include "../../includes/serverHeader/ServerUtils.hpp"
+#include "../../includes/serverHeader/CookiesSessionManager.hpp"
 #include "Client.hpp"
 
 Response::Response( void )
@@ -200,11 +201,12 @@ Range parseRangeHeader(const std::string& rangeHeader, long long fileSize) {
 	return r;
 }
 
-void sendResponse(Client& client) {
+void sendResponse(Client& client, CookiesSessionManager& sessionManager) {
 	Response& response = client.getResponse();
 
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
+		userLoginHandl(client, sessionManager); /* if user enter to `/login` path, we assign session & cookies for it. */
 		str headers = response.generate();
 		client._sendInfo.buff.assign(headers.begin(), headers.end());
 		client._sendInfo.resStatus = CS_WRITING;

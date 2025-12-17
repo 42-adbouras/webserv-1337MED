@@ -29,6 +29,5 @@ struct  CONSOLE {
     }
 };
 
-// const std::string& toStrin
 
 extern CONSOLE g_console;
