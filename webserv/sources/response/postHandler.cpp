@@ -3,13 +3,19 @@
 #include "Client.hpp"
 
 void postHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client) {
-	/* if (!request.getBody().length()) {
-		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
-		return;
-	} */
 	Location location = getLocation(_srvEntry, request, response);
 	if (validateRequest(_srvEntry, request, response, location)) {
 		int type = fileStat(src);
+		if (response.getStatusCode() != 0) {
+			if (isFileExist(client._uploadPath)) {
+				if (std::remove(client._uploadPath.c_str()) != 0) {
+					getSrvErrorPage(response, _srvEntry, INTERNAL_SERVER_ERROR);
+					return;
+				}
+			}
+			getSrvErrorPage(response, _srvEntry, response.getStatusCode());
+			return;
+		}
 		if (!location._uploadStore.empty()) {
 			response.setStatus(CREATED);
 		} else {

@@ -15,12 +15,7 @@ void deleteHandler(ServerEntry *_srvEntry, Request& request, Response& response,
 			}
 			else if (isFileExist(src)) {
 				if (std::remove(src.c_str()) != 0) {
-					std::strerror(errno);
-					if (errno == EACCES || errno == EPERM) {
-						getSrvErrorPage(response, _srvEntry, FORBIDDEN);
-					}
-					else
-						getSrvErrorPage(response, _srvEntry, INTERNAL_SERVER_ERROR);
+					getSrvErrorPage(response, _srvEntry, INTERNAL_SERVER_ERROR);
 				}
 				else
 					response.setStatus(NO_CONTENT);

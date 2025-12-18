@@ -181,24 +181,30 @@ void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, 
 }
 
 void processClientRequest( Client& client ) {
-	Response response;
-
 	Request request = client.getRequest();
-	// std::vector<char> bufferVec = request.getBuffer();
-	// str buffer(bufferVec.begin(), bufferVec.end());
 
-	bool reqFlg = request.requestLineErrors( response );
+	bool reqFlg = request.requestLineErrors( client.getResponse() );
 	initPath(request);
 	if (!reqFlg) {
 		client.setClientState(CS_KEEPALIVE);
 	} else {
-		// if (requestErrors(request, response, client.getRequest().getSrvEntry())) {
-			str source = getSource(request, client.getRequest().getSrvEntry(), response);
-			response.setSrc(source);
-			checkMethod( client.getRequest().getSrvEntry(), client.getRequest(), response, source, client );
-		// }
+		str source = getSource(request, client.getRequest().getSrvEntry(), client.getResponse());
+		client.getResponse().setSrc(source);
+		checkMethod( client.getRequest().getSrvEntry(), client.getRequest(), client.getResponse(), source, client );
 	}
-	client.setResponse(response);
+	client.setResponse(client.getResponse());
+}
+
+void handlerReturn( Client& client ) {
+	if (client._state == REQUEST_COMPLETE) {
+		client._reqInfo.reqStatus = CS_READING_DONE;
+		processClientRequest( client );
+		
+		client.getLeftover().clear();
+		client._state = PARSING_HEADERS;
+		client.setExpectedBodyLength(0);
+		client.setIsChunked(false);
+	}
 }
 
 void multiPartParser( Client& client ) {
@@ -212,6 +218,9 @@ void multiPartParser( Client& client ) {
 		return;
 	}
 	str boundary = multipartHeader.substr(boundaryPos);
+	str delimiter = "--" + boundary.substr(9) + "\r\n";
+	str endDelimiter = "--" + boundary.substr(9) + "--\r\n";
+	str::size_type delimiterPos = client.getLeftover().find(delimiter);
 }
 
 void requestHandler( Client& client ) {
@@ -229,8 +238,9 @@ void requestHandler( Client& client ) {
 		size_t headersEndPos = client.getLeftover().find("\r\n\r\n");
 		if (headersEndPos == str::npos) {
 			if (client.getLeftover().size() > 8192) {
-				client.getResponse().setStatus(RANGE_NOT_SATISFIABLE);
+				client.getResponse().setStatus(REQUEST_HEADER_FIELDS_TOO_LARGE);
 				client._state = REQUEST_COMPLETE;
+				handlerReturn(client);
 			}
 			return;
 		}
@@ -248,10 +258,10 @@ void requestHandler( Client& client ) {
 
 		if (!requestErrors(client.getRequest(), client.getResponse(), client.getRequest().getSrvEntry())) {
 			client._state = REQUEST_COMPLETE;
+			handlerReturn( client );
 			return;
 		}
 
-		// set isChunked and content-length
 		HeadersMap::const_iterator te = headers.find("Transfer-Encoding");
 		HeadersMap::const_iterator cl = headers.find("Content-Length");
 
@@ -261,6 +271,7 @@ void requestHandler( Client& client ) {
 		if (client.getExpectedBodyLength() > _srvEntry->_maxBodySize) {
 			client.getResponse().setStatus(CONTENT_TOO_LARGE);
 			client._state = REQUEST_COMPLETE;
+			handlerReturn( client );
 			return;
 		}
 		client.getLeftover().erase(0, headersEndPos + 4);
@@ -270,12 +281,13 @@ void requestHandler( Client& client ) {
 
 	if (client._state == PARSING_BODY) {
 		if (client.getRequest().getMethod() == "POST") {
-			client._uploadPath = client.getResponse().getSrc() + "/file";
+			client._uploadPath = client.getResponse().getSrc().append("/file");
 			if (client._uploadFd <= 0) {
 				client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 				if (client._uploadFd == -1) {
 					client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
 					client._state = REQUEST_COMPLETE;
+					handlerReturn( client );
 					return;
 				}
 			}
@@ -283,12 +295,13 @@ void requestHandler( Client& client ) {
 			const HeadersMap& headers = client.getRequest().getHeaders();
 			if (!client.getIsChunked()) {
 				HeadersMap::const_iterator ct = headers.find("Content-Type");
-				if (ct->second != "multipart/form-data") {
+				if (ct->second.find("multipart/form-data;") == str::npos) {
 					// single file TO-DO
 					int bytesWritten = write(client._uploadFd, client.getLeftover().c_str(), client.getLeftover().size());
 					if (bytesWritten < 0) {
 						client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
 						client._state = REQUEST_COMPLETE;
+						handlerReturn( client );
 						return;
 					}
 					client._uploadedBytes += bytesWritten;
@@ -296,21 +309,13 @@ void requestHandler( Client& client ) {
 					if (client._uploadedBytes > client.getExpectedBodyLength()) {
 						client.getResponse().setStatus(BAD_REQUEST);
 						client._state = REQUEST_COMPLETE;
-						// return;
 					} else if (client._uploadedBytes < client.getExpectedBodyLength()) {
 						return;
 					} else {
 						client._state = REQUEST_COMPLETE;
 					}
 				} else {
-					// multipart
-					str multipartHeader = ct->second;
-					str::size_type boundaryPos = multipartHeader.find("boundary=");
-					if (boundaryPos == str::npos) {
-						client.getResponse().setStatus(BAD_REQUEST);
-						client._state = REQUEST_COMPLETE;
-					}
-					str boundary = multipartHeader.substr(boundaryPos);
+					multiPartParser( client );
 				}
 			} else {
 				size_t pos = 0;
@@ -342,13 +347,5 @@ void requestHandler( Client& client ) {
 		client._state = REQUEST_COMPLETE;
 	}
 
-	if (client._state == REQUEST_COMPLETE) {
-		client._reqInfo.reqStatus = CS_READING_DONE;
-		processClientRequest( client );
-
-		client.getLeftover().clear();
-		client._state = PARSING_HEADERS;
-		client.setExpectedBodyLength(0);
-		client.setIsChunked(false);
-	}
+	handlerReturn( client );
 }
