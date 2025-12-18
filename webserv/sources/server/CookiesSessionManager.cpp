@@ -87,13 +87,12 @@ void    userLoginHandl(Client& client, CookiesSessionManager& sessionManager) { 
 	std::cout << BG_BLUE << "path alter: " << client.getRequest().getPath() << RESET << std::endl;
     sessionManager.displayAllSession();
     const HeadersMap::const_iterator    it = client.getRequest().getHeaders().find(str("Cookie")); /* check if browser set Cookie */
-    if (it != client.getRequest().getHeaders().end())
+    if (it != client.getRequest().getHeaders().end()) /* browser send Cookie; so this User already have a Session */
     {
+        std::cout << "<<<<<<<<< Cookies exist >>>>>>>>>" << std::endl;
         int index;
-        std::cout << BG_RED << sessionManager.getParamValue(it->second, str("id")) << RESET << std::endl;
-        std::cout << BG_RED << sessionManager.getParamValue(it->second, str("counterLog")) << RESET << std::endl;
-        std::cout << "<<<<<<<<< Cookies exist >>>>>>>>>" << std::endl; /* i get the ID and CounterLog  */
-        index = sessionManager.findSessionIfExist(sessionManager.getParamValue(it->second, str("id")));
+        
+        index = sessionManager.findSessionIfExist(sessionManager.getParamValue(it->second, str("id"))); /* get idndex of the current User in SessionTable{} */
         if (index != -1)
         {
             std::cout << BG_BLUE << "Session ID exist in server DataBase: " << sessionManager.getParamValue(it->second, str("id")) << RESET << std::endl;
@@ -102,22 +101,13 @@ void    userLoginHandl(Client& client, CookiesSessionManager& sessionManager) { 
             sessionManager.setCookies(client, sessionManager.getParamValue(it->second, str("id")), sessionManager.getSessionTable()[index].second.logCounter);
             std::cout << GREEN << "Cookie i get: " << it->second << RESET << std::endl;
         }
-        else {
+        else { /* browser sent Cookie Header, but server restart so all Session removed */
             std::cout << BG_RED << "Session ID dosen't exist in the server DB" << std::endl;
             sessionManager.createNewSession(sessionManager, client);
         }
     }
-    else
-    {
+    else /* No Cookie Header sent by browser */
         sessionManager.createNewSession(sessionManager, client);
-        // const std::string   sessionId = sessionManager.generateSessionId();
-        // size_t  logCounter;
-
-        // sessionManager.addSession(sessionId);
-        // logCounter = sessionManager.getLogCounter(sessionId);
-        // sessionManager.setCookies(client, sessionId, logCounter);
-        // std::cout << BG_GREEN << "Session Id that i set: " << sessionId << RESET << std::endl;
-    }
 }
 
 void    CookiesSessionManager::createNewSession(CookiesSessionManager& sessionManager, Client& client) {
