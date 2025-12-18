@@ -5,7 +5,7 @@
 #include "./Client.hpp"
 
 #define ROOT_LOGIN "/login/"
-#define HOME_LOGIN "/login/index.html"
+#define SESSION_LOGIN "/login/session.html"
 #define PROFILE_LOGIN "/login/profile.html"
 
 struct  Session;
