@@ -81,9 +81,12 @@ int CookiesSessionManager::findSessionIfExist( const std::string& id ) const {
 
 void    userLoginHandl(Client& client, CookiesSessionManager& sessionManager) { /* handle session & cookies */
 	std::cout << BLUE << "path before: " << client.getRequest().getPath() << RESET << std::endl;
-    if (client.getRequest().getPath() != str(PROFILE_LOGIN) && client.getRequest().getPath() != str(HOME_LOGIN)
-        && client.getRequest().getPath() != str(ROOT_LOGIN))
-        return ;
+    if ( client.getRequest().getPath() != str(PROFILE_LOGIN)
+        && client.getRequest().getPath() != str(SESSION_LOGIN)
+        && client.getRequest().getPath() != str(ROOT_LOGIN) )
+    {
+        return;
+    }
 	std::cout << BG_BLUE << "path alter: " << client.getRequest().getPath() << RESET << std::endl;
     sessionManager.displayAllSession();
     const HeadersMap::const_iterator    it = client.getRequest().getHeaders().find(str("Cookie")); /* check if browser set Cookie */
