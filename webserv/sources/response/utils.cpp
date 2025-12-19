@@ -30,6 +30,7 @@ static std::map<str, str> rMimeMape() {
 		rM["video/x-matroska"] = ".mkv";
 		rM["application/font-woff"] = ".woff";
 		rM["application/font-woff2"] = ".woff2";
+		rM["text/x-sh"] = ".sh";
 	}
 	return rM;
 }
@@ -38,26 +39,27 @@ static std::map<str, str> mimeMap() {
 	std::map<str, str> m;
 	if (m.empty()) {
 		m[".html"] = "text/html; charset=UTF-8";
-		m[".htm"]  = "text/html; charset=UTF-8";
-		m[".css"]  = "text/css";
-		m[".py"]   = "text/x-python";
-		m[".php"]  = "application/x-httpd-php";
-		m[".js"]   = "application/javascript";
+		m[".htm"] = "text/html; charset=UTF-8";
+		m[".css"] = "text/css";
+		m[".py"] = "text/x-python";
+		m[".php"] = "application/x-httpd-php";
+		m[".js"] = "application/javascript";
 		m[".json"] = "application/json";
-		m[".xml"]  = "application/xml";
-		m[".txt"]  = "text/plain";
-		m[".png"]  = "image/png";
-		m[".jpg"]  = "image/jpeg";
+		m[".xml"] = "application/xml";
+		m[".txt"] = "text/plain";
+		m[".png"] = "image/png";
+		m[".jpg"] = "image/jpeg";
 		m[".jpeg"] = "image/jpeg";
-		m[".gif"]  = "image/gif";
-		m[".svg"]  = "image/svg+xml";
-		m[".pdf"]  = "application/pdf";
-		m[".zip"]  = "application/zip";
-		m[".mp3"]  = "audio/mpeg";
-		m[".mp4"]  = "video/mp4";
+		m[".gif"] = "image/gif";
+		m[".svg"] = "image/svg+xml";
+		m[".pdf"] = "application/pdf";
+		m[".zip"] = "application/zip";
+		m[".mp3"] = "audio/mpeg";
+		m[".mp4"] = "video/mp4";
 		m[".mkv"] = "video/x-matroska";
 		m[".woff"] = "application/font-woff";
-		m[".woff2"]= "application/font-woff2";
+		m[".woff2"] = "application/font-woff2";
+		m[".sh"] = "text/x-sh";
 	}
 	return m;
 }

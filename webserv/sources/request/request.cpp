@@ -65,7 +65,7 @@ void Request::parseRequestLine( str& input ) {
 const char* Request::valid_methods[] = {
 	"GET", "POST", "DELETE", 0
 };
-bool Request::is_valid_method( const str& method ) const {
+bool Request::isValidMethod( const str& method ) const {
 	for (size_t i=0; valid_methods[i]!=0; ++i) {
 		if (method == valid_methods[i])
 			return true;
@@ -73,7 +73,7 @@ bool Request::is_valid_method( const str& method ) const {
 	return false;
 }
 
-bool Request::parse_query_params( const str& path ) {
+bool Request::parseQueryParams( const str& path ) {
 	_path = path;
 
 	str::size_type pos = path.find('?');
@@ -104,7 +104,7 @@ void initPath( Request& request ) {
 		request.setPath(normalizePath(uri.substr(0, pos)));
 	else
 		request.setPath(normalizePath(uri));
-	request.setPath(urlDecode(uri));
+	request.setPath(urlDecode(request.getPath()));
 }
 
 bool Request::requestLineErrors( Response& response ) {
@@ -112,7 +112,7 @@ bool Request::requestLineErrors( Response& response ) {
 		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
 		return false;
 	}
-	if (!is_valid_method( _method )) {
+	if (!isValidMethod( _method )) {
 		getSrvErrorPage(response, _srvEntry, NOT_IMPLEMENTED);
 		return false;
 	}
@@ -124,7 +124,7 @@ bool Request::requestLineErrors( Response& response ) {
 		getSrvErrorPage(response, _srvEntry, URI_TOO_LONG);
 		return false;
 	}
-	if (!parse_query_params( _Uri ) || !UriAllowedChars( _Uri )) {
+	if (!parseQueryParams( _Uri ) || !UriAllowedChars( _Uri )) {
 		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
 		return false;
 	}
@@ -181,14 +181,12 @@ void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, 
 }
 
 void processClientRequest( Client& client ) {
-	Request request = client.getRequest();
-
-	bool reqFlg = request.requestLineErrors( client.getResponse() );
-	initPath(request);
+	bool reqFlg = client.getRequest().requestLineErrors( client.getResponse() );
+	initPath(client.getRequest());
 	if (!reqFlg) {
 		client.setClientState(CS_KEEPALIVE);
 	} else {
-		str source = getSource(request, client.getRequest().getSrvEntry(), client.getResponse());
+		str source = getSource(client.getRequest(), client.getRequest().getSrvEntry(), client.getResponse());
 		client.getResponse().setSrc(source);
 		checkMethod( client.getRequest().getSrvEntry(), client.getRequest(), client.getResponse(), source, client );
 	}
@@ -207,22 +205,6 @@ void handlerReturn( Client& client ) {
 	}
 }
 
-void multiPartParser( Client& client ) {
-	const HeadersMap& headers = client.getRequest().getHeaders();
-	HeadersMap::const_iterator ct = headers.find("Content-Type");
-	str multipartHeader = ct->second;
-	str::size_type boundaryPos = multipartHeader.find("boundary=");
-	if (boundaryPos == str::npos) {
-		client.getResponse().setStatus(BAD_REQUEST);
-		client._state = REQUEST_COMPLETE;
-		return;
-	}
-	str boundary = multipartHeader.substr(boundaryPos);
-	str delimiter = "--" + boundary.substr(9) + "\r\n";
-	str endDelimiter = "--" + boundary.substr(9) + "--\r\n";
-	str::size_type delimiterPos = client.getLeftover().find(delimiter);
-}
-
 void requestHandler( Client& client ) {
 	if (client.getStatus() == CS_NEW) {
 		client._reqInfo.reqStatus = CS_READING;
@@ -237,11 +219,6 @@ void requestHandler( Client& client ) {
 	if (client._state == PARSING_HEADERS) {
 		size_t headersEndPos = client.getLeftover().find("\r\n\r\n");
 		if (headersEndPos == str::npos) {
-			if (client.getLeftover().size() > 8192) {
-				client.getResponse().setStatus(REQUEST_HEADER_FIELDS_TOO_LARGE);
-				client._state = REQUEST_COMPLETE;
-				handlerReturn(client);
-			}
 			return;
 		}
 		str rawHeaders = client.getLeftover().substr(0, headersEndPos + 4);
@@ -281,22 +258,22 @@ void requestHandler( Client& client ) {
 
 	if (client._state == PARSING_BODY) {
 		if (client.getRequest().getMethod() == "POST") {
-			client._uploadPath = client.getResponse().getSrc().append("/file");
-			if (client._uploadFd <= 0) {
-				client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-				if (client._uploadFd == -1) {
-					client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
-					client._state = REQUEST_COMPLETE;
-					handlerReturn( client );
-					return;
-				}
-			}
-			client._uploadPath = client.getResponse().getSrc();
 			const HeadersMap& headers = client.getRequest().getHeaders();
 			if (!client.getIsChunked()) {
 				HeadersMap::const_iterator ct = headers.find("Content-Type");
 				if (ct->second.find("multipart/form-data;") == str::npos) {
-					// single file TO-DO
+					// single file
+					client._uploadPath = client.getResponse().getSrc().append("/file");
+					if (client._uploadFd <= 0) {
+						client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+						if (client._uploadFd == -1) {
+							client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
+							client._state = REQUEST_COMPLETE;
+							handlerReturn( client );
+							return;
+						}
+					}
+					client._uploadPath = client.getResponse().getSrc();
 					int bytesWritten = write(client._uploadFd, client.getLeftover().c_str(), client.getLeftover().size());
 					if (bytesWritten < 0) {
 						client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
@@ -315,9 +292,41 @@ void requestHandler( Client& client ) {
 						client._state = REQUEST_COMPLETE;
 					}
 				} else {
-					multiPartParser( client );
+					// multipart
+					if (!client._multipartParser.isActive()) {
+						client._multipartParser.init( ct->second, client.getResponse().getSrc()
+													, client.getExpectedBodyLength() );
+						if (client._multipartParser.hasError()) {
+							client.getResponse().setStatus(BAD_REQUEST);
+							client._state = REQUEST_COMPLETE;
+							handlerReturn(client);
+							return;
+						}
+					}
+					MultipartParser::Result res = client._multipartParser.feed( client.getLeftover().c_str()
+																				, client.getLeftover().size() );
+					
+					std::cout << "RESULT: " << res << std::endl;
+					std::cout << "LEFTOVER BEFORE ------ : " << client.getLeftover() << std::endl;
+					client.getLeftover().clear();
+					std::cout << "LEFTOVER AFTER ------ : " << client.getLeftover() << std::endl;
+					if (res == MultipartParser::ERROR) {
+						client.getResponse().setStatus(BAD_REQUEST);
+						client._state = REQUEST_COMPLETE;
+						handlerReturn(client);
+						return;
+					} else if (res == MultipartParser::COMPLETE) {
+						client._state = REQUEST_COMPLETE;
+						handlerReturn(client);
+						return;
+					}
+					else {
+						return;
+					}
+					// multiPartParser( client );
 				}
 			} else {
+				// chunked
 				size_t pos = 0;
 				str body;
 				while (true) {

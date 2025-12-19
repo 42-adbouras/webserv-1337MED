@@ -26,8 +26,8 @@ private:
 
 	static const char* valid_methods[];
 
-	bool is_valid_method( const str& method ) const;
-	bool parse_query_params( const str& path );
+	bool isValidMethod( const str& method ) const;
+	bool parseQueryParams( const str& path );
 
 public:
 	Request( void );
