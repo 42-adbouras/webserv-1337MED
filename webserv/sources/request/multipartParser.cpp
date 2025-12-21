@@ -38,8 +38,10 @@ MultipartParser::Result MultipartParser::feed( const char* data, size_t len ) {
 		return ERROR;
 	}
 
-	for(;;) {
-		Result r;
+	for (;;) {
+		Result r = NEED_MORE;
+		int stateBefore = _state;
+		size_t bufferSizeBefore = _buffer.size();
 		if (_state == ST_EXPECT_BOUNDARY)
 			r = processBoundary();
 		else if (_state == ST_PART_HEADERS)
@@ -48,8 +50,6 @@ MultipartParser::Result MultipartParser::feed( const char* data, size_t len ) {
 			r = processPartBody(_buffer.size());
 		else if (_state == ST_DONE)
 			return COMPLETE;
-		else
-			break;
 
 		if (r == ERROR) {
 			_error = true;
@@ -57,7 +57,13 @@ MultipartParser::Result MultipartParser::feed( const char* data, size_t len ) {
 		}
 		if (r == COMPLETE)
 			return COMPLETE;
+
+		bool stateChanged = (_state != stateBefore);
+		bool dataConsumed = (_buffer.size() < bufferSizeBefore);
 		
+		if (!stateChanged && !dataConsumed)
+			break;
+
 		if (_buffer.empty())
 			break;
 	}
@@ -119,17 +125,26 @@ MultipartParser::Result MultipartParser::processPartBody( size_t available ) {
 		boundPos = _buffer.find(_closingBoundary);
 
 	if (boundPos == std::string::npos) {
-		size_t safe = (available > 4) ? available - 4 : 0;
+		size_t safe = (available > _boundary.size()) ? available - _boundary.size() : 0;
 		if (safe > 0 && _curFd != -1) {
-			write(_curFd, _buffer.data(), safe);
+			ssize_t written = write(_curFd, _buffer.data(), safe);
+			if (written < 0 || written != static_cast<ssize_t>(safe)) {
+				_error = true;
+				return ERROR;
+			}
 			_buffer.erase(0, safe);
 		}
 		return NEED_MORE;
 	}
 
 	if (boundPos >= 2 && _buffer.substr(boundPos - 2, 2) == "\r\n") {
-		if (_curFd != -1)
-			write(_curFd, _buffer.data(), boundPos - 2);
+		if (_curFd != -1) {
+			ssize_t written = write(_curFd, _buffer.data(), boundPos - 2);
+			if (written < 0 || written != static_cast<ssize_t>(boundPos - 2)) {
+				_error = true;
+				return ERROR;
+			}
+		}
 		_buffer.erase(0, boundPos);
 		_state = ST_EXPECT_BOUNDARY;
 		return NEED_MORE;

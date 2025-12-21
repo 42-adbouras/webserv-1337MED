@@ -242,8 +242,14 @@ void requestHandler( Client& client ) {
 		HeadersMap::const_iterator te = headers.find("Transfer-Encoding");
 		HeadersMap::const_iterator cl = headers.find("Content-Length");
 
-		client.setIsChunked(te->second == "chunked");
-		client.setExpectedBodyLength(sToSize_t(cl->second));
+		if (te != headers.end()) {
+			client.setIsChunked(te->second == "chunked");
+		}
+		if (cl != headers.end()) {
+			client.setExpectedBodyLength(sToSize_t(cl->second));
+		} else {
+			client.setExpectedBodyLength(0);
+		}
 
 		if (client.getExpectedBodyLength() > _srvEntry->_maxBodySize) {
 			client.getResponse().setStatus(CONTENT_TOO_LARGE);
@@ -303,13 +309,8 @@ void requestHandler( Client& client ) {
 							return;
 						}
 					}
-					MultipartParser::Result res = client._multipartParser.feed( client.getLeftover().c_str()
-																				, client.getLeftover().size() );
-					
-					std::cout << "RESULT: " << res << std::endl;
-					std::cout << "LEFTOVER BEFORE ------ : " << client.getLeftover() << std::endl;
+					MultipartParser::Result res = client._multipartParser.feed( client.getLeftover().c_str(), client.getLeftover().size() );
 					client.getLeftover().clear();
-					std::cout << "LEFTOVER AFTER ------ : " << client.getLeftover() << std::endl;
 					if (res == MultipartParser::ERROR) {
 						client.getResponse().setStatus(BAD_REQUEST);
 						client._state = REQUEST_COMPLETE;
@@ -323,34 +324,31 @@ void requestHandler( Client& client ) {
 					else {
 						return;
 					}
-					// multiPartParser( client );
 				}
 			} else {
 				// chunked
-				size_t pos = 0;
-				str body;
-				while (true) {
-					str::size_type chunkSize = client.getLeftover().find("\r\n", pos);
-					if (chunkSize == str::npos)
-						return;
-					str hex = client.getLeftover().substr(pos, chunkSize - pos);
-					sstream ss;
-					ss << std::hex << hex;
-					size_t x = 0;
-					ss >> x;
-					if (client.getLeftover().size() < chunkSize + 2 + x + 2)
-						return;
-					if (x == 0) {
-						pos = chunkSize + 2;
+				client._uploadPath = client.getResponse().getSrc().append("/ChunkedFile");
+				if (!client._chunkedParser.isActive()) {
+					client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+					if (client._uploadFd == -1) {
+						client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
 						client._state = REQUEST_COMPLETE;
-						break;
+						handlerReturn( client );
+						return;
 					}
-					// write(fd, client.getLeftover().substr(chunkSize + 2).c_str(), client.getLeftover().substr(chunkSize + 2).size());
-					body.append(client.getLeftover().substr(chunkSize + 2, x));
-					pos = chunkSize + 2 + x + 2;
+					client._chunkedParser.init(client._uploadFd);
 				}
-				client.getRequest().setBody(body);
-				client.getLeftover().erase(0, pos);
+				ChunkedParser::Result res = client._chunkedParser.feed(client.getLeftover().data(), client.getLeftover().size());
+				client.getLeftover().clear();
+
+				if (res == ChunkedParser::ERROR) {
+					client.getResponse().setStatus(BAD_REQUEST);
+				}
+				else if (res == ChunkedParser::COMPLETE) {
+					client._state = REQUEST_COMPLETE;
+				} else {
+					return;
+				}
 			}
 		}
 		client._state = REQUEST_COMPLETE;

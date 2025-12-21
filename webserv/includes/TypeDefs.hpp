@@ -28,6 +28,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <iostream>
+#include <sys/time.h>
 
 struct Token;
 typedef std::string						str;
