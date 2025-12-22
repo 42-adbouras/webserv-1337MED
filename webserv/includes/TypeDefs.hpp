@@ -79,7 +79,7 @@ typedef std::map<str, str>				QueryMap;
 #define CGI_SEND_BUFFER 4096 // => 4KB
 #define CGI_R_BUFFER 4096 // => 4KB
 
-#define CGI_TIME_OUT 3 // => 60seconde
+#define CGI_TIME_OUT 10 // => 60seconde
 
 // struct CGIEntry
 // {

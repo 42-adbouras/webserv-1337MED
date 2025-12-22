@@ -1,17 +1,17 @@
 #pragma once
 
 #include  "./Client.hpp"
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <poll.h>
+// #include <poll.h>
 #include <cstring>
-#include <cerrno>
+// #include <cerrno>
+#include <csignal>
+
 typedef    size_t    wsrv_timer_t;
 
 #include "SocketManager.hpp"
 #include "CookiesSessionManager.hpp"
-#include <fcntl.h>
 
 struct Data;
 class Server

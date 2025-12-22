@@ -1,5 +1,6 @@
 #include "../../includes/response.hpp"
 #include "../../includes/serverHeader/ServerUtils.hpp"
+#include "../../includes/serverHeader/CookiesSessionManager.hpp"
 #include "Client.hpp"
 
 Response::Response( void )
@@ -200,7 +201,7 @@ Range parseRangeHeader(const std::string& rangeHeader, long long fileSize) {
 	return r;
 }
 
-void sendResponse(Client& client) {
+void sendResponse(Client& client, CookiesSessionManager& sessionManager) {
 	Response& response = client.getResponse();
 
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();

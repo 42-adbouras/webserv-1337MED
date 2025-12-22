@@ -131,6 +131,7 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 		close(inPipe[0]);  close(inPipe[1]);
 
 		execve(av[0], av, env);
+		
 		std::cerr << "execve() failed" << std::endl;
 
 		for (int i = 0; env[i]; ++i)
@@ -141,7 +142,7 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 	*alreadyExec = true;
 	close(inPipe[0]);
 	close(outPipe[1]);
-	const str body = req._body; 
+	const str body = req._body;
 	if(!body.empty()) {
 		write(inPipe[1], body.c_str(), body.size());
 	}
@@ -156,10 +157,8 @@ void readChild(Client& client)
     std::vector<char>   buff(CGI_R_BUFFER);
 
     ssize_t readByte = read(client._cgiProc._readPipe, buff.data(), buff.size());
-
     if (readByte > 0)
     {
-		// buff[readByte] = '\0';
 		std::cout << "readByte>0: Reading data success.." << std::endl;
 		std::string newBody = client.getResponse().getBody();
 		newBody.append(buff.data(), readByte);
@@ -181,25 +180,25 @@ void readChild(Client& client)
     }
     if (readByte < 0 )
     {
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-		{
-			std::cout << "ERRNO EWOULDBLOCK" << std::endl;
-			/*No data yet, but child still running*/
-			client.setCltCgiState(CCS_RUNNING);
-		}
-		else{
-			out._code = 500;
-			close(client._cgiProc._readPipe);
-			client._cgiProc._readPipe = -1;
+		// if (errno == EAGAIN || errno == EWOULDBLOCK)
+		// {
+		// 	std::cout << "ERRNO EWOULDBLOCK" << std::endl;
+		// 	/*No data yet, but child still running*/
 			client.setCltCgiState(CCS_FAILLED);
-		}
-		std::cout << "readByte<0: error detected" << std::endl;
+		// }
+		// else{
+			out._code = 500;
+			// close(client._cgiProc._readPipe);
+			// client._cgiProc._readPipe = -1;
+			// client.setCltCgiState(CCS_FAILLED);
+		// }
+		// std::cout << "readByte<0: error detected" << std::endl;
     }
 	client._cgiOut._code = out._code;
 }
 
 void	generate_CGI_Response(Client& client) {
-	Response    res = client.getResponse();
+	// Response    res = client.getResponse();
 	
 	// if (client.getCltCgiState() == CCS_FAILLED) {
 	// getSrvErrorPage(res, res.srvEntry, INTERNAL_SERVER_ERROR);
@@ -209,9 +208,9 @@ void	generate_CGI_Response(Client& client) {
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		client._cgiOut._code = 500;
 	client._cgiProc._childPid = -1;
-	res.setStatus(client._cgiOut._code);
-	res.addHeaders("Content-Type", "text/plain");
+	client.getResponse().setStatus(client._cgiOut._code);
+	client.getResponse().addHeaders("Content-Type", "text/plain");
 	// res.addHeaders("Content-Length", iToString(res.getContentLength()));
-	client.setResponse(res);
-	client._cgiOut._output = res.generate();
+	client.setResponse(client.getResponse());
+	client._cgiOut._output = client.getResponse().generate();
 }

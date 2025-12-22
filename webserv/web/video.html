@@ -121,7 +121,7 @@
 
             <div class="video-container">
                 <video id="main-video" controls style="position:absolute; width:100%; height:100%;">
-                    <source id="video-source" src="./assets/TearsOfSteel.mp4" type="video/mp4">
+                    <source id="video-source" src="./assets/video/TearsOfSteel.mp4" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
             </div>
@@ -142,10 +142,10 @@
             <div class="grid grid-3">
                 <!-- Video Item 1 -->
                 <div class="card" style="padding: 1rem; cursor: pointer;"
-                    onclick="switchVideo('./assets/Sintel.mp4', 'Sintel')">
+                    onclick="switchVideo('http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', 'Sintel')">
                     <div class="thumbnail">
                         <!-- Placeholder duration or extract if possible, but hardcoding for now -->
-                        <div class="duration">Movie</div>
+                        <div class="duration">Anime</div>
                     </div>
                     <h4>Sintel</h4>
                     <p style="font-size: 0.9rem; color: var(--text-secondary);">Animation</p>
@@ -153,11 +153,32 @@
 
                 <!-- Video Item 2 -->
                 <div class="card" style="padding: 1rem; cursor: pointer;"
-                    onclick="switchVideo('./assets/VolkswagenGTIReview.mp4', 'Volkswagen GTI Review')">
+                    onclick="switchVideo('http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', 'Elephant Dream')">
                     <div class="thumbnail">
-                        <div class="duration">Review</div>
+                        <div class="duration">Elephant Dream</div>
                     </div>
-                    <h4>Volkswagen GTI Review</h4>
+                    <h4>The first Blender Open Movie from 2006</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Cars</p>
+                </div>
+            </div>
+                <!-- Video Item 3 -->
+                <div class="card" style="padding: 1rem; cursor: pointer;"
+                    onclick="switchVideo('http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4', 'Elephant Dream')">
+                    <div class="thumbnail">
+                        <div class="duration">By Garage419</div>
+                    </div>
+                    <h4>Subaru Outback On Street And Dirt</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Cars</p>
+                </div>
+            </div>
+            </div>
+                <!-- Video Item 4 -->
+                <div class="card" style="padding: 1rem; cursor: pointer;"
+                    onclick="switchVideo('./assets/video/TearsOfSteel.mp4', 'Elephant Dream')">
+                    <div class="thumbnail">
+                        <div class="duration">Volkswagen GTI Review</div>
+                    </div>
+                    <h4>Subaru Outback On Street And Dirt</h4>
                     <p style="font-size: 0.9rem; color: var(--text-secondary);">Cars</p>
                 </div>
             </div>

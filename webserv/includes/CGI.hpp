@@ -21,6 +21,19 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+/*  CGI error codes  */
+
+// #define	INTER_SERVER_ERROR 500 		// internal server error 500
+// #define	GATEWAY_TIMEOUT 504 	// Gateway Timeout 504
+// #define	Forbiden 403 	// Forbiden 504
+
+/* CGI error Messages */
+
+#define INTER_SRVR_ERR "500 Internal Server Error"
+#define GATEWAY_TIMEOUT "504 Gateway Timeout"
+#define Forbiden "403 Forbidden"
+
+
 struct CGIContext
 {
 	str			_path;

@@ -8,6 +8,7 @@
 
 /* macro for output messages */
 
+#define CGI_SCRIPT "[ ./RUN-CGI ]"
 #define INFO "[ INFO ]"
 #define CONNECTION "[ CONNECTION ]"
 #define TIME_OUT    "[ TIME-OUT ]"
@@ -20,8 +21,6 @@
 #define WARNING "[ WARNING ]"
 #include <iostream>
 
-
-
 struct  CONSOLE {
     std::string message;
     CONSOLE() {};
@@ -30,6 +29,5 @@ struct  CONSOLE {
     }
 };
 
-// const std::string& toStrin
 
 extern CONSOLE g_console;

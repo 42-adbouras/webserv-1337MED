@@ -25,6 +25,9 @@
 #include "Lexer.hpp"
 // #include ""
 
+#define DEF_HEADER_TIME_OUT 10 //s
+#define DEF_CGI_TIME_OUT 10 //s
+
 class ParsingError : public std::exception
 {
 private:
