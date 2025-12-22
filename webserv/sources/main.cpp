@@ -75,22 +75,12 @@ int	main( int ac, char** av )
 		// ----------------------------------------------------------
 		
 		std::vector<TableOfListen>	tableOfListen;
-		SocketManager	socketManager(config, tableOfListen);
-		socketManager.setTableOfListen(tableOfListen);
-
+		SocketManager	socketManager( config, tableOfListen );
+		socketManager.setTableOfListen( tableOfListen );
+		socketManager.hanldVirtualHost( tableOfListen );
 		// displayHashTable(tableOfListen);
-		for (size_t i = 0; i < tableOfListen.size(); i++)
-		{
-			for (size_t k = i; k < tableOfListen.size(); k++)
-			{
-				if (i == k || tableOfListen[i]._interfaceState.alreadyBinded == true)
-					continue ; /* prevent check the same table */
-				if (tableOfListen[i] == tableOfListen[k])
-				{
-					tableOfListen[k]._interfaceState.alreadyBinded = true;
-				}
-			}
-		}/*****************************/
+
+		/*****************************/
 		// for (size_t i = 0; i < tableOfListen.size(); i++)
 		// {
 		// 	if (tableOfListen[i]._interfaceState.alreadyBinded == false)

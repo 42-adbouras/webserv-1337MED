@@ -4,9 +4,9 @@
 #include <ctime>
 #include "./Client.hpp"
 
-#define ROOT_LOGIN "/login/"
-#define SESSION_LOGIN "/login/session.html"
-#define PROFILE_LOGIN "/login/profile.html"
+#define ROOT_LOGIN "/login"
+// #define SESSION_LOGIN "/login/session.html"
+// #define PROFILE_LOGIN "/login/profile.html"
 
 struct  Session;
 
@@ -31,7 +31,7 @@ class CookiesSessionManager
 };
 
 struct  Session {
-    std::string     name;
+    // std::string     name;
     size_t          logCounter;
 };
 

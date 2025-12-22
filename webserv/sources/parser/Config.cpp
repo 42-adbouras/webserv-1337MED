@@ -27,8 +27,8 @@ ParsingError::ParsingError( const str& msg, const str& path, const Token& cur )
 }
 
 ServerEntry::ServerEntry( void )
-	: _listenSet(false), _serverName(""), _root("/html"), _maxBodySize(0), _cltHeadTimeout(60)
-	, _cltBodyTimeout(60), _keepAliveTimeout(75)
+	: _listenSet(false), _serverName(""), _root("/html"), _maxBodySize(0), _cltHeadTimeout(DEF_HEADER_TIME_OUT)
+	, _cltBodyTimeout(DEF_HEADER_TIME_OUT), _keepAliveTimeout(DEF_HEADER_TIME_OUT)
 {
 	_listen.insert(std::make_pair("0.0.0.0", "8080"));
 }

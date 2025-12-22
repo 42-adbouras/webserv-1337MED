@@ -142,7 +142,7 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 	*alreadyExec = true;
 	close(inPipe[0]);
 	close(outPipe[1]);
-	const str body = req._body; 
+	const str body = req._body;
 	if(!body.empty()) {
 		write(inPipe[1], body.c_str(), body.size());
 	}

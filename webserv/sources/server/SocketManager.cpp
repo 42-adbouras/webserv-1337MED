@@ -4,12 +4,6 @@
 #include "../../includes/serverHeader/Client.hpp"
 #include "../../includes/serverHeader/CookiesSessionManager.hpp"
 #include "../../includes/response.hpp"
-#include <cerrno>
-#include <cstddef>
-#include <cstring>
-#include <iostream>
-#include <stdexcept>
-#include <sys/poll.h>
 
 bool    g_run = true;
 
@@ -17,6 +11,24 @@ void    signalHandler(int sig) {
     std::cout << "\nSignal is: " << sig  << std::endl;
 	g_run = false;
     return;
+}
+
+void    SocketManager::hanldVirtualHost( std::vector<TableOfListen>& tableOfListen ) {
+    /**
+     * just i set the apropriate state for each Listen directives in .conf file;
+     * that will help to bind all Listen & prevent duplicate binding
+    */
+
+    for (size_t i = 0; i < tableOfListen.size(); i++)
+    {
+        for (size_t k = i; k < tableOfListen.size(); k++)
+        {
+            if (i == k || tableOfListen[i]._interfaceState.alreadyBinded == true)
+                continue ; /* prevent check the same table */
+            if (tableOfListen[i] == tableOfListen[k])
+                tableOfListen[k]._interfaceState.alreadyBinded = true;
+        }
+    }
 }
 
 SocketManager::SocketManager(Data& config, std::vector<TableOfListen>& tableOfListen) : _config(&config), _tableOfListen(tableOfListen) {
@@ -44,10 +56,6 @@ void    SocketManager::setTableOfListen(std::vector<TableOfListen>& table) {
             it++;
         }
     }
-}
-
-int SocketManager::setNonBlocking(int fd) {
-    return (fcntl(fd, F_SETFL, O_NONBLOCK));
 }
 
 void    SocketManager::initSockets(void) {
@@ -96,40 +104,7 @@ void    SocketManager::initSockets(void) {
     }
 }
 
-void    SocketManager::bindSockets(size_t counter) {
-    int status = 0;
 
-    status = bind(_tableOfListen[counter]._fd, reinterpret_cast<struct sockaddr*>(&_tableOfListen[counter].addr), sizeof(struct sockaddr));
-    if (status != 0) {
-        std::cerr << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << ", " << counter;
-        throw std::runtime_error(strerror(errno));
-    }
-    else  if (status == 0) {
-        std::cout << GREEN << "IP:PORT->" << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << RESET << std::endl;
-        std::cout << "socket fd " << _tableOfListen[counter]._fd << ": binded successfull" << std::endl;
-    }
-}
-
-void    SocketManager::listenToPorts(void) {
-    int status;
-
-	for (size_t i = 0; i < _tableOfListen.size(); i++)
-    {
-        if (_tableOfListen[i]._interfaceState.alreadyBinded)
-            continue;
-        // std::cout << GREEN << "<< " << _tableOfListen[i]._ip << ", " << _tableOfListen[i]._port << " >>" << RESET << std::endl;
-        if ((status = listen(_tableOfListen[i]._fd, SOMAXCONN)) == 0)
-        {
-            std::cout << LISTEN << CYAN <<  "Socket FD=" << _tableOfListen[i]._fd << " listening" << RESET << std::endl;
-        }
-        else if(status != 0)
-        {
-            closeListenSockets();
-            std::cout << _tableOfListen[i]._ip << _tableOfListen[i]._port << std::endl;
-            std::runtime_error(strerror(errno));
-        }
-    }
-}
 
 void    SocketManager::setListenEvent(std::vector<struct pollfd>& _pollfd) {
     size_t  count = 0;
@@ -188,17 +163,16 @@ Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Serv
         std::cerr << RED << "Poll: " << strerror(errno) << RESET << std::endl;
         return NON;
     }
-    server.wsrv_timeout_closer(pollFd); /* remove client that timed-out */
-    // std::cout << GREEN << "[ " << totalEvent << " ]" << RED << " <<<<<<< EVENTS OCCURED ! >>>>>>>" << RESET << std::endl;
+    server.wsrv_timeout_closer(pollFd); /* remove client that timed-out  */
     return NON;
 }
-
-void    SocketManager::handlErrCloses(std::vector<struct pollfd>& _pollfd, Server& server, size_t cltSize){
+//
+void    SocketManager::handlErrCloses( std::vector<struct pollfd>& _pollfd, Server& server ){
     size_t  clientStart = portCounter();
-    (void)cltSize;
+
     for (size_t i = clientStart; i < server.getListOfClients().size(); i++)
     {
-        if ( _pollfd[i].revents & (POLLHUP | POLLERR | POLLNVAL) )
+        if ( _pollfd[i].revents & ( POLLHUP | POLLERR | POLLNVAL ) )
         {
             std::cout << WARNING << RED << "Client FD=" << _pollfd[i].fd << " Closed Connection Unexpectedly" << RESET << std::endl;
             server.handleDisconnect(i - portCounter(), _pollfd);
@@ -218,40 +192,35 @@ void    SocketManager::runCoreLoop(void) {
     signal(SIGPIPE, SIG_IGN);
     while (g_run)
     {
-/* -------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------*/
+        sessionManager.displayAllSession();
+        /*
+         ** Main loop events:
+         ** polling for incoming event (POLLIN & POLLOUT || ( POLLHUP | POLLERR | POLLNVAL ))
+        */
+        PollingForEvents(_pollfd, _server, _clients.size());
         /**
-         * TODO:
-         * set apropriate response for user time-out ...
-         * 
-         */
-        if (PollingForEvents(_pollfd, _server, _clients.size()) == S_TIMEDOUT)
-            continue;
-        handlErrCloses(_pollfd, _server, _clients.size()); // handle close/error from client-side.
-/*
- ++++++++++++++++++  Check Listen Sockets For new Connect: ++++++++++++++++++
- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-*/ 
+         *  handle close/error from client-side. 
+         *  if one of these events ( POLLHUP | POLLERR | POLLNVAL ) occure.
+         * */
+        handlErrCloses( _pollfd, _server );
+/*++++++++++++++++++  Check Listen Sockets For new Connect: ++++++++++++++++++*/ 
+        /**
+         * Loop over all listening socket for incoming new Client,
+         * accept & add him to the pollfd{}
+        */
         checkForNewClients(_pollfd, _server);
 /*
- ++++++++++++++++++      Lists Available Ports & Users:     ++++++++++++++++++
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-*/ 
-        // std::cout << BG_CYAN << "All Pollfd: \n[";
-        // for (size_t i = 0; i < _pollfd.size(); i++)
-        // {
-        //     std::cout << _pollfd[i].fd << '|' << std::endl;
-        // }
-        // std::cout << ']' << RESET << std::endl;
-/*
  ++++++++++++++++++            CGI Events Part:            ++++++++++++++++++
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */ 
-        if (portCounter() + _clients.size() < _pollfd.size()) { /*ensure there is at least one cgi Running*/
+        if (portCounter() + _clients.size() < _pollfd.size()) { /* ensure there is at least one cgi Running (pipe fd) */
             g_console.log(SERVER, str("CGI Events Parts"), BG_BLUE);
+            /**
+             * loop over all opened pipe and check if there is some data to read.
+             * 
+            */
             cgiEventsChecking(_clients, _pollfd, _server);
         }
 /*
@@ -303,11 +272,11 @@ void    SocketManager::runCoreLoop(void) {
                 /* ****** CGI Handler exec/response ****** */
                     if (!client._alreadyExec) /* run CGI-script one time per-request & add CGIproc{pipe-fd to pollfd, pid} to client-data */
                     {
-                        client.setTimeOut(CGI_TIME_OUT);  /* set time-out for cgi-script */
+                        client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout); /* to replace by cgi_time */  /* set time-out for cgi-script */
                         if (isCgiRequest(_pollfd, _clients[i - cltStart], i)) {
                             if (client.getCltCgiState() == CCS_FAILLED) {
                                 CGI_errorResponse(_clients[i - cltStart], _clients[i - cltStart]._cgiProc._statusCode);
-                                client.setTimeOut(client._serverBlockHint[0].second->_cltHeadTimeout); /* waiting for new request */
+                                client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout); /* waiting for new request */
                                 client.setClientState(CS_NEW);
                                 _pollfd[i].events |= POLLIN;
                                 _pollfd[i].events &= ~POLLOUT;
@@ -328,12 +297,12 @@ void    SocketManager::runCoreLoop(void) {
                             client._alreadyExec = false;
                             client.setResponse(Response());
                             g_console.log(INFO, str("********* CGI Response Sent ***********"), BG_BLUE);
-                            client.setTimeOut(client._serverBlockHint[0].second->_cltHeadTimeout);
+                            client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout);
                             continue;
                         }
 
                         size_t  toSend = std::min<size_t>(client._cgiOut._output.size(), CGI_SEND_BUFFER);
-                        // std::cout << "ToSend is:" << toSend << std::endl;
+
                         ssize_t sendByte = send(client.getFd(), client._cgiOut._output.c_str(), toSend, 0);
                         if (sendByte > 0)
                         {

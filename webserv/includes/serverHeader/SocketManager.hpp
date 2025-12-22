@@ -1,8 +1,16 @@
 #pragma once
 
-// #include <iostream>
+#include <cstddef>
+#include <fcntl.h>
+
+// #include <cstring>
+#include <iostream>
+#include <stdexcept>
+#include <sys/poll.h>
 #include <netdb.h>
-#include <poll.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
 #include <cstring>
 #include <cerrno>
 #include <vector>
@@ -33,7 +41,7 @@ class   SocketManager {
         void    runCoreLoop(void);
         void    setListenEvent(std::vector<struct pollfd>& _pollfd);
         void    checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server );
-        // void    hanldVirtualHost(TableOfListen& table, size_t index);
+        void    hanldVirtualHost( std::vector<TableOfListen>& tableOfListen );
         // bool    checkIfAlreadyBinded(size_t index) const;
         void    closeListenSockets(void) const;
         void    closeClientsSockets(std::vector<Client>& clients);
@@ -44,7 +52,7 @@ class   SocketManager {
         // static struct sockaddr_in  getSockaddr(void);
         static int  setNonBlocking(int fd);
         size_t      portCounter(void) const;
-        void        handlErrCloses(std::vector<struct pollfd>& _pollfd, Server& server , size_t cltSize);
+        void        handlErrCloses( std::vector<struct pollfd>& _pollfd, Server& server );
         // ---------------  CGI     ---------------------
 
         void    readFromCgi(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, Server& srvr, size_t* coreIndex);

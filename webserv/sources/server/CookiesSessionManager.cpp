@@ -6,12 +6,9 @@ CookiesSessionManager::~CookiesSessionManager() {
 }
 
 void    CookiesSessionManager::addSession(const std::string sessionId ) {
-    Session newSession = {"mait-taj", 0};
-    
+    Session newSession = { 1 };
     _sessionTable.push_back(std::make_pair(sessionId, newSession));
 }
-
-
 
 std::vector<std::pair<std::string, Session> >&  CookiesSessionManager::getSessionTable( void ) {
     return _sessionTable;
@@ -42,12 +39,6 @@ size_t  CookiesSessionManager::getLogCounter( const str& id ) const{
     return 0;
 }
 
-// std::string CookiesSessionManager::getCurrentId()  {
-//     // std::map<std::string, Session>::iterator    it = _sessionTable.end();
-//     // it--;
-//     // return it->first;
-// }
-
 std::string   CookiesSessionManager::getParamValue( const std::string& cookies, const std::string& key) {
     size_t  pos;
     size_t  end;
@@ -66,7 +57,7 @@ std::string   CookiesSessionManager::getParamValue( const std::string& cookies, 
     return res;
 }
 
-int CookiesSessionManager::findSessionIfExist( const std::string& id ) const {
+int CookiesSessionManager::findSessionIfExist( const std::string& id ) const { /* return sessionTable Index for the current user  */
     std::vector<std::pair<std::string, Session> >::const_iterator   it;
     int index = 0;
 
@@ -80,14 +71,13 @@ int CookiesSessionManager::findSessionIfExist( const std::string& id ) const {
 }
 
 void    userLoginHandl(Client& client, CookiesSessionManager& sessionManager) { /* handle session & cookies */
-	std::cout << BLUE << "path before: " << client.getRequest().getPath() << RESET << std::endl;
-    if ( client.getRequest().getPath() != str(PROFILE_LOGIN)
-        && client.getRequest().getPath() != str(SESSION_LOGIN)
-        && client.getRequest().getPath() != str(ROOT_LOGIN) )
+	// std::cout << BLUE << "path before: " << client.getRequest().getPath() << RESET << std::endl;
+    size_t  pos;
+    if ( (pos = client.getRequest().getPath().find(ROOT_LOGIN)) == std::string::npos )
     {
         return;
     }
-	std::cout << BG_BLUE << "path alter: " << client.getRequest().getPath() << RESET << std::endl;
+	// std::cout << BG_BLUE << "path alter: " << client.getRequest().getPath() << RESET << std::endl;
     sessionManager.displayAllSession();
     const HeadersMap::const_iterator    it = client.getRequest().getHeaders().find(str("Cookie")); /* check if browser set Cookie */
     if (it != client.getRequest().getHeaders().end()) /* browser send Cookie; so this User already have a Session */
@@ -124,6 +114,7 @@ void    CookiesSessionManager::createNewSession(CookiesSessionManager& sessionMa
 }
 
 void    CookiesSessionManager::displayAllSession() const {
+    std::cout << BG_RED << "SHOW TABLES:" << RESET << std::endl;
     for(size_t i = 0; i < _sessionTable.size(); i++) {
         std::cout << GREEN << "Session " << i + 1 << ": " << _sessionTable[i].first << RESET << std::endl;
     }

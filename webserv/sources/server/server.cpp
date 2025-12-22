@@ -61,7 +61,7 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     struct pollfd   temp;
 
     client.setStartTime(std::time(NULL));
-    client.setTimeOut(client._serverBlockHint[0].second->_cltHeadTimeout);/* timeOut to wait for the first request */
+    client.setTimeOut(DEF_HEADER_TIME_OUT);/* timeOut to wait for the first request */
     client.setClientState(CS_NEW);
     client._alreadyExec = false;
     client._cgiProc._readPipe = -1;
