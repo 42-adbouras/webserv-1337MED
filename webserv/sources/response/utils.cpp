@@ -8,33 +8,6 @@ static str toLower( const str& s ) {
 	return out;
 }
 
-static std::map<str, str> rMimeMape() {
-	std::map<str, str> rM;
-	if (rM.empty()) {
-		rM["text/html"] = ".html";
-		rM["text/css"] = ".css";
-		rM["text/x-python"] = ".py";
-		rM["application/x-httpd-php"] = ".php";
-		rM["application/javascript"] = ".js";
-		rM["application/json"] = ".json";
-		rM["application/xml"] = ".xml";
-		rM["text/plain"] = ".txt";
-		rM["image/png"] = ".png";
-		rM["image/jpeg"] = ".jpg";
-		rM["image/gif"] = ".gif";
-		rM["image/svg+xml"] = ".svg";
-		rM["application/pdf"] = ".pdf";
-		rM["application/zip"] = ".zip";
-		rM["audio/mpeg"] = ".mp3";
-		rM["video/mp4"] = ".mp4";
-		rM["video/x-matroska"] = ".mkv";
-		rM["application/font-woff"] = ".woff";
-		rM["application/font-woff2"] = ".woff2";
-		rM["text/x-sh"] = ".sh";
-	}
-	return rM;
-}
-
 static std::map<str, str> mimeMap() {
 	std::map<str, str> m;
 	if (m.empty()) {
@@ -52,24 +25,24 @@ static std::map<str, str> mimeMap() {
 		m[".jpeg"] = "image/jpeg";
 		m[".gif"] = "image/gif";
 		m[".svg"] = "image/svg+xml";
+		m[".webp"] = "image/webp";
 		m[".pdf"] = "application/pdf";
 		m[".zip"] = "application/zip";
 		m[".mp3"] = "audio/mpeg";
 		m[".mp4"] = "video/mp4";
 		m[".mkv"] = "video/x-matroska";
+		m["mpeg"] = "video/mpeg";
+		m[".webm"] = "video/webm";
+		m[".avi"] = "video/x-msvideo";
+		m[".wav"] = "audio/wav";
+		m[".ogg"] = "audio/ogg";
 		m[".woff"] = "application/font-woff";
 		m[".woff2"] = "application/font-woff2";
 		m[".sh"] = "text/x-sh";
+		m[".doc"] = "application/msword";
+		m[".csv"] = "text/csv";
 	}
 	return m;
-}
-
-str getFileType( const str& type ) {
-	const std::map<str, str>& rM = rMimeMape();
-	std::map<str, str>::const_iterator it = rM.find(type);
-	str rMime = (it != rM.end()) ? it->second : ".txt";
-
-	return rMime;
 }
 
 str getContentType( const str& path ) {
@@ -91,7 +64,6 @@ void redirectionResponse( Response& response, Location location ) {
 	response.setStatus(location._redirCode);
 	response.addHeaders("Location", location._redirTarget);
 	response.setBody("Moved Permanently. Redirecting to " + location._redirTarget);
-	// response.addHeaders("Content-Length", toString(response.getContentLength()));
 }
 
 void genResponse( Response& response, str& src, ServerEntry* _srvEntry ) {
@@ -192,7 +164,6 @@ void defErrorResponse( Response& response, int code) {
 		buffer << file.rdbuf();
 		response.setStatus(code);
 		response.setBody(buffer.str());
-		// response.addHeaders("Content-Length", toString(response.getContentLength()));
 		response.addHeaders("Content-Type", getContentType(f.substr(1)));
 		file.close();
 	} else
@@ -206,7 +177,6 @@ bool genErrorResponse( Response& response, str& src, int code ) {
 		buffer << file.rdbuf();
 		response.setBody(buffer.str());
 		response.setStatus(code);
-		// response.addHeaders("Content-Length", toString(response.getContentLength()));
 		response.addHeaders("Content-Type", getContentType(src.substr(1)));
 		file.close();
 		return true;

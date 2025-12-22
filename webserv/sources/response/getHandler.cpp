@@ -46,7 +46,6 @@ void listDirectory( str& src, Response& response, Request& request, ServerEntry*
 	str responseHtml = html.str();
 	response.setBody(responseHtml);
 	response.setStatus(OK);
-	// response.addHeaders("Content-Length", toString(response.getContentLength()));
 	response.addHeaders("Content-Type", "text/html; charset=UTF-8");
 }
 
@@ -121,7 +120,12 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 			}
 			if (getContentType(src) == "video/mp4"
 				|| getContentType(src) == "audio/mpeg"
-				|| getContentType(src) == "video/x-matroska") {
+				|| getContentType(src) == "video/x-matroska"
+				|| getContentType(src) == "video/mpeg"
+				|| getContentType(src) == "video/webm"
+				|| getContentType(src) == "video/x-msvideo"
+				|| getContentType(src) == "audio/wav"
+				|| getContentType(src) == "audio/ogg") {
 				response.setFlag(true);
 			}
 			genResponse(response, src, _srvEntry);

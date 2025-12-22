@@ -7,7 +7,9 @@ void postHandler(ServerEntry *_srvEntry, Request& request, Response& response, s
 	if (validateRequest(_srvEntry, request, response, location)) {
 		int type = fileStat(src);
 		if (response.getStatusCode() != 0) {
-			if (isFileExist(client._uploadPath)) {
+			if (!client._multipartParser.getUploadedFiles().empty()) {
+				client._multipartParser.cleanupAllFiles();
+			} else if (isFileExist(client._uploadPath)) {
 				if (std::remove(client._uploadPath.c_str()) != 0) {
 					getSrvErrorPage(response, _srvEntry, INTERNAL_SERVER_ERROR);
 					return;

@@ -205,6 +205,7 @@ void sendResponse(Client& client) {
 
 	const HeadersMap& reqHeaders = client.getRequest().getHeaders();
 	if (client._sendInfo.resStatus == CS_START_SEND) {
+		userLoginHandl(client, sessionManager); /* if user enter to `/login` path, we assign session & cookies for it. */
 		str headers = response.generate();
 		client._sendInfo.buff.assign(headers.begin(), headers.end());
 		client._sendInfo.resStatus = CS_WRITING;
