@@ -106,7 +106,7 @@
             log('Initiating DELETE request...', 'info');
             try {
                 // Attempting to delete a dummy file. In a real scenario, you'd upload one first.
-                const response = await fetch('/uploads/post.txt', { method: 'DELETE' });
+                const response = await fetch('/uploads/config', { method: 'DELETE' });
                 log(`DELETE Response: ${response.status} ${response.statusText}`);
             } catch (error) {
                 log(`DELETE Error: ${error.message}`);

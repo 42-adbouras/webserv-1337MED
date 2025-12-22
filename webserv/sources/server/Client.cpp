@@ -1,8 +1,8 @@
 #include "../../includes/serverHeader/Server.hpp"
 #include "../../includes/serverHeader/Client.hpp"
-Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _serverBlockHint(server_block),
+Client::Client(int fd, const serverBlockHint& server_block) : _fd(fd), _expectedBodyLength(0), _isChunked(false), _serverBlockHint(server_block),
 				_cgiProc(CGIProc()), _state(PARSING_HEADERS)
-				, _isStreamingUpload(false), _uploadFd(-1)
+				, _uploadFd(-1)
 				, _uploadPath(), _uploadedBytes(0) {
 		_sendInfo.fd = -1;
 }
@@ -23,10 +23,10 @@ void    Client::setClientState(ClientState clientState) {
     _clientState = clientState;
 }
 
-void	Client::setRequest( Request req ) {
+void	Client::setRequest( Request& req ) {
 	_request = req;
 }
-void	Client::setResponse( Response res ) {
+void	Client::setResponse( Response& res ) {
 	_response = res;
 }
 

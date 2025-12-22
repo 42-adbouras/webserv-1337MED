@@ -269,6 +269,7 @@ void    SocketManager::runCoreLoop(void) {
                 Client&	client = _server.getListOfClients()[i - cltStart];
                 client.setStartTime(std::time(NULL));
                 if (client.getStatus() == CS_CGI_REQ) {
+                    Response response;
                 /* ****** CGI Handler exec/response ****** */
                     if (!client._alreadyExec) /* run CGI-script one time per-request & add CGIproc{pipe-fd to pollfd, pid} to client-data */
                     {
@@ -295,7 +296,7 @@ void    SocketManager::runCoreLoop(void) {
                             _pollfd[i].events &= ~POLLOUT;
                             client.setClientState(CS_NEW);
                             client._alreadyExec = false;
-                            client.setResponse(Response());
+                            client.setResponse(response);
                             g_console.log(INFO, str("********* CGI Response Sent ***********"), BG_BLUE);
                             client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout);
                             continue;

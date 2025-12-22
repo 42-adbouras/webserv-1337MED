@@ -29,10 +29,6 @@
 
 /* CGI error Messages */
 
-#define INTER_SRVR_ERR "500 Internal Server Error"
-#define GATEWAY_TIMEOUT "504 Gateway Timeout"
-#define Forbiden "403 Forbidden"
-
 
 struct CGIContext
 {

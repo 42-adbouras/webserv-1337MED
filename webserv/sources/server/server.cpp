@@ -81,12 +81,15 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
 
 
 ClientState Server::readRequest(size_t cltIndx) {
-    char    buff[SRV_READ_BUFFER];
+    // char    buff[SRV_READ_BUFFER];
+	std::vector<char>	buff(SRV_READ_BUFFER);
     ssize_t rByte;
     if (_client[cltIndx].getStatus() == CS_NEW) {
-        _client[cltIndx].setRequest(Request());
+		Request request;
+        _client[cltIndx].setRequest(request);
     }
-    rByte = recv(_client[cltIndx].getFd(), buff, SRV_READ_BUFFER, 0);
+    // Request req = _client[cltIndx].getRequest();
+    rByte = recv(_client[cltIndx].getFd(), buff.data(), SRV_READ_BUFFER, 0);
     if (rByte > 0)
     {
         /**
@@ -95,10 +98,10 @@ ClientState Server::readRequest(size_t cltIndx) {
          * else `CS_READING`
          * */
         // _client[cltIndx].getRequest().setBuffer(buffer);
-        _client[cltIndx]._reqInfo.buffer.insert(_client[cltIndx]._reqInfo.buffer.end(), buff, buff + rByte);
+        // _client[cltIndx]._reqInfo.buffer.insert(_client[cltIndx]._reqInfo.buffer.end(), buff, buff + rByte);
+		_client[cltIndx]._reqInfo.buffer.insert(_client[cltIndx]._reqInfo.buffer.end(), buff.data(), buff.data() + rByte);
         requestHandler(_client[cltIndx]);
         if (_client[cltIndx]._reqInfo.reqStatus == CS_READING_DONE) {
-            _client[cltIndx]._reqInfo.buffer.clear();
             _client[cltIndx]._sendInfo.resStatus = CS_START_SEND; /* To track first try of send-response */
             return CS_READING_DONE;
         }
@@ -115,6 +118,44 @@ ClientState Server::readRequest(size_t cltIndx) {
     }
     return CS_FATAL;
 }
+
+
+// ClientState Server::readRequest(size_t cltIndx) {
+//     char    buff[SRV_READ_BUFFER];
+//     ssize_t rByte;
+//     if (_client[cltIndx].getStatus() == CS_NEW) {
+//         Request request;
+//         _client[cltIndx].setRequest(request);
+//     }
+//     rByte = recv(_client[cltIndx].getFd(), buff, SRV_READ_BUFFER, 0);
+//     if (rByte > 0)
+//     {
+//         /**
+//          * Read request chunks-chunks, every chunk past to parseRequest,
+//          * the parse of request must detect if the request is finished by setting ReqInfo to `CS_READING_DONE`
+//          * else `CS_READING`
+//          * */
+//         // _client[cltIndx].getRequest().setBuffer(buffer);
+//         _client[cltIndx]._reqInfo.buffer.insert(_client[cltIndx]._reqInfo.buffer.end(), buff, buff + rByte);
+//         requestHandler(_client[cltIndx]);
+//         if (_client[cltIndx]._reqInfo.reqStatus == CS_READING_DONE) {
+//             _client[cltIndx]._reqInfo.buffer.clear();
+//             _client[cltIndx]._sendInfo.resStatus = CS_START_SEND; /* To track first try of send-response */
+//             return CS_READING_DONE;
+//         }
+//         return CS_READING;
+//     }
+//     else if (rByte == 0)
+//     {
+//         return CS_DISCONNECT;
+//     }
+//     else
+//     {
+//         std::cout << "Read Request: " << strerror(errno) << std::endl;
+//         return CS_READING;
+//     }
+//     return CS_FATAL;
+// }
 
 void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd) {
     std::cout << SERVER << RED << "User FD=" << _client[index ].getFd() << " Disconnected" << RESET << std::endl;

@@ -193,7 +193,6 @@ void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code ) {
 			if (!genErrorResponse(response, src, code))
 				defErrorResponse(response, code);
 		} else {
-			std::cout << "***************************" << std::endl;
 			defErrorResponse(response, code);
 			return;
 		}
@@ -223,24 +222,3 @@ long long getFileSize( const str& src ) {
 	return (long long)st.st_size;
 }
 
-void	errPageNotFound( Response& resp, int errorCode ) {
-	str	buffer;
-	resp.setStatus(errorCode);
-	std::cout << "====== " << errorCode << std::endl;
-	switch (errorCode)
-	{
-	case 500:
-		// INTERNAL_SERVER_ERROR;
-		buffer = str("500 Internal Server Error");
-		break;
-	case 504:
-		buffer = str("504 Gateway Timeout");
-		break;
-	case 403:
-		buffer = str("403 Forbidden");
-		break;
-	}
-	resp.setBody(buffer);
-	resp.addHeaders("Content-Length", toString(resp.getContentLength()));
-	resp.addHeaders("Content-Type", "text/html");
-}
