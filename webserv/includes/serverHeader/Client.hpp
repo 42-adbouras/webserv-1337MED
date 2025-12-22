@@ -5,6 +5,8 @@
 #include "SocketManager.hpp"
 #include "../CGI.hpp"
 #include "../request.hpp"
+#include "../multipartParser.hpp"
+#include "../ChunkedParser.hpp"
 
 typedef	size_t	wsrv_timer_t;
 
@@ -116,5 +118,7 @@ class   Client {
 		int _uploadFd;
 		str _uploadPath;
 		size_t _uploadedBytes;
+		MultipartParser _multipartParser;
+		ChunkedParser _chunkedParser;
 
 };

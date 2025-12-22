@@ -2,17 +2,20 @@
 
 ChunkedParser::ChunkedParser( void ) : _active(false), _error(false)
 										,_state(ST_CHUNK_SIZE), _currentChunkSize(0)
-										,_bytesWritten(0), _outputFd(-1) { }
+										,_bytesWritten(0), _outputFd(-1)
+										,_totalBytesWritten(0), _maxBodySize(0) { }
 ChunkedParser::~ChunkedParser() { closeOutput(); }
 
-void ChunkedParser::init( int outputFd ) {
+void ChunkedParser::init( int outputFd, size_t maxBodySize ) {
 	_active = true;
 	_error = false;
 	_state = ST_CHUNK_SIZE;
 	_buffer.clear();
 	_currentChunkSize = 0;
 	_bytesWritten = 0;
+	_totalBytesWritten = 0;
 	_outputFd = outputFd;
+	_maxBodySize = maxBodySize;
 }
 
 ChunkedParser::Result ChunkedParser::feed( const char* data, size_t len ) {
@@ -55,7 +58,7 @@ ChunkedParser::Result ChunkedParser::feed( const char* data, size_t len ) {
 	return NEED_MORE;
 }
 
-ChunkedParser::Result ChunkedParser::processChunkSize() {
+ChunkedParser::Result ChunkedParser::processChunkSize( void ) {
 	str::size_type pos = _buffer.find("\r\n");
 	if (pos == str::npos) {
 		return NEED_MORE;
@@ -69,12 +72,16 @@ ChunkedParser::Result ChunkedParser::processChunkSize() {
 	if (!(ss >> _currentChunkSize))
 		return ERROR;
 
+	if (_totalBytesWritten + _currentChunkSize > _maxBodySize) {
+		_error = true;
+		return MAXERROR;
+	}
 	_state = ST_CHUNK_DATA;
 	_bytesWritten = 0;
 	return NEED_MORE;
 }
 
-ChunkedParser::Result ChunkedParser::processChunkData() {
+ChunkedParser::Result ChunkedParser::processChunkData( void ) {
 	size_t remainingInChunk = _currentChunkSize - _bytesWritten;
 	if (_buffer.empty())
 		return NEED_MORE;
@@ -88,9 +95,21 @@ ChunkedParser::Result ChunkedParser::processChunkData() {
 			return ERROR;
 		if (bytes != static_cast<ssize_t>(toWrite))
 			return ERROR;
+		
 		_bytesWritten += bytes;
+		_totalBytesWritten += bytes;
+
+		if (_totalBytesWritten > _maxBodySize) {
+			_error = true;
+			return MAXERROR;
+		}
 	} else {
 		_bytesWritten += toWrite;
+		_totalBytesWritten += toWrite;
+		if (_totalBytesWritten > _maxBodySize) {
+			_error = true;
+			return MAXERROR;
+		}
 	}
 
 	_buffer.erase(0, toWrite);
@@ -101,7 +120,7 @@ ChunkedParser::Result ChunkedParser::processChunkData() {
 	return NEED_MORE;
 }
 
-ChunkedParser::Result ChunkedParser::processChunkEnd() {
+ChunkedParser::Result ChunkedParser::processChunkEnd( void ) {
 	if (_buffer.size() < 2)
 		return NEED_MORE;
 
@@ -119,26 +138,14 @@ ChunkedParser::Result ChunkedParser::processChunkEnd() {
 	}
 }
 
-ChunkedParser::Result ChunkedParser::finish() {
-	if (_error)
-		return ERROR;
-	if (_state != ST_DONE) {
-		_error = true;
-		return ERROR;
-	}
-	closeOutput();
-	_active = false;
-	return COMPLETE;
-}
-
-void ChunkedParser::closeOutput() {
+void ChunkedParser::closeOutput( void ) {
 	if (_outputFd != -1) {
 		close(_outputFd);
 		_outputFd = -1;
 	}
 }
 
-bool ChunkedParser::isActive() const { return _active; }
-bool ChunkedParser::hasError() const { return _error; }
+bool ChunkedParser::isActive( void ) const { return _active; }
+bool ChunkedParser::hasError( void ) const { return _error; }
 
-size_t ChunkedParser::getBytesWritten() const { return _bytesWritten; }
+size_t ChunkedParser::getBytesWritten( void ) const { return _bytesWritten; }

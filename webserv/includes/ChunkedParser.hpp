@@ -9,22 +9,21 @@ public:
 	enum Result {
 		NEED_MORE,
 		COMPLETE,
-		ERROR
+		ERROR,
+		MAXERROR
 	};
 
 	ChunkedParser( void );
 	~ChunkedParser();
 
-	void init( int outputFd );
+	void init( int outputFd, size_t maxBodySize );
 
 	Result feed( const char* data, size_t len );
 
-	Result finish();
+	bool isActive( void ) const;
+	bool hasError( void ) const;
 
-	bool isActive() const;
-	bool hasError() const;
-
-	size_t getBytesWritten() const;
+	size_t getBytesWritten( void ) const;
 private:
 	enum State {
 		ST_CHUNK_SIZE,
@@ -33,11 +32,11 @@ private:
 		ST_DONE
 	};
 
-	Result processChunkSize();
-	Result processChunkData();
-	Result processChunkEnd();
+	Result processChunkSize( void );
+	Result processChunkData( void );
+	Result processChunkEnd( void );
 
-	void closeOutput();
+	void closeOutput( void );
 
 	bool	_active;
 	bool	_error;
@@ -46,6 +45,8 @@ private:
 	size_t	_currentChunkSize;
 	size_t	_bytesWritten;
 	int	_outputFd;
+	size_t _totalBytesWritten;
+	size_t _maxBodySize;
 };
 
 #endif

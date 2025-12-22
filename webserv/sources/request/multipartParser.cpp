@@ -104,16 +104,45 @@ MultipartParser::Result MultipartParser::processPartHeaders( void ) {
 	_headerBuffer = _buffer.substr(0, pos);
 	_buffer.erase(0, pos + 4);
 
+	_currentFile = UploadedFile();
+
 	str::size_type fnPos = _headerBuffer.find("filename=\"");
+	str originalFilename;
 	if (fnPos != str::npos) {
 		fnPos += 10;
 		str::size_type end = _headerBuffer.find("\"", fnPos);
 		if (end != str::npos) {
-			_curFilename = _headerBuffer.substr(fnPos, end - fnPos);
-			if (!openNewFile(_curFilename))
-				return ERROR;
+			originalFilename = _headerBuffer.substr(fnPos, end - fnPos);
+			_currentFile.originalName = originalFilename;
 		}
 	}
+
+	str contentType;
+	str::size_type ctPos = _headerBuffer.find("Content-Type:");
+	if (ctPos != str::npos) {
+		ctPos += 13;
+		str::size_type ctEnd = _headerBuffer.find("\r\n", ctPos);
+		if (ctEnd != str::npos) {
+			contentType = _headerBuffer.substr(ctPos, ctEnd - ctPos);
+			str::size_type start = contentType.find_first_not_of(" \t");
+			if (start != str::npos) {
+				contentType = contentType.substr(start);
+			}
+			_currentFile.contentType = contentType;
+		}
+	}
+
+	if (!_currentFile.originalName.empty()) {
+		_curFilename = _currentFile.originalName;
+		_currentFile.fullPath = _uploadDir + _currentFile.originalName;
+	} else {
+		_curFilename = FilenameGenerator::generate(originalFilename, _currentFile.contentType);
+		_currentFile.generatedName = _curFilename;
+		_currentFile.fullPath = _uploadDir + _curFilename;
+	}
+
+	if (!openNewFile(_curFilename))
+		return ERROR;
 
 	_state = ST_PART_BODY;
 	return NEED_MORE;
@@ -164,7 +193,7 @@ void MultipartParser::closeCurrentFile( void ) {
 bool MultipartParser::openNewFile( const str& filename ) {
 	if (filename.empty())
 		return false;
-	
+
 	str fullPath = _uploadDir + filename;
 	_curFd = open(fullPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
@@ -174,19 +203,16 @@ bool MultipartParser::openNewFile( const str& filename ) {
 	return true;
 }
 
-MultipartParser::Result MultipartParser::finish( void ) {
-	if (_error)
-		return ERROR;
-	
-	if (_state != ST_DONE) {
-		closeCurrentFile();
-		_error = true;
-		return ERROR;
-	}
+const std::vector<MultipartParser::UploadedFile>& MultipartParser::getUploadedFiles( void ) const {
+	return _uploadedFiles;
+}
 
-	closeCurrentFile();
-	_active = false;
-	return COMPLETE;
+void MultipartParser::cleanupAllFiles( void ) {
+	for (size_t i = 0; i < _uploadedFiles.size(); i++) {
+		if (!_uploadedFiles[i].fullPath.empty())
+			std::remove(_uploadedFiles[i].fullPath.c_str());
+	}
+	_uploadedFiles.clear();
 }
 
 bool MultipartParser::isActive( void ) const { return _active; }

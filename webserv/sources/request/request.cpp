@@ -242,14 +242,12 @@ void requestHandler( Client& client ) {
 		HeadersMap::const_iterator te = headers.find("Transfer-Encoding");
 		HeadersMap::const_iterator cl = headers.find("Content-Length");
 
-		if (te != headers.end()) {
+		if (te != headers.end())
 			client.setIsChunked(te->second == "chunked");
-		}
-		if (cl != headers.end()) {
+		if (cl != headers.end())
 			client.setExpectedBodyLength(sToSize_t(cl->second));
-		} else {
+		else
 			client.setExpectedBodyLength(0);
-		}
 
 		if (client.getExpectedBodyLength() > _srvEntry->_maxBodySize) {
 			client.getResponse().setStatus(CONTENT_TOO_LARGE);
@@ -269,7 +267,7 @@ void requestHandler( Client& client ) {
 				HeadersMap::const_iterator ct = headers.find("Content-Type");
 				if (ct->second.find("multipart/form-data;") == str::npos) {
 					// single file
-					client._uploadPath = client.getResponse().getSrc().append("/file");
+					client._uploadPath = generateUploadPath( client );
 					if (client._uploadFd <= 0) {
 						client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 						if (client._uploadFd == -1) {
@@ -314,12 +312,8 @@ void requestHandler( Client& client ) {
 					if (res == MultipartParser::ERROR) {
 						client.getResponse().setStatus(BAD_REQUEST);
 						client._state = REQUEST_COMPLETE;
-						handlerReturn(client);
-						return;
 					} else if (res == MultipartParser::COMPLETE) {
 						client._state = REQUEST_COMPLETE;
-						handlerReturn(client);
-						return;
 					}
 					else {
 						return;
@@ -327,7 +321,7 @@ void requestHandler( Client& client ) {
 				}
 			} else {
 				// chunked
-				client._uploadPath = client.getResponse().getSrc().append("/ChunkedFile");
+				client._uploadPath = generateUploadPath( client );
 				if (!client._chunkedParser.isActive()) {
 					client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 					if (client._uploadFd == -1) {
@@ -336,15 +330,22 @@ void requestHandler( Client& client ) {
 						handlerReturn( client );
 						return;
 					}
-					client._chunkedParser.init(client._uploadFd);
+					client._chunkedParser.init(client._uploadFd, client.getRequest().getSrvEntry()->_maxBodySize);
+					if (client._chunkedParser.hasError()) {
+						client.getResponse().setStatus(BAD_REQUEST);
+						client._state = REQUEST_COMPLETE;
+						handlerReturn(client);
+						return;
+					}
 				}
 				ChunkedParser::Result res = client._chunkedParser.feed(client.getLeftover().data(), client.getLeftover().size());
 				client.getLeftover().clear();
 
 				if (res == ChunkedParser::ERROR) {
 					client.getResponse().setStatus(BAD_REQUEST);
-				}
-				else if (res == ChunkedParser::COMPLETE) {
+				} else if (res == ChunkedParser::MAXERROR) {
+					client.getResponse().setStatus(CONTENT_TOO_LARGE);
+				} else if (res == ChunkedParser::COMPLETE) {
 					client._state = REQUEST_COMPLETE;
 				} else {
 					return;

@@ -1,5 +1,6 @@
 #include "../../includes/request.hpp"
 #include <sstream>
+#include "Client.hpp"
 
 bool UriAllowedChars( str& uri ) {
 	str allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
@@ -121,4 +122,14 @@ str urlDecode( const str& path ) {
 		}
 	}
 	return result;
+}
+
+str generateUploadPath( Client& client ) {
+	const HeadersMap& headers = client.getRequest().getHeaders();
+	HeadersMap::const_iterator ct = headers.find("Content-Type");
+
+	str filename = FilenameGenerator::generateFromContentType(ct->second);
+	str _uploadPath = client.getResponse().getSrc() + "/" + filename;
+
+	return _uploadPath;
 }

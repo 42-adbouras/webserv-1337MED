@@ -6,6 +6,7 @@
 #include "./response.hpp"
 #include <sys/socket.h>
 #include <deque>
+#include "./FilenameGenerator.hpp"
 
 class Client;
 class Response;
@@ -77,7 +78,7 @@ str getSource( Request& request, ServerEntry* _srvEntry, Response& response );
 bool requestErrors( Request& request, Response& response, ServerEntry* _srvEntry );
 bool isNumber(const str& s);
 std::deque<str> splitPath( const str& path );
-Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
 str urlDecode( const str& path );
+str generateUploadPath( Client& client );
 
 #endif
