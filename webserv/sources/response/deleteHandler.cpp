@@ -3,13 +3,13 @@
 #include "Client.hpp"
 
 void deleteHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client) {
-	Location location = getLocation(_srvEntry, request, response);
+	Location location = getLocation( request, response);
 	if (validateRequest(_srvEntry, request, response, location)) {
 		int type = fileStat(src);
 		str path = request.getPath();
 
 		if (type == 1) {
-			if (isCgi(location, src, client, _srvEntry, request)) {
+			if (isCgi(location, src, client, request)) {
 				client.setClientState(CS_CGI_REQ);
 				return;
 			}

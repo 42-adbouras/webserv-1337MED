@@ -71,19 +71,19 @@ void getIndex( ServerEntry *_srvEntry, Response& response, Location& lct, Reques
 	}
 }
 
-CGIContext fillCgiContext( str& src, Request& request, ServerEntry* _srvEntry, str& name, Client& client ) {
+CGIContext fillCgiContext( str& src, Request& request, str& name, Client& client ) {
 	CGIContext cgiContext = client.getCgiContext();
 	cgiContext._path = src;
 	cgiContext._name = name;
 	cgiContext._body = request.getBody();
 	cgiContext._method = request.getMethod();
-	cgiContext._serverName = _srvEntry->_serverName;
+	cgiContext._serverName = client.getRequest().getSrvEntry()->_serverName;
 	cgiContext._query = request.getQueryParams();
 	cgiContext._headers = request.getHeaders();
 	return cgiContext;
 }
 
-bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry, Request& request ) {
+bool isCgi( Location& location, str& src, Client& client, Request& request ) {
 	if (location._isCGI) {
 		if (location._cgi.empty())
 			return false;
@@ -91,7 +91,7 @@ bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry
 		std::vector<str>::iterator it = location._cgi.begin();
 		while (it != location._cgi.end()) {
 			if (*it == cgiFile) {
-				CGIContext cgiContext = fillCgiContext(src, request, _srvEntry, cgiFile, client);
+				CGIContext cgiContext = fillCgiContext(src, request, cgiFile, client);
 				client.setCgiContext(cgiContext);
 				break;
 			}
@@ -104,7 +104,7 @@ bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry
 }
 
 void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client) {
-	Location location = getLocation(_srvEntry, request, response);
+	Location location = getLocation(request, response);
 	HeadersMap hdrs = request.getHeaders();
 	if (validateRequest(_srvEntry, request, response, location)) {
 		if (request.getPath() == "/") {
@@ -114,7 +114,7 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 
 		int type = fileStat(src);
 		if (type == 1) {
-			if (isCgi(location, src, client, _srvEntry, request)) {
+			if (isCgi(location, src, client, request)) {
 				client.setClientState(CS_CGI_REQ);
 				return;
 			}

@@ -18,10 +18,10 @@ std::deque<str> splitPath( const str& path ) {
 	return segments;
 }
 
-Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response ) {
+Location getLocation( Request& request, Response& response ) {
 	str path = request.getPath();
 
-	std::vector<Location> locations = _srvEntry->_locations;
+	std::vector<Location> locations = request.getSrvEntry()->_locations;
 	std::vector<str> lcts;
 	for(size_t i=0; i < locations.size(); ++i) {
 		str loc = locations[i]._path;
@@ -42,7 +42,7 @@ Location getLocation( ServerEntry *_srvEntry, Request& request, Response& respon
 		}
 	}
 	if (lcts.empty()) {
-		getSrvErrorPage(response, _srvEntry, NOT_FOUND);
+		getSrvErrorPage(response, request.getSrvEntry(), NOT_FOUND);
 		return Location();
 	}
 	std::vector<str>::iterator largest = std::max_element(lcts.begin(), lcts.end());

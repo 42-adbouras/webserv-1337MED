@@ -32,7 +32,7 @@ str normalizePath( const str& path ) {
 
 str getSource( Request& request, ServerEntry* _srvEntry, Response& response ) {
 	str path = request.getPath();
-	Location lct = getLocation(_srvEntry, request, response);
+	Location lct = getLocation(request, response);
 	str location = request.getLocation();
 	str root;
 	if (lct._uploadStore.length())
@@ -124,12 +124,40 @@ str urlDecode( const str& path ) {
 	return result;
 }
 
+str removeFilename(const str& path) {
+	str::size_type lastSlash = path.find_last_of('/');
+	if (lastSlash == str::npos)
+		return path;
+
+	str::size_type lastDot = path.find_last_of('.');
+	if (lastDot != str::npos && lastDot > lastSlash)
+		return path.substr(0, lastSlash + 1);
+
+	return path;
+}
+
+str extractFilename(const str& path) {
+	str::size_type pos = path.find_last_of('/');
+	str filename = (pos == str::npos) ? path : path.substr(pos + 1);
+
+	if (filename.find('.') != str::npos)
+		return filename;
+	return "";
+}
+
 str generateUploadPath( Client& client ) {
 	const HeadersMap& headers = client.getRequest().getHeaders();
 	HeadersMap::const_iterator ct = headers.find("Content-Type");
+	str path = removeFilename(client.getResponse().getSrc());
+	str extractedFilename = extractFilename(client.getResponse().getSrc());
 
 	str filename = FilenameGenerator::generateFromContentType(ct->second);
-	str _uploadPath = client.getResponse().getSrc() + "/" + filename;
+
+	str _uploadPath;
+	if (!extractedFilename.empty())
+		_uploadPath = path + "/" + extractedFilename;
+	else
+		_uploadPath = path + "/" + filename;
 
 	return _uploadPath;
 }

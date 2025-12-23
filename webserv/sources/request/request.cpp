@@ -257,18 +257,48 @@ void requestHandler( Client& client ) {
 		}
 		client.getLeftover().erase(0, headersEndPos + 4);
 
+		if (client.getRequest().getMethod() == "POST") {
+			Location lct = getLocation(client.getRequest(), client.getResponse());
+			if (lct._uploadStore.empty()) {
+				if (!isCgi(lct, source, client, client.getRequest())) {
+					client.getResponse().setStatus(FORBIDDEN);
+					client._state = REQUEST_COMPLETE;
+					handlerReturn(client);
+					return;
+				}
+			}
+		}
+
 		client._state = PARSING_BODY;
 	}
 
 	if (client._state == PARSING_BODY) {
 		if (client.getRequest().getMethod() == "POST") {
 			const HeadersMap& headers = client.getRequest().getHeaders();
-			if (!client.getIsChunked()) {
+
+			Location loc = getLocation(client.getRequest(), client.getResponse());
+        	str source = getSource(client.getRequest(), client.getRequest().getSrvEntry(), client.getResponse());
+        	bool isCgiRequest = isCgi(loc, source, client, client.getRequest());
+	
+        	if (isCgiRequest && loc._uploadStore.empty()) {
+        	    str bodyChunk(client.getLeftover().begin(), client.getLeftover().end());
+				str body = client.getRequest().getBody();
+        	    client.getRequest().setBody(body.append(bodyChunk));
+				body.clear();
+        	    client.getLeftover().clear();
+
+        	    if (client.getRequest().getBody().size() >= client.getExpectedBodyLength()) {
+        	        client._state = REQUEST_COMPLETE;
+        	    } else {
+        	        return;
+        	    }
+        	} else if (!loc._uploadStore.empty()) {
+				if (!client.getIsChunked()) {
 				HeadersMap::const_iterator ct = headers.find("Content-Type");
 				if (ct->second.find("multipart/form-data;") == str::npos) {
 					// single file
 					client._uploadPath = generateUploadPath( client );
-					if (client._uploadFd <= 0) {
+					if (client._uploadFd == -1) {
 						client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 						if (client._uploadFd == -1) {
 							client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
@@ -319,37 +349,37 @@ void requestHandler( Client& client ) {
 						return;
 					}
 				}
-			} else {
-			
-				// chunked
-				client._uploadPath = generateUploadPath( client );
-				if (!client._chunkedParser.isActive()) {
-					client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-					if (client._uploadFd == -1) {
-						client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
-						client._state = REQUEST_COMPLETE;
-						handlerReturn( client );
-						return;
-					}
-					client._chunkedParser.init(client._uploadFd, client.getRequest().getSrvEntry()->_maxBodySize);
-					if (client._chunkedParser.hasError()) {
-						client.getResponse().setStatus(BAD_REQUEST);
-						client._state = REQUEST_COMPLETE;
-						handlerReturn(client);
-						return;
-					}
-				}
-				ChunkedParser::Result res = client._chunkedParser.feed(client.getLeftover().data(), client.getLeftover().size());
-				client.getLeftover().clear();
-
-				if (res == ChunkedParser::ERROR) {
-					client.getResponse().setStatus(BAD_REQUEST);
-				} else if (res == ChunkedParser::MAXERROR) {
-					client.getResponse().setStatus(CONTENT_TOO_LARGE);
-				} else if (res == ChunkedParser::COMPLETE) {
-					client._state = REQUEST_COMPLETE;
 				} else {
-					return;
+					// chunked
+					client._uploadPath = generateUploadPath( client );
+					if (!client._chunkedParser.isActive()) {
+						client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+						if (client._uploadFd == -1) {
+							client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
+							client._state = REQUEST_COMPLETE;
+							handlerReturn( client );
+							return;
+						}
+						client._chunkedParser.init(client._uploadFd, client.getRequest().getSrvEntry()->_maxBodySize);
+						if (client._chunkedParser.hasError()) {
+							client.getResponse().setStatus(BAD_REQUEST);
+							client._state = REQUEST_COMPLETE;
+							handlerReturn(client);
+							return;
+						}
+					}
+					ChunkedParser::Result res = client._chunkedParser.feed(client.getLeftover().data(), client.getLeftover().size());
+					client.getLeftover().clear();
+
+					if (res == ChunkedParser::ERROR) {
+						client.getResponse().setStatus(BAD_REQUEST);
+					} else if (res == ChunkedParser::MAXERROR) {
+						client.getResponse().setStatus(CONTENT_TOO_LARGE);
+					} else if (res == ChunkedParser::COMPLETE) {
+						client._state = REQUEST_COMPLETE;
+					} else {
+						return;
+					}
 				}
 			}
 		}
