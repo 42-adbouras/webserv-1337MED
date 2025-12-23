@@ -93,9 +93,7 @@ void    SocketManager::initSockets(void) {
             /* set option for that socket */
             int addrYes = 1;
             std::cout << "->" << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << std::endl;
-            if (setsockopt(_tableOfListen[counter]._fd, SOL_SOCKET, SO_REUSEADDR, &addrYes, sizeof(addrYes)) != 0)
-                throw std::runtime_error("here");
-            // setsockopt(_tableOfListen[counter]._fd, SOL_SOCKET, SO_REUSEADDR, &addrYes, sizeof(addrYes));
+            setsockopt(_tableOfListen[counter]._fd, SOL_SOCKET, SO_REUSEADDR, &addrYes, sizeof(addrYes));
             std::memcpy(&_tableOfListen[counter].addr, results->ai_addr, results->ai_addrlen);
             _tableOfListen[counter].addr_len = results->ai_addrlen;
             freeaddrinfo(results);
@@ -129,7 +127,6 @@ void    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
         {
             if ((clientFd = accept(_pollfd[i].fd, NULL, NULL)) == -1)
             {
-                std::cout << "IN ACCEPT FUNC" << std::endl;
                 closeListenSockets();
                 _server.closeClientConnection();
                 throw std::runtime_error(strerror(errno));
@@ -138,7 +135,7 @@ void    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
             setsockopt(clientFd, SOL_SOCKET, SO_NOSIGPIPE, &sigYes, sizeof(sigYes));
             _server.addClients(Client(clientFd, detectServerBlock(_pollfd[i].fd)), _pollfd);
             SocketManager::setNonBlocking(clientFd);
-            std::cout << CONNECTION << YELLOW << "New Client Connected, FD=" << clientFd << RESET << std::endl;
+            std::cout << CONNECTION << YELLOW << "New Client Connected, SOCKET_FD=" << clientFd << RESET << std::endl;
         }
     }
 }
@@ -216,7 +213,6 @@ void    SocketManager::runCoreLoop(void) {
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */ 
         if (portCounter() + _clients.size() < _pollfd.size()) { /* ensure there is at least one cgi Running (pipe fd) */
-            g_console.log(SERVER, str("CGI Events Parts"), BG_BLUE);
             /**
              * loop over all opened pipe and check if there is some data to read.
              * 
@@ -307,6 +303,8 @@ void    SocketManager::runCoreLoop(void) {
                         ssize_t sendByte = send(client.getFd(), client._cgiOut._output.c_str(), toSend, 0);
                         if (sendByte > 0)
                         {
+
+                            std::cout << BG_BLUE << client.getFd() <<  " ++++++++++++++++++++++++++++++++"  << RESET << std::endl;
                             std::cout << client._cgiOut._output << std::endl;
                             client._cgiOut._output.erase(client._cgiOut._output.begin(), client._cgiOut._output.begin() + sendByte);
                             continue;

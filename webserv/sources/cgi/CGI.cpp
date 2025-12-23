@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "../../includes/CGI.hpp"
+#include "../../includes/response.hpp"
 #include "../../includes/serverHeader/SocketManager.hpp"
 #include "../../includes/serverHeader/Client.hpp"
 #include "../../includes/serverHeader/ServerUtils.hpp"
@@ -181,7 +182,6 @@ void readChild(Client& client)
     {
 		// if (errno == EAGAIN || errno == EWOULDBLOCK)
 		// {
-		// 	std::cout << "ERRNO EWOULDBLOCK" << std::endl;
 		// 	/*No data yet, but child still running*/
 			client.setCltCgiState(CCS_FAILLED);
 		// }
@@ -204,12 +204,17 @@ void	generate_CGI_Response(Client& client) {
 	// }
 	int status;
 	waitpid(client._cgiProc._childPid, &status, 0);
-	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 		client._cgiOut._code = 500;
+		getSrvErrorPage(client.getResponse(), client.getRequest().getSrvEntry(), client._cgiOut._code);
+		client._cgiOut._output = client.getResponse().generate();
+		std::cout << BG_RED << "EXIT STATUS: " << status << std::endl;
+		return;
+	}
 	client._cgiProc._childPid = -1;
 	client.getResponse().setStatus(client._cgiOut._code);
-	client.getResponse().addHeaders("Content-Type", "text/plain");
-	// res.addHeaders("Content-Length", iToString(res.getContentLength()));
+	client.getResponse().addHeaders("Content-Type", "text/html");
 	client.setResponse(client.getResponse());
 	client._cgiOut._output = client.getResponse().generate();
+	std::cout << BG_RED << "*********************************************" << std::endl;
 }
