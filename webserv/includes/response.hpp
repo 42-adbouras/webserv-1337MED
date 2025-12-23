@@ -93,7 +93,7 @@ void postHandler( ServerEntry *_srvEntry, Request& request, Response& response, 
 void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
 void defErrorResponse( Response& response, int code);
 bool startsWith( const str& path, const str& start );
-Location getLocation( ServerEntry *_srvEntry, Request& request, Response& response );
+Location getLocation( Request& request, Response& response );
 void redirectionResponse( Response& response, Location location );
 str getContentType( const str& path );
 void genResponse( Response& response, str& src, ServerEntry* _srvEntry );
@@ -101,7 +101,7 @@ bool validateRequest( ServerEntry *_srvEntry, Request& request, Response& respon
 str getDateHeader( void );
 int fileStat( const str& src );
 bool isFileExist( str& src );
-bool isCgi( Location& location, str& src, Client& client, ServerEntry *_srvEntry, Request& request );
+bool isCgi( Location& location, str& src, Client& client, Request& request );
 void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code );
 size_t sToSize_t( const str& str );
 str getFileType( const str& type );
