@@ -164,7 +164,7 @@ void Request::setBody( str& body ) {
 ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
 	serverBlockHint::iterator it = _srvBlockHint.begin();
 	while(it != _srvBlockHint.end()) {
-		if (it->first->_serverName == getHost(request.getHeaders()))
+		if (it->first->_serverName + ":" + it->first->_port == getHost(request.getHeaders()))
 			return it->second;
 		++it;
 	}
@@ -285,6 +285,13 @@ void requestHandler( Client& client ) {
 				str body = client.getRequest().getBody();
         	    client.getRequest().setBody(body.append(bodyChunk));
 				body.clear();
+				if (client.getRequest().getBody().size() > M_MEGA) {
+					client.getResponse().setStatus(CONTENT_TOO_LARGE);
+					client._state = REQUEST_COMPLETE;
+					client._sendInfo.connectionState = CLOSED;
+					handlerReturn(client);
+					return;
+				}
         	    client.getLeftover().clear();
 
         	    if (client.getRequest().getBody().size() >= client.getExpectedBodyLength()) {

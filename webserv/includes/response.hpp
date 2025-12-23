@@ -91,7 +91,7 @@ str iToString(size_t n);
 void deleteHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
 void postHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
 void getHandler( ServerEntry *_srvEntry, Request& request, Response& response, str& src, Client& client );
-void defErrorResponse( Response& response, int code);
+void defErrorResponse( Response& response, int code, ServerEntry* _srvEntry );
 bool startsWith( const str& path, const str& start );
 Location getLocation( Request& request, Response& response );
 void redirectionResponse( Response& response, Location location );

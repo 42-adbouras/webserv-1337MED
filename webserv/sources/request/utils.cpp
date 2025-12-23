@@ -159,5 +159,9 @@ str generateUploadPath( Client& client ) {
 	else
 		_uploadPath = path + "/" + filename;
 
+	std::cout << "UPLOADPATH: " << _uploadPath << std::endl;
+	std::cout << "EXTRACTED: " << extractedFilename << std::endl;
+	std::cout << "LOCATIO: " << client.getRequest().getLocation() << std::endl;
+
 	return _uploadPath;
 }
