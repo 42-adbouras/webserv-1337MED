@@ -61,10 +61,43 @@
             <div class="card animate-fade-in delay-1">
                 <h3>🎮 Method Testing</h3>
                 <p style="margin-bottom: 1rem; color: var(--text-secondary);">Test different HTTP verbs.</p>
-                <div class="flex flex-col">
-                    <button onclick="testDelete()" class="btn btn-danger">Test DELETE Method</button>
+                <div class="form-group">
+                    <label for="delete-filename">Filename to Delete (in uploads/)</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="delete-filename" placeholder="example.txt"
+                            style="flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
+                        <button type="button" onclick="testDelete()" class="btn btn-danger">Delete</button>
+                    </div>
                 </div>
                 <div id="method-output" style="margin-top: 1rem;"></div>
+            </div>
+
+            <!-- CGI Data Testing -->
+            <div class="card animate-fade-in delay-2">
+                <h3>🧪 CGI Data Testing</h3>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">Test CGI with custom data.</p>
+
+                <!-- POST Test -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="margin-bottom: 0.5rem;">POST Request (Body)</h4>
+                    <form action="/cgi-scripts/hello.py" method="POST">
+                        <textarea name="data" placeholder="Enter content to POST..."
+                            style="width: 100%; min-height: 80px; margin-bottom: 0.5rem; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;"></textarea>
+                        <button type="submit" class="btn btn-primary">Send POST</button>
+                    </form>
+                </div>
+
+                <!-- GET Test -->
+                <div>
+                    <h4 style="margin-bottom: 0.5rem;">GET Request (Query)</h4>
+                    <form action="/cgi-scripts/hello.py" method="GET">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" name="query_data" placeholder="Enter query parameters..."
+                                style="flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
+                            <button type="submit" class="btn btn-secondary">Send GET</button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <!-- Error Handling -->
@@ -99,18 +132,32 @@
 
         function log(message, type = 'info') {
             const timestamp = new Date().toLocaleTimeString();
-            consoleEl.innerHTML = `[${timestamp}] ${message}\n` + consoleEl.innerHTML;
+            const logLine = document.createElement('div');
+            logLine.textContent = `[${timestamp}] ${message}`;
+            consoleEl.insertBefore(logLine, consoleEl.firstChild);
         }
 
         async function testDelete() {
-            log('Initiating DELETE request...', 'info');
+            const filenameInput = document.getElementById('delete-filename');
+            const filename = filenameInput.value.trim();
+
+            if (!filename) {
+                log('Error: Please enter a filename to delete.', 'error');
+                return;
+            }
+
+            log(`Initiating DELETE request for file: ${filename}...`, 'info');
             try {
-                // Attempting to delete a dummy file. In a real scenario, you'd upload one first.
-                const response = await fetch('/uploads/post.txt', { method: 'DELETE' });
+                const response = await fetch(`/uploads/${filename}`, { method: 'DELETE' });
                 log(`DELETE Response: ${response.status} ${response.statusText}`);
+                if (response.ok) {
+                    log(`File ${filename} deleted successfully.`);
+                } else {
+                    log(`Failed to delete ${filename}.`);
+                }
             } catch (error) {
                 log(`DELETE Error: ${error.message}`);
-            }  
+            }
         }
     </script>
 </body>
