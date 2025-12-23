@@ -21,14 +21,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-/*  CGI error codes  */
-
-// #define	INTER_SERVER_ERROR 500 		// internal server error 500
-// #define	GATEWAY_TIMEOUT 504 	// Gateway Timeout 504
-// #define	Forbiden 403 	// Forbiden 504
-
-/* CGI error Messages */
-
 
 struct CGIContext
 {

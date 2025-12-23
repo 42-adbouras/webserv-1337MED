@@ -142,9 +142,8 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 	*alreadyExec = true;
 	close(inPipe[0]);
 	close(outPipe[1]);
-	const str body = req._body;
-	if(!body.empty()) {
-		write(inPipe[1], body.c_str(), body.size());
+	if(!req._body.empty()) {
+		write(inPipe[1], req._body.c_str(), req._body.size());
 	}
 	close(inPipe[1]);
 	g_console.log(SERVER, str(req._path) + str(" Executed!"), BG_GREEN);

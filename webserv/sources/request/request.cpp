@@ -181,15 +181,11 @@ void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, 
 }
 
 void processClientRequest( Client& client ) {
-	bool reqFlg = client.getRequest().requestLineErrors( client.getResponse() );
+	// bool reqFlg = client.getRequest().requestLineErrors( client.getResponse() );
 	initPath(client.getRequest());
-	if (!reqFlg) {
-		client.setClientState(CS_KEEPALIVE);
-	} else {
-		str source = getSource(client.getRequest(), client.getRequest().getSrvEntry(), client.getResponse());
-		client.getResponse().setSrc(source);
-		checkMethod( client.getRequest().getSrvEntry(), client.getRequest(), client.getResponse(), source, client );
-	}
+	str source = getSource(client.getRequest(), client.getRequest().getSrvEntry(), client.getResponse());
+	client.getResponse().setSrc(source);
+	checkMethod( client.getRequest().getSrvEntry(), client.getRequest(), client.getResponse(), source, client );
 	client.setResponse(client.getResponse());
 }
 
@@ -285,6 +281,13 @@ void requestHandler( Client& client ) {
 				str body = client.getRequest().getBody();
         	    client.getRequest().setBody(body.append(bodyChunk));
 				body.clear();
+				if (client.getRequest().getBody().size() > M_MEGA) {
+					client.getResponse().setStatus(CONTENT_TOO_LARGE);
+					client._state = REQUEST_COMPLETE;
+					client._sendInfo.connectionState = CLOSED;
+					handlerReturn(client);
+					return;
+				}
         	    client.getLeftover().clear();
 
         	    if (client.getRequest().getBody().size() >= client.getExpectedBodyLength()) {

@@ -99,7 +99,11 @@ ClientState Server::readRequest(size_t cltIndx) {
          * */
         // _client[cltIndx].getRequest().setBuffer(buffer);
         // _client[cltIndx]._reqInfo.buffer.insert(_client[cltIndx]._reqInfo.buffer.end(), buff, buff + rByte);
-		_client[cltIndx]._reqInfo.buffer.insert(_client[cltIndx]._reqInfo.buffer.end(), buff.data(), buff.data() + rByte);
+		std::cout << BG_BLUE;
+        std::cout.write( buff.data(), rByte);
+        // std::cout << BG_BLUE << buff.data() << RESET << std::endl;
+        std::cout << RESET << std::endl;
+        _client[cltIndx]._reqInfo.buffer.insert(_client[cltIndx]._reqInfo.buffer.end(), buff.data(), buff.data() + rByte);
         requestHandler(_client[cltIndx]);
         if (_client[cltIndx]._reqInfo.reqStatus == CS_READING_DONE) {
             _client[cltIndx]._sendInfo.resStatus = CS_START_SEND; /* To track first try of send-response */
