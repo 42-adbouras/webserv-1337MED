@@ -155,9 +155,9 @@ void HtmlDefaultErrorsPages( Response& response, int code ) {
 	response.addHeaders("Content-Type", "text/html; charset=UTF-8");
 }
 
-void defErrorResponse( Response& response, int code) {
+void defErrorResponse( Response& response, int code, ServerEntry* _srvEntry ) {
 	response.setStatus(code);
-	str f = "./www/defaultErrorPages/" + toString(code) + ".html";
+	str f = "." + _srvEntry->_root + "/defaultErrorPages/" + toString(code) + ".html";
 	std::ifstream file(f.c_str());
 	str errorExpt = toString(code) + " error default page not found!";
 	if (file.is_open()) {
@@ -191,13 +191,13 @@ void getSrvErrorPage( Response& response, ServerEntry* _srvEntry, int code ) {
 		if (errorPgs.find(code) != errorPgs.end()) {
 			str src = "." + _srvEntry->_root + errorPgs.find(code)->second;
 			if (!genErrorResponse(response, src, code))
-				defErrorResponse(response, code);
+				defErrorResponse(response, code, _srvEntry);
 		} else {
-			defErrorResponse(response, code);
+			defErrorResponse(response, code, _srvEntry);
 			return;
 		}
 	} else {
-		defErrorResponse(response, code);
+		defErrorResponse(response, code, _srvEntry);
 		return;
 	}
 }

@@ -41,6 +41,9 @@ ChunkedParser::Result ChunkedParser::feed( const char* data, size_t len ) {
 		if (r == ERROR) {
 			_error = true;
 			return ERROR;
+		} else if (r == MAXERROR) {
+			_error = true;
+			return MAXERROR;
 		}
 		if (r == COMPLETE)
 			return COMPLETE;

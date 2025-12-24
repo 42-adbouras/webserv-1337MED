@@ -164,7 +164,7 @@ void Request::setBody( str& body ) {
 ServerEntry* getSrvBlock( serverBlockHint& _srvBlockHint, Request& request) {
 	serverBlockHint::iterator it = _srvBlockHint.begin();
 	while(it != _srvBlockHint.end()) {
-		if (it->first->_serverName == getHost(request.getHeaders()))
+		if (it->first->_serverName + ":" + it->first->_port == getHost(request.getHeaders()))
 			return it->second;
 		++it;
 	}
@@ -300,8 +300,8 @@ void requestHandler( Client& client ) {
 				HeadersMap::const_iterator ct = headers.find("Content-Type");
 				if (ct->second.find("multipart/form-data;") == str::npos) {
 					// single file
-					client._uploadPath = generateUploadPath( client );
 					if (client._uploadFd == -1) {
+						client._uploadPath = generateUploadPath( client );
 						client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 						if (client._uploadFd == -1) {
 							client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
@@ -354,8 +354,8 @@ void requestHandler( Client& client ) {
 				}
 				} else {
 					// chunked
-					client._uploadPath = generateUploadPath( client );
 					if (!client._chunkedParser.isActive()) {
+						client._uploadPath = generateUploadPath( client );
 						client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 						if (client._uploadFd == -1) {
 							client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
