@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 14:46:27 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 17:00:52 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,7 +111,7 @@ str		normPath( const str& path )
 
 	if (start == end)
 		return ("/");
-	return (out.substr(start, end - start));
+ 	return (out.substr(start, end - start));
 }
 
 ServerEntry	ConfigParser::parseServerBlock( void )
@@ -127,25 +127,25 @@ ServerEntry	ConfigParser::parseServerBlock( void )
 	if (!accept(T_LBRACE))
 		throw ParsingError(SERV_DIR_ERR, _path, cur);
 
-	ServerEntry	s;
+	ServerEntry	serv;
 
 	while (!accept(T_RBRACE)) {
 		Token cur = current();
 
 		if (cur._type == T_STR && cur._token == "location") {
 			Location loc = parseLocationBlock();
-			for (size_t i = 0; i < s._locations.size(); ++i) {
-				if (normPath(s._locations[i]._path) == normPath(loc._path))
+			for (size_t i = 0; i < serv._locations.size(); ++i) {
+				if (normPath(serv._locations[i]._path) == normPath(loc._path))
 					throw ParsingError(LOC_DUP_ERR + loc._path + "\"", _path, cur);
 			}
-			s._locations.push_back(loc);
+			serv._locations.push_back(loc);
 		} else if (cur._type == T_STR) {
-			parseServerDir(s);
+			parseServerDir(serv);
 		} else {
-			throw ParsingError("unknown directive \"" + cur._token + "\"", _path, cur);
+			throw ParsingError(UNK_DIRECTIVE + cur._token + "\"", _path, cur);
 		}
 	}
-	return (s);
+	return (serv);
 }
 
 Location	ConfigParser::parseLocationBlock( void )
@@ -155,16 +155,16 @@ Location	ConfigParser::parseLocationBlock( void )
 	Token	tPath = current();
 	
 	if (!(tPath._type == T_STR && startsWith(tPath._token, "/")))
-		throw ParsingError("UnexpectedPathPrefix [" + tPath._token + "]", _path, tPath);
+		throw ParsingError(EXP_PATH_PREFIX + tPath._token + "]", _path, tPath);
 
 	Location	loc;
 	loc._path = tPath._token;
 	++_index;
 	if (!accept(T_LBRACE))
-		throw ParsingError("expecting \"{\" after location directive", _path, current());
+		throw ParsingError(EXP_L_BRACKET, _path, current());
 	while (!accept(T_RBRACE)) {
 		if (!(current()._type == T_STR))
-			throw ParsingError("expecting \"location\" directive", _path, current());
+			throw ParsingError(EXP_LOC_DIR, _path, current());
 		parseLocationDir(loc);
 	}
 	return (loc);
@@ -198,11 +198,7 @@ void	ConfigParser::parseServerDir( ServerEntry& serv )
 	} else if (cur._token == "error_page") {
 		fetchErrorPages(serv._errorPages);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
-	} /*else if (cur._token == "cgi") {
-		fetchCGI(serv._cgi);
-		expect(T_SEMI, EXPECT_SEMI_ERR);
-	} */
-	else if (isTimeout(cur._token)) {
+	} else if (isTimeout(cur._token)) {
 		fetchTimeout(serv, cur._token);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else {
@@ -319,10 +315,12 @@ void	ConfigParser::fetchPath( str& path )
 {
 	Token	cur = current();
 	
-	if (!accept(T_STR)) 
+	if (!accept(T_STR))
 		throw ParsingError("expected path", _path, cur);
-
 	path = cur._token;
+
+	if (!startsWith(cur._token, "/"))
+		throw ParsingError(EXP_PATH_START + cur._token + "]", _path, cur);
 }
 
 void	ConfigParser::fetchPathList( std::vector<str>& list )
@@ -416,16 +414,6 @@ void	ConfigParser::fetchCGI( Location& loc )
 
 	loc._isCGI = true;
 	loc._cgi.push_back(cur._token);
-	// str	ext = cur._token;
-	// if (ext.size() < 2 || ext[0] != '.')
-	// 	throw ParsingError(INV_CGI_EXT_ERR, _path, cur);
-
-	// cur = current();
-	// if (!accept(T_STR))
-	// 	throw ParsingError(EXP_CGI_ITR_ERR, _path, cur);
-	// str inter = cur._token;
-	// cgi._extention = ext;
-	// cgi._interpreter = inter;
 }
 
 void	ConfigParser::fetchMethods( std::set<str>& methods )

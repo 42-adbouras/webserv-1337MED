@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 13:22:27 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 16:47:46 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,3 +159,8 @@ enum	Status {    // Enum for programe status only.
 #define MAX_T_OUT_ERR	"\" directive must be less than 24 hours"
 #define DUP_ERRPAGE_WAR	"duplicated \"error_page\" for ["
 #define LOC_DUP_ERR		"detected \"location\" directive duplication \""
+#define EXP_PATH_PREFIX	"unexpected path prefix ["
+#define EXP_L_BRACKET	"expecting \"{\" after location directive"
+#define EXP_LOC_DIR		"expecting \"location\" directive"
+#define UNK_DIRECTIVE	"unknown directive \""
+#define EXP_PATH_START	"expected path to starts with '/' on ["
