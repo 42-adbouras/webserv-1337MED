@@ -19,7 +19,7 @@ CLN		=	\033[K\r\c
 
 CXX		=	c++
 
-CFLAGS	=	-Wall -Wextra -Werror -g -std=c++98 -fsanitize=address -D_FILE_OFFSET_BITS=64
+CFLAGS	=	-Wall -Wextra -Werror -g -std=c++98 #-fsanitize=address -D_FILE_OFFSET_BITS=64
 
 NAME	=	webserv
 
@@ -44,9 +44,6 @@ $(NAME): $(OBJ)
 	@echo "$(YLW)[Compiling $(NAME)]$(RST)$(RST)$(CLN)"
 	@$(CXX) $(CFLAGS) $(OBJ) -o $(NAME)
 	@echo "$(GRN)[Compiled successfully, to run, execute: ./$(NAME)]$(RST)"
-
-# leak:
-# 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./webserv configs/config.conf
 
 clean:
 	@rm -rf $(OBJ_DIR)

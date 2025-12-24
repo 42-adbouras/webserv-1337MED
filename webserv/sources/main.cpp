@@ -45,15 +45,7 @@ void	printTokens( const TokensVector& tokens )
 	}
 }
 
-void	displayHashTable(const std::vector<TableOfListen> &table) {
-	for (size_t i = 0; i < table.size(); i++)
-	{
-		std::cout << YELLOW;
-		std::cout << "TABLE " << i + 1 << ": ==> " << "[ FD=" << table[i]._fd << ", IP=" << table[i]._ip << ", PORT=" << table[i]._port << ", SERVER_NAME=" << table[i]._serverName << " ]" << std::endl;
-		std::cout << GREEN << "          ========================        " << std::endl;
-	}
-	std::cout << RESET << std::endl;
-}
+
 
 void	leak() {
 	system("leaks webserv");
@@ -71,76 +63,22 @@ int	main( int ac, char** av )
 		TokensVector	tokens = lex.tokenize();
 		ConfigParser	p(tokens, av[1]);
 		Data	config = p.parseTokens();
-		// making a hash-table for all IP:PORT
-		// ----------------------------------------------------------
 		
 		std::vector<TableOfListen>	tableOfListen;
 		SocketManager	socketManager( config, tableOfListen );
+		// making a hash-table for all IP:PORT
 		socketManager.setTableOfListen( tableOfListen );
 		socketManager.hanldVirtualHost( tableOfListen );
 		// displayHashTable(tableOfListen);
-
-		/*****************************/
-		// for (size_t i = 0; i < tableOfListen.size(); i++)
-		// {
-		// 	if (tableOfListen[i]._interfaceState.alreadyBinded == false)
-		// 	{
-		// 		std::cout  << "IP:PORT that not binded: " << tableOfListen[i]._ip << ":" << tableOfListen[i]._port << std::endl;
-		// 	}
-		// 	else
-		// 		std::cout  << "IP:PORT that already binded: " << tableOfListen[i]._ip << ":" << tableOfListen[i]._port << std::endl;
-		// }
-		/*****************************/
-
 		socketManager.initSockets();
 		displayHashTable(tableOfListen);
 		socketManager.listenToPorts();
-		std::cout << " ========= " << socketManager.portCounter() << " ================" << std::endl;
-		// exit(0);
 		signal(SIGINT, signalHandler);
 		socketManager.runCoreLoop();
-		tableOfListen.clear();
-		config._servers.clear();
-		tokens.clear();
-		// Server	server(data);
-//	-------------------------------------------------------------------
-		
-		// CGIContext	cgi;
-		// cgi._path = "www/cgi-scripts/hello.py";
-		// cgi._name = "hello.py"; cgi._ntrp = "/usr/bin/python3";
-		// cgi._method = "POST"; cgi._serverName = "ait-server";
-		// cgi._serverAddr = "0.0.0.0"; cgi._serverPort = "8080";
-		// cgi._contenType = "text/palin";
-		// cgi._query["name"] = "world"; cgi._query["lang"] = "en";
-		// cgi._headers["Host"] = "0.0.0.0:8080";
-		// cgi._headers["Content-Type"] = "text/plain";
-		// cgi._headers["User-Agent"] = "webserv-dev/0.1";
-		// cgi._headers["Accept"] = "*/*";
-		// cgi._body = "<user>\n\t"
-		// 			"<name>Jane Doe</name>\n\t"
-		// 			"<email>jane.doe@example.com</email>\n\t"
-		// 			"<age>25</age>\n"
-		// 			"</user>";
-		// std::cout << cgiHandle(cgi)._output << std::endl;
-		
-
 		
 	} catch (std::exception& e) {
 		std::cerr << RED << e.what() << RESET << std::endl;
 		return (1);
 	}
-	// std::ifstream	confStream(av[1]);
-	// std::ostringstream out;
-	// out << confStream.rdbuf();
-
-	// Server	server(PORT, ROOT);
-
-	// if (!server.init())
-	// 	return (1);
-	// server.run();
-	
 	return (0);
 }
-
-
-// nik ys ab re ab ceb sim imad

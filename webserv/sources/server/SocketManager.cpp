@@ -299,8 +299,6 @@ void    SocketManager::runCoreLoop(void) {
                         ssize_t sendByte = send(client.getFd(), client._cgiOut._output.c_str(), toSend, 0);
                         if (sendByte > 0)
                         {
-                            // std::cout << BG_BLUE << client.getFd() <<  " ++++++++++++++++++++++++++++++++"  << RESET << std::endl;
-                            // std::cout << client._cgiOut._output << std::endl;
                             client._cgiOut._output.erase(client._cgiOut._output.begin(), client._cgiOut._output.begin() + sendByte);
                             continue;
                         }
@@ -317,7 +315,6 @@ void    SocketManager::runCoreLoop(void) {
                 if (client.getStatus() != CS_CGI_REQ && client._sendInfo.resStatus != CS_WRITING_DONE)  /** Handle response for normal HTTP request */
 				{
                     client.setStartTime(std::time(NULL));
-					// std::cout << "------ Start Sending ------" << std::endl;
 					sendResponse(client, sessionManager);
 					size_t	dataLen = client._sendInfo.buff.size();
 					const char* dataPtr = client._sendInfo.buff.data();
@@ -325,7 +322,6 @@ void    SocketManager::runCoreLoop(void) {
 					ssize_t byte = send(_pollfd[i].fd, dataPtr, dataLen, 0);
 					if (byte == 0)
 					{
-						// std::cout << "CLose connection " << std::endl;
 						_server.handleDisconnect(i - cltStart, _pollfd);
                         i--;
 						continue;
@@ -337,9 +333,7 @@ void    SocketManager::runCoreLoop(void) {
 				}
 				if (client._sendInfo.resStatus == CS_WRITING_DONE)
 				{
-                	// std::cout << "Finish writing" << std::endl;
                     if (client._sendInfo.connectionState == CLOSED) {
-                        // std::cout << "Flag Set" << std::endl;
                         _server.handleDisconnect(i - cltStart, _pollfd);
                         i--;
                         continue;
