@@ -47,7 +47,6 @@ wsrv_timer_t Server::wsrv_find_next_timeout(void) {
         if (_client[i].getRemainingTime() < lower)
             lower = _client[i].getRemainingTime();
     }
-    // std::cout << TIME_OUT << "Remaining Time for Waiting events: " << lower << std::endl;
     return (lower);
 }
 
@@ -55,7 +54,7 @@ void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     struct pollfd   temp;
 
     client.setStartTime(std::time(NULL));
-    client.setTimeOut(DEF_HEADER_TIME_OUT);/* timeOut to wait for the first request */
+    client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_headerTimeout); /* timeOut to wait for the first request */
     client.setClientState(CS_NEW);
     client._alreadyExec = false;
     client._cgiProc._readPipe = -1;
@@ -173,11 +172,15 @@ Client& Server::getClientReqCGI(int pipeFd) {
     return _client[0];
 }
 
-void    CGI_errorResponse(Client& client, int statusCode) {
+Connection    CGI_errorResponse(Client& client, int statusCode) {
     /**/
     getSrvErrorPage(client.getResponse(), client.getRequest().getSrvEntry(), statusCode);
     /**/
     str buffer = client.getResponse().generate();
-    // std::cout << BG_BLUE << "(((((((((((((((())))))))))))))))" << RESET << std::endl;
-    send(client.getFd(), buffer.c_str(), buffer.size(), 0);
+    if (send(client.getFd(), buffer.c_str(), buffer.size(), 0) <= 0)
+    {
+        std::cerr << RED << "send() faill" << RESET << std::endl;
+        return CLOSED;
+    }
+    return NEW;
 }

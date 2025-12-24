@@ -29,9 +29,10 @@ class Server
         void					closeClientConnection(void);
         Client&					getClientReqCGI(int pipeFd);
         ClientState				readRequest(size_t cltIndx);
+        
         Server(CookiesSessionManager& sessionManager, int portOpen);
         ~Server();
 };
 
-void    CGI_errorResponse(Client& client, int statusCode);
-void    signalHandler(int sig);
+Connection  CGI_errorResponse(Client& client, int statusCode);
+void        signalHandler(int sig);

@@ -1,20 +1,14 @@
 #pragma once
 
 #include "../TypeDefs.hpp"
-#define G_TIME_OUT 10000 // globale time-out for poll() events in ms
-#define CLIENT_HEADER_TIMEOUT 10 // second
-#define CLIENT_BODY_TIMEOUT 60 // second
-#define KEEPALIVE_TIMEOUT 75 // second
 
 /* macro for output messages */
 
-#define CGI_SCRIPT "[ ./RUN-CGI ]"
 #define INFO "[ INFO ]"
 #define CONNECTION "[ CONNECTION ]"
 #define TIME_OUT    "[ TIME-OUT ]"
 #define DISCONNECTION "[ DISCONNECTION ]"
 #define LISTEN "[ LISTEN ]"
-#define REQUEST "[ REQUEST ]"
 #define NOTICE "[ NOTICE ]"
 #define SERVER "[ SERVER ]"
 #define SOCKET_MANAGER "[ SOCKET_MANAGER ]"
@@ -28,6 +22,5 @@ struct  CONSOLE {
         std::cout << BG_CYAN << tag << RESET << color << " —— " << mess << RESET << "\n" << std::endl;
     }
 };
-
 
 extern CONSOLE g_console;

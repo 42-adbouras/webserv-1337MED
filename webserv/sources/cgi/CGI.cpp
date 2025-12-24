@@ -182,7 +182,6 @@ void	generate_CGI_Response(Client& client) {
 		client._cgiOut._code = 500;
 		getSrvErrorPage(client.getResponse(), client.getRequest().getSrvEntry(), client._cgiOut._code);
 		client._cgiOut._output = client.getResponse().generate();
-		// std::cout << BG_RED << "EXIT STATUS: " << status << std::endl;
 		return;
 	}
 	client._cgiProc._childPid = -1;

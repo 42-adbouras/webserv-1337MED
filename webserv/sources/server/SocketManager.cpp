@@ -8,7 +8,7 @@
 bool    g_run = true;
 
 void    signalHandler(int sig) {
-    std::cout << "\nSignal is: " << sig  << std::endl;
+    std::cout << "\nClosing server..." << std::endl;
 	g_run = false;
     return;
 }
@@ -231,10 +231,8 @@ void    SocketManager::runCoreLoop(void) {
             /*     ***************     Request Part    ***************    */
 			
             if ( _pollfd[i].revents & POLLIN ) {
-                
-				// std::cout << "--- Reading Request---" << std::endl;
                 ClientState state = _server.readRequest(i - cltStart);
-                _clients[i - cltStart].setStartTime(std::time(NULL));
+                _clients[i - cltStart].setStartTime(std::time(NULL)); /* reset time-out */
                 if (state == CS_READING_DONE)
                 {
                     _pollfd[i].events |= POLLOUT;
@@ -250,9 +248,7 @@ void    SocketManager::runCoreLoop(void) {
                 else if (state == CS_READING) /* still reading request ...*/
                     continue;
             }
-
             /*    ***************      Response Part     ***************    */
-
             if ( _pollfd[i].revents & POLLOUT )
             {
                 /*
@@ -261,28 +257,32 @@ void    SocketManager::runCoreLoop(void) {
                  * So prevent to run it multiple-time!
                  */
                 Client&	client = _server.getListOfClients()[i - cltStart];
-                client.setStartTime(std::time(NULL));
+                client.setStartTime(std::time(NULL));                           /* reset time-out */
                 if (client.getStatus() == CS_CGI_REQ) {
                     Response response;
                 /* ****** CGI Handler exec/response ****** */
-                    if (!client._alreadyExec) /* run CGI-script one time per-request & add CGIproc{pipe-fd to pollfd, pid} to client-data */
+                    if (!client._alreadyExec)                                   /* run CGI-script one time per-request & add CGIproc{pipe-fd to pollfd, pid} to client-data */
                     {
-                        client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cgiTimeout); /* to replace by cgi_time */  /* set time-out for cgi-script */
+                        client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cgiTimeout); /* set time-out for cgi-script */
                         if (isCgiRequest(_pollfd, _clients[i - cltStart], i)) {
+                            client.setStartTime(std::time(NULL));                           /* reset time-out */
                             if (client.getCltCgiState() == CCS_FAILLED) {
-                            CGI_errorResponse(_clients[i - cltStart], _clients[i - cltStart]._cgiProc._statusCode); /* send error response */
-                                client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cgiTimeout); /* waiting for new request */
+                                if (CGI_errorResponse(_clients[i - cltStart], _clients[i - cltStart]._cgiProc._statusCode) == CLOSED) {
+                                    _server.handleDisconnect(i - cltStart, _pollfd);
+                                    i--;
+                                    continue;
+                                }
+                                client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_headerTimeout); /* waiting for new request */
                                 client.setClientState(CS_NEW);
                                 _pollfd[i].events |= POLLIN;
                                 _pollfd[i].events &= ~POLLOUT;
                             }
-                            // std::cout << CGI_SCRIPT << CYAN << "Client FD=" << client.getFd() << ", CPID=" << client._cgiProc._childPid << RESET << std::endl;
                             continue;
                         }
                     }
                     else if (client.getCltCgiState() == CCS_DONE) /** when CGI-script Done, we send appropriate response here. */
                     {
-                        client.setStartTime(std::time(NULL));
+                        client.setStartTime(std::time(NULL));                           /* reset time-out */
                         if (client._cgiOut._output.empty())
                         {
                             /* nothing to send  */
@@ -292,15 +292,13 @@ void    SocketManager::runCoreLoop(void) {
                             client._alreadyExec = false;
                             client.setResponse(response);
                             // g_console.log(INFO, str("********* CGI Response Sent ***********"), BG_BLUE);
-                            client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cgiTimeout); /* reset time from cgi-time to header-time */
+                            client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_headerTimeout); /* reset time from cgi-time to header-time */
                             continue;
                         }
                         size_t  toSend = std::min<size_t>(client._cgiOut._output.size(), CGI_SEND_BUFFER);
                         ssize_t sendByte = send(client.getFd(), client._cgiOut._output.c_str(), toSend, 0);
                         if (sendByte > 0)
                         {
-                            // std::cout << BG_BLUE << client.getFd() <<  " ++++++++++++++++++++++++++++++++"  << RESET << std::endl;
-                            // std::cout << client._cgiOut._output << std::endl;
                             client._cgiOut._output.erase(client._cgiOut._output.begin(), client._cgiOut._output.begin() + sendByte);
                             continue;
                         }
@@ -310,22 +308,20 @@ void    SocketManager::runCoreLoop(void) {
                             continue;
                         }
                         if (sendByte < 0)
-                            continue ; /* will check errors in `handlErrCloses()` */
+                            continue ;                          /* will check errors in `handlErrCloses()` */
                     }
                 } 
     /* **************************   Response for static-files    **************************************** */
                 if (client.getStatus() != CS_CGI_REQ && client._sendInfo.resStatus != CS_WRITING_DONE)  /** Handle response for normal HTTP request */
 				{
-                    client.setStartTime(std::time(NULL));
-					// std::cout << "------ Start Sending ------" << std::endl;
 					sendResponse(client, sessionManager);
 					size_t	dataLen = client._sendInfo.buff.size();
 					const char* dataPtr = client._sendInfo.buff.data();
 
 					ssize_t byte = send(_pollfd[i].fd, dataPtr, dataLen, 0);
+                    client.setStartTime(std::time(NULL)); /* reset time-out */
 					if (byte == 0)
 					{
-						// std::cout << "CLose connection " << std::endl;
 						_server.handleDisconnect(i - cltStart, _pollfd);
                         i--;
 						continue;
@@ -337,9 +333,7 @@ void    SocketManager::runCoreLoop(void) {
 				}
 				if (client._sendInfo.resStatus == CS_WRITING_DONE)
 				{
-                	// std::cout << "Finish writing" << std::endl;
                     if (client._sendInfo.connectionState == CLOSED) {
-                        // std::cout << "Flag Set" << std::endl;
                         _server.handleDisconnect(i - cltStart, _pollfd);
                         i--;
                         continue;
