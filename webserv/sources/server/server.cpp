@@ -47,7 +47,6 @@ wsrv_timer_t Server::wsrv_find_next_timeout(void) {
         if (_client[i].getRemainingTime() < lower)
             lower = _client[i].getRemainingTime();
     }
-    // std::cout << TIME_OUT << "Remaining Time for Waiting events: " << lower << std::endl;
     return (lower);
 }
 

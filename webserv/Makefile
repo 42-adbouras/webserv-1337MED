@@ -45,9 +45,6 @@ $(NAME): $(OBJ)
 	@$(CXX) $(CFLAGS) $(OBJ) -o $(NAME)
 	@echo "$(GRN)[Compiled successfully, to run, execute: ./$(NAME)]$(RST)"
 
-# leak:
-# 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./webserv configs/config.conf
-
 clean:
 	@rm -rf $(OBJ_DIR)
 	@echo "$(RED)[Objects cleaned]$(RST)"
