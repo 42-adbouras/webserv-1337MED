@@ -10,42 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/serverHeader/Server.hpp"
-#include "../includes/Lexer.hpp"
-#include "../includes/TypeDefs.hpp"
-#include "../includes/Config.hpp"
-#include "../includes/serverHeader/SocketManager.hpp"
-#include "ServerUtils.hpp"
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include "../includes/CGI.hpp"
+#include "../includes/webserv.hpp"
+
 CONSOLE g_console;
-
-const char*	tokenTypeName( TokenType t )
-{
-	switch (t) {
-	case T_EOF:		return ("T_EOF");
-	case T_LBRACE:	return ("T_LBRACE");
-	case T_RBRACE:	return ("T_RBRACE");
-	case T_SEMI:	return ("T_SEMI");
-	case T_STR:		return ("T_STR");
-	case T_NUM:		return ("T_NUM");
-	default:		return ("T_UNK");
-	}
-}
-
-void	printTokens( const TokensVector& tokens )
-{
-	for (std::size_t i = 0; i < tokens.size(); ++i) {
-		const Token& t = tokens[i];
-		std::cout << "[" << t._line << ":" << t._col << "] "
-				  << tokenTypeName(t._type) << "  '"
-				  << t._token << "'" << std::endl;
-	}
-}
-
-
 
 void	leak() {
 	system("leaks webserv");

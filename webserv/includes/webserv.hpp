@@ -12,4 +12,13 @@
 
 #pragma once
 
-
+#include "serverHeader/Server.hpp"
+#include "Lexer.hpp"
+#include "TypeDefs.hpp"
+#include "Config.hpp"
+#include "serverHeader/SocketManager.hpp"
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include "CGI.hpp"
+#include "serverHeader/ServerUtils.hpp"
