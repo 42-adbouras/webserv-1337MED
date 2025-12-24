@@ -92,7 +92,6 @@ void    SocketManager::initSockets(void) {
             }
             /* set option for that socket */
             int addrYes = 1;
-            std::cout << "->" << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << std::endl;
             setsockopt(_tableOfListen[counter]._fd, SOL_SOCKET, SO_REUSEADDR, &addrYes, sizeof(addrYes));
             std::memcpy(&_tableOfListen[counter].addr, results->ai_addr, results->ai_addrlen);
             _tableOfListen[counter].addr_len = results->ai_addrlen;
@@ -163,7 +162,7 @@ Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Serv
     server.wsrv_timeout_closer(pollFd); /* remove client that timed-out  */
     return NON;
 }
-//
+
 void    SocketManager::handlErrCloses( std::vector<struct pollfd>& _pollfd, Server& server ){
     size_t  clientStart = portCounter();
 
@@ -233,7 +232,7 @@ void    SocketManager::runCoreLoop(void) {
 			
             if ( _pollfd[i].revents & POLLIN ) {
                 
-				std::cout << "--- Reading Request---" << std::endl;
+				// std::cout << "--- Reading Request---" << std::endl;
                 ClientState state = _server.readRequest(i - cltStart);
                 _clients[i - cltStart].setStartTime(std::time(NULL));
                 if (state == CS_READING_DONE)
@@ -243,12 +242,12 @@ void    SocketManager::runCoreLoop(void) {
                 }
                 else if (state == CS_DISCONNECT || state == CS_FATAL)
                 {
-                    std::cout << NOTICE << RED << "FD=" << _pollfd[i].fd << ", peer closed connection" << RESET << std::endl;
+                    std::cout << NOTICE << RED << "SOCKET_FD=" << _pollfd[i].fd << ", peer closed connection" << RESET << std::endl;
                     _server.handleDisconnect(i - cltStart, _pollfd);
                     i--;
                     continue;
                 }
-                else if (state == CS_READING) /* means; it still reading request ...*/
+                else if (state == CS_READING) /* still reading request ...*/
                     continue;
             }
 
@@ -256,8 +255,7 @@ void    SocketManager::runCoreLoop(void) {
 
             if ( _pollfd[i].revents & POLLOUT )
             {
-                // g_console.log(SERVER, str("Response Handler"), BG_CYAN);
-/*
+                /*
                  * If User req CGI, Run CGI Script and wait for results next polling!
                  * ```!_clients[i-cltStart]._alreadyExec``` == Script Of CGI Already Running.
                  * So prevent to run it multiple-time!
@@ -272,13 +270,13 @@ void    SocketManager::runCoreLoop(void) {
                         client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout); /* to replace by cgi_time */  /* set time-out for cgi-script */
                         if (isCgiRequest(_pollfd, _clients[i - cltStart], i)) {
                             if (client.getCltCgiState() == CCS_FAILLED) {
-                                CGI_errorResponse(_clients[i - cltStart], _clients[i - cltStart]._cgiProc._statusCode);
+                            CGI_errorResponse(_clients[i - cltStart], _clients[i - cltStart]._cgiProc._statusCode); /* send error response */
                                 client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout); /* waiting for new request */
                                 client.setClientState(CS_NEW);
                                 _pollfd[i].events |= POLLIN;
                                 _pollfd[i].events &= ~POLLOUT;
                             }
-                            std::cout << CGI_SCRIPT << CYAN << "Client FD=" << client.getFd() << ", CPID=" << client._cgiProc._childPid << RESET << std::endl;
+                            // std::cout << CGI_SCRIPT << CYAN << "Client FD=" << client.getFd() << ", CPID=" << client._cgiProc._childPid << RESET << std::endl;
                             continue;
                         }
                     }
@@ -293,19 +291,16 @@ void    SocketManager::runCoreLoop(void) {
                             client.setClientState(CS_NEW);
                             client._alreadyExec = false;
                             client.setResponse(response);
-                            g_console.log(INFO, str("********* CGI Response Sent ***********"), BG_BLUE);
-                            client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout);
+                            // g_console.log(INFO, str("********* CGI Response Sent ***********"), BG_BLUE);
+                            client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout); /* reset time from cgi-time to header-time */
                             continue;
                         }
-
                         size_t  toSend = std::min<size_t>(client._cgiOut._output.size(), CGI_SEND_BUFFER);
-
                         ssize_t sendByte = send(client.getFd(), client._cgiOut._output.c_str(), toSend, 0);
                         if (sendByte > 0)
                         {
-
-                            std::cout << BG_BLUE << client.getFd() <<  " ++++++++++++++++++++++++++++++++"  << RESET << std::endl;
-                            std::cout << client._cgiOut._output << std::endl;
+                            // std::cout << BG_BLUE << client.getFd() <<  " ++++++++++++++++++++++++++++++++"  << RESET << std::endl;
+                            // std::cout << client._cgiOut._output << std::endl;
                             client._cgiOut._output.erase(client._cgiOut._output.begin(), client._cgiOut._output.begin() + sendByte);
                             continue;
                         }
@@ -317,11 +312,12 @@ void    SocketManager::runCoreLoop(void) {
                         if (sendByte < 0)
                             continue ; /* will check errors in `handlErrCloses()` */
                     }
-                } /* **************************************************** */
+                } 
+    /* **************************   Response for static-files    **************************************** */
                 if (client.getStatus() != CS_CGI_REQ && client._sendInfo.resStatus != CS_WRITING_DONE)  /** Handle response for normal HTTP request */
 				{
                     client.setStartTime(std::time(NULL));
-					std::cout << "------ Start Sending ------" << std::endl;
+					// std::cout << "------ Start Sending ------" << std::endl;
 					sendResponse(client, sessionManager);
 					size_t	dataLen = client._sendInfo.buff.size();
 					const char* dataPtr = client._sendInfo.buff.data();
@@ -329,7 +325,7 @@ void    SocketManager::runCoreLoop(void) {
 					ssize_t byte = send(_pollfd[i].fd, dataPtr, dataLen, 0);
 					if (byte == 0)
 					{
-						std::cout << "CLose connection " << std::endl;
+						// std::cout << "CLose connection " << std::endl;
 						_server.handleDisconnect(i - cltStart, _pollfd);
                         i--;
 						continue;
@@ -341,9 +337,9 @@ void    SocketManager::runCoreLoop(void) {
 				}
 				if (client._sendInfo.resStatus == CS_WRITING_DONE)
 				{
-                	std::cout << "Finish writing" << std::endl;
+                	// std::cout << "Finish writing" << std::endl;
                     if (client._sendInfo.connectionState == CLOSED) {
-                        std::cout << "Flag Set" << std::endl;
+                        // std::cout << "Flag Set" << std::endl;
                         _server.handleDisconnect(i - cltStart, _pollfd);
                         i--;
                         continue;
@@ -402,14 +398,13 @@ void    SocketManager::cgiEventsChecking(std::vector<Client>& clients, std::vect
     {
         if ( pollFd[i].revents & ( POLLIN | POLLHUP ) )
         {
-            std::cout << "Data To Read From CGI PIPE=" << pollFd[i].fd << std::endl;
+            // std::cout << "Data To Read From CGI PIPE=" << pollFd[i].fd << std::endl;
             /**
              * read result from pipe;
              */
             Client& clinet = srvr.getClientReqCGI(pollFd[i].fd);
             if (pollFd[i].fd == clinet._cgiProc._readPipe)
             {
-                std::cout << "Client fd=" << clinet.getFd() << " is ready to read from pipe=" << clinet._cgiProc._readPipe <<std::endl;
                 readChild(clinet);
                 /**
                  * check if Done to set The Client to POLLOUT & remove pipe from pollfd struct.
@@ -420,7 +415,7 @@ void    SocketManager::cgiEventsChecking(std::vector<Client>& clients, std::vect
                     {
                         if (clinet.getFd() == pollFd[i].fd)
                         {
-			                std::cout << "Client with fd=" << clinet.getFd() << ", Switched to POLLOUT" << std::endl;
+			                // std::cout << "Client with fd=" << clinet.getFd() << ", Switched to POLLOUT" << std::endl;
                             pollFd[i].events |= POLLOUT;
                             pollFd[i].events &= ~POLLIN;
                         }
@@ -448,8 +443,6 @@ serverBlockHint    SocketManager::detectServerBlock(int sockFd) const {
         if (sockFd == _tableOfListen[i]._fd)
         {
             tmp.push_back(std::make_pair(&_tableOfListen[i],  &(_config->_servers[_tableOfListen[i]._serverBlockId])));
-            // std::cout << BLUE << "HII THERE! I GET THE BLOCKE SERVER." << RESET << std::endl;
-            // std::cout << "IP=" << _tableOfListen[i]._ip << ", PORT=" << _tableOfListen[i]._port << YELLOW << ", DOMAINE-NAME=[" << _tableOfListen[i]._serverName << "]" << RESET << std::endl;
         }
     }
     return tmp;
@@ -475,17 +468,6 @@ size_t SocketManager::portCounter(void) const {
     return count;
 }
 
-void    displayPOllList(const std::vector<pollfd>& list) {
-    std::cout << CYAN << "Open Socket List:" << RESET << std::endl;
-    for (size_t i = 0; i < list.size(); i++)
-    {
-        std::cout << list[i].fd;
-        if (i + 1 < list.size())
-            std::cout << "--";
-    }
-    std::cout << GREEN << " -|" << RESET << std::endl;
-}
-
 void    SocketManager::closeClientsSockets(std::vector<Client>& clients) {
     for (size_t i = 0; i < clients.size(); i++)
     {
@@ -509,6 +491,3 @@ void    SocketManager::closeClientsSockets(std::vector<Client>& clients) {
     }
     std::cout << INFO << GREEN << "Clients Resources are Cleanned" << RESET << std::endl;
 }
-
-
-// Changes: /*---------*/

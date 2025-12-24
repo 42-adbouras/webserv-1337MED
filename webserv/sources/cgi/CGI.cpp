@@ -147,7 +147,6 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 		write(inPipe[1], req._body.c_str(), req._body.size());
 	}
 	close(inPipe[1]);
-	g_console.log(SERVER, str(req._path) + str(" Executed!"), BG_GREEN);
 	return (CGIProc(pid, outPipe[0], 200));
 }
 
@@ -159,7 +158,7 @@ void readChild(Client& client)
     ssize_t readByte = read(client._cgiProc._readPipe, buff.data(), buff.size());
     if (readByte > 0)
     {
-		std::cout << "readByte>0: Reading data success.." << std::endl;
+		// std::cout << "readByte>0: Reading data success.." << std::endl;
 		std::string newBody = client.getResponse().getBody();
 		newBody.append(buff.data(), readByte);
 		client.getResponse().setBody(newBody);
@@ -170,7 +169,7 @@ void readChild(Client& client)
         /**
 		 * Ensure no more data -> Pipe closed -> child has finished writing.
 		 **/
-		std::cout << "readByte=0: no more data to read." << std::endl;
+		// std::cout << "readByte=0: no more data to read." << std::endl;
         if (client._cgiProc._readPipe != -1)
 		{
 			close(client._cgiProc._readPipe);
@@ -180,35 +179,20 @@ void readChild(Client& client)
     }
     if (readByte < 0 )
     {
-		// if (errno == EAGAIN || errno == EWOULDBLOCK)
-		// {
-		// 	/*No data yet, but child still running*/
-			client.setCltCgiState(CCS_FAILLED);
-		// }
-		// else{
-			out._code = 500;
-			// close(client._cgiProc._readPipe);
-			// client._cgiProc._readPipe = -1;
-			// client.setCltCgiState(CCS_FAILLED);
-		// }
-		// std::cout << "readByte<0: error detected" << std::endl;
+		client.setCltCgiState(CCS_FAILLED);
+		out._code = 500;
     }
 	client._cgiOut._code = out._code;
 }
 
 void	generate_CGI_Response(Client& client) {
-	// Response    res = client.getResponse();
-	
-	// if (client.getCltCgiState() == CCS_FAILLED) {
-	// getSrvErrorPage(res, res.srvEntry, INTERNAL_SERVER_ERROR);
-	// }
 	int status;
 	waitpid(client._cgiProc._childPid, &status, 0);
-	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0 || status != 0) {
 		client._cgiOut._code = 500;
 		getSrvErrorPage(client.getResponse(), client.getRequest().getSrvEntry(), client._cgiOut._code);
 		client._cgiOut._output = client.getResponse().generate();
-		std::cout << BG_RED << "EXIT STATUS: " << status << std::endl;
+		// std::cout << BG_RED << "EXIT STATUS: " << status << std::endl;
 		return;
 	}
 	client._cgiProc._childPid = -1;
@@ -216,5 +200,4 @@ void	generate_CGI_Response(Client& client) {
 	client.getResponse().addHeaders("Content-Type", "text/html");
 	client.setResponse(client.getResponse());
 	client._cgiOut._output = client.getResponse().generate();
-	std::cout << BG_RED << "*********************************************" << std::endl;
 }

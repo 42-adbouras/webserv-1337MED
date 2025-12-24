@@ -22,8 +22,7 @@
 #include <exception> // IWYU pragma: keep
 #include <cstdlib>
 #include <limits> // IWYU pragma: keep
-// #include <algorithm>
-// #include <deque>
+
 #include <cctype>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -80,12 +79,6 @@ typedef std::map<str, str>				QueryMap;
 #define CGI_R_BUFFER 4096 // => 4KB
 
 #define CGI_TIME_OUT 10 // => 60seconde
-
-// struct CGIEntry
-// {
-// 	str						_extention;
-// 	str						_interpreter;
-// };
 
 struct Location
 {

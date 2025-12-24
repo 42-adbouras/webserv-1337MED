@@ -47,7 +47,6 @@ std::time_t Client::getTimeOut(void) const {
 
 void        Client::setStartTime(std::time_t start) {
     this->_startTime = start;
-    // std::cout << CYAN << "START TIME IS= " << _startTime << RESET << std::endl;
 }
 
 std::time_t   Client::getStartTime(void) const {
