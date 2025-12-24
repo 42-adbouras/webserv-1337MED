@@ -8,6 +8,7 @@
 bool    g_run = true;
 
 void    signalHandler(int sig) {
+    (void) sig;
     std::cout << "\nClosing server..." << std::endl;
 	g_run = false;
     return;

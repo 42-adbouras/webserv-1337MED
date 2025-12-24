@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 13:22:27 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 18:52:55 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,7 +68,6 @@ private:
 	void			parseLocationDir (Location& loc );
 
 	void			fetchListen( ServerEntry& serv );
-	// void			fetchPortList( ServerEntry& serv, const str& path );
 	void			fetchServerName( ServerEntry& serv );
 	void			fetchPath( str& path );
 	void			fetchPathList( std::vector<str>& list );
@@ -84,10 +83,11 @@ private:
 	void			printWarning( const str& arg, int line, int col );
 };
 
-str		readConfig( const str& path );
-bool	validFile( const str& path );
+Data				getConfig( const char* arg );
+str					readConfig( const str& path );
+bool				validFile( const str& path );
 
-bool	startsWith( const str& path, const str& start );
-bool	validatePort( str& portStr, const Token& cur, const str& path );
-bool	isNum( const str& s );
-bool	validHost( str& host );
+bool				startsWith( const str& path, const str& start );
+bool				validatePort( str& portStr, const Token& cur, const str& path );
+bool				isNum( const str& s );
+bool				validHost( str& host );

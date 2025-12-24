@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 13:22:27 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 18:52:03 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,14 +22,10 @@ int	main( int ac, char** av )
 {
 	// atexit(leak);
 	if (ac < 2) {
-		std::cerr << "Usage: ./webserv <config.conf>" << std::endl;
+		std::cerr << USAGE_ERROR << std::endl;
 		return (1);
 	} try {
-		str				cfg = readConfig(av[1]);
-		Lexer			lex(cfg);
-		TokensVector	tokens = lex.tokenize();
-		ConfigParser	p(tokens, av[1]);
-		Data	config = p.parseTokens();
+		Data	config = getConfig(av[1]);
 		
 		std::vector<TableOfListen>	tableOfListen;
 		SocketManager	socketManager( config, tableOfListen );

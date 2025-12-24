@@ -6,12 +6,22 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/02 11:30:53 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/07 15:12:47 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 18:41:05 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/Config.hpp" 
 #include <string> 
+
+Data	getConfig( const char* arg )
+{
+	str				cfg = readConfig(arg);
+	Lexer			lex(cfg);
+	TokensVector	tokens = lex.tokenize();
+	ConfigParser	conf(tokens, arg);
+
+	return (conf.parseTokens());
+}
 
 bool	validFile( const str& path )
 {

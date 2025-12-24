@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 17:00:52 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 18:58:05 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -171,8 +171,7 @@ Location	ConfigParser::parseLocationBlock( void )
 }
 
 bool	isTimeout( const str& token ) {
-	return (token == "header_timeout" \
-			|| token == "cgi_timeout");
+	return (token == "header_timeout" || token == "cgi_timeout");
 }
 
 void	ConfigParser::parseServerDir( ServerEntry& serv )
@@ -307,8 +306,8 @@ void	ConfigParser::fetchServerName( ServerEntry& serv )
 		serv._serverName = cur._token;
 	else
 		printWarning(SERV_NAME_WAR + serv._serverName \
-							+ "\".\n\t\t:: [" + cur._token + "] will be ignored." \
-							, cur._line, cur._col);
+			+ "\".\n\t\t:: [" + cur._token + "] will be ignored." \
+			, cur._line, cur._col);
 }
 
 void	ConfigParser::fetchPath( str& path )
@@ -420,7 +419,7 @@ void	ConfigParser::fetchMethods( std::set<str>& methods )
 {
 	const char* allowed[] = {"GET", "POST", "DELETE", NULL};
 	Token cur = current();
-	
+
 	while (cur._type == T_STR) {
 		str   method = cur._token;
 		bool  ok     = false;

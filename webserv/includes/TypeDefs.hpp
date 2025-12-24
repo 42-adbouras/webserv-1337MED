@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 16:47:46 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 18:33:29 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,6 +127,7 @@ enum	Status {    // Enum for programe status only.
 	NON
 };
 
+#define USAGE_ERROR		"Usage: ./webserv <config/path.conf>"
 #define INV_CFG_PATH	"[ERROR]: invalid config path exception."
 #define INV_CFG_FILE	"[ERROR]: invalid config file exception."
 #define FAIL_OPEN_FILE	"[ERROR]: failed to open file exception."
