@@ -298,7 +298,6 @@ void sendResponse(Client& client, CookiesSessionManager& sessionManager) {
 		client._sendInfo.resStatus = CS_WRITING_DONE;
 	}
 
-	// probably 204/304/201
 	if (client._sendInfo.buff.empty()) {
 		client._sendInfo.resStatus = CS_WRITING_DONE;
 	}

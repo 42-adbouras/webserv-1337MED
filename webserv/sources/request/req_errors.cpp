@@ -42,6 +42,10 @@ bool requestErrors( Request& request, Response& response, ServerEntry* _srvEntry
 		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
 		return false;
 	}
+	if (cl != headers.end() && sToSize_t(cl->second) == 0) {
+		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
+		return false;
+	}
 	if (!headersCheck(request))
 		getSrvErrorPage(response, _srvEntry, BAD_REQUEST);
 	return true;
