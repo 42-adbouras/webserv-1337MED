@@ -181,12 +181,14 @@ void checkMethod( ServerEntry *_srvEntry, Request& request, Response& response, 
 }
 
 void processClientRequest( Client& client ) {
-	// bool reqFlg = client.getRequest().requestLineErrors( client.getResponse() );
+	bool reqFlg = client.getRequest().requestLineErrors( client.getResponse() );
 	initPath(client.getRequest());
-	str source = getSource(client.getRequest(), client.getRequest().getSrvEntry(), client.getResponse());
-	client.getResponse().setSrc(source);
-	checkMethod( client.getRequest().getSrvEntry(), client.getRequest(), client.getResponse(), source, client );
-	client.setResponse(client.getResponse());
+	if (reqFlg) {
+		str source = getSource(client.getRequest(), client.getRequest().getSrvEntry(), client.getResponse());
+		client.getResponse().setSrc(source);
+		checkMethod( client.getRequest().getSrvEntry(), client.getRequest(), client.getResponse(), source, client );
+		client.setResponse(client.getResponse());
+	}
 }
 
 void handlerReturn( Client& client ) {
