@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/14 16:54:55 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 12:48:38 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,10 @@ ParsingError::ParsingError( const str& msg, const str& path, const Token& cur )
 }
 
 ServerEntry::ServerEntry( void )
-	: _listenSet(false), _serverName(""), _root("/html"), _maxBodySize(0), _cltHeadTimeout(DEF_HEADER_TIME_OUT)
-	, _cltBodyTimeout(DEF_HEADER_TIME_OUT), _keepAliveTimeout(DEF_HEADER_TIME_OUT)
+	: _listenSet(false), _serverName(""), _root("/html")
+	, _maxBodySize(0)
+	, _headerTimeout(HEADER_TIME_OUT)
+	, _cgiTimeout(CGI_TIME_OUT)
 {
 	_listen.insert(std::make_pair("0.0.0.0", "8080"));
 }
@@ -170,9 +172,8 @@ Location	ConfigParser::parseLocationBlock( void )
 }
 
 bool	isTimeout( const str& token ) {
-	return (token == "client_header_timeout" \
-			|| token == "client_body_timeout" \
-			|| token == "keepalive_timeout");
+	return (token == "header_timeout" \
+			|| token == "cgi_timeout");
 }
 
 void	ConfigParser::parseServerDir( ServerEntry& serv )
@@ -260,11 +261,10 @@ void	ConfigParser::fetchTimeout( ServerEntry& serv, const str& type )
 	if (timeout > MAX_TIMEOUT)
 		throw ParsingError("\"" + type + MAX_T_OUT_ERR, _path, cur);
 	
-	if (type == "client_header_timeout")
-		serv._cltHeadTimeout = timeout; 
-	else if (type == "client_body_timeout")
-		serv._cltBodyTimeout = timeout; 
-	else serv._keepAliveTimeout = timeout; 
+	if (type == "header_timeout")
+		serv._headerTimeout = timeout; 
+	else if (type == "cgi_timeout")
+		serv._cgiTimeout = timeout; 
 }
 
 void	ConfigParser::fetchListen( ServerEntry& serv )

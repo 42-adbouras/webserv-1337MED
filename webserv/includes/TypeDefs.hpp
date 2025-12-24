@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/23 15:44:05 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 13:22:27 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,12 +16,12 @@
 #include <vector>
 #include <set>
 #include <sstream>
-#include <fstream> // IWYU pragma: keep
+#include <fstream>
 #include <map>
 #include <cstddef>
-#include <exception> // IWYU pragma: keep
+#include <exception>
 #include <cstdlib>
-#include <limits> // IWYU pragma: keep
+#include <limits>
 
 #include <cctype>
 #include <sys/stat.h>
@@ -78,7 +78,8 @@ typedef std::map<str, str>				QueryMap;
 #define CGI_SEND_BUFFER 4096 // => 4KB
 #define CGI_R_BUFFER 4096 // => 4KB
 
-#define CGI_TIME_OUT 10 // => 60seconde
+#define HEADER_TIME_OUT	10 //s
+#define CGI_TIME_OUT	10 //s
 
 struct Location
 {
@@ -113,8 +114,8 @@ struct ServerEntry
 	std::map<int, str>		_errorPages;
 	size_t					_maxBodySize;
 	str						_uploadStore;
-	size_t					_cltHeadTimeout;
-	size_t					_cltBodyTimeout;
+	size_t					_headerTimeout;
+	size_t					_cgiTimeout;
 	size_t					_keepAliveTimeout;
 	std::vector<Location>	_locations;
 	ServerEntry( void );

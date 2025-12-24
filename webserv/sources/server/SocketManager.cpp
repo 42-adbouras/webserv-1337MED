@@ -267,11 +267,11 @@ void    SocketManager::runCoreLoop(void) {
                 /* ****** CGI Handler exec/response ****** */
                     if (!client._alreadyExec) /* run CGI-script one time per-request & add CGIproc{pipe-fd to pollfd, pid} to client-data */
                     {
-                        client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout); /* to replace by cgi_time */  /* set time-out for cgi-script */
+                        client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cgiTimeout); /* to replace by cgi_time */  /* set time-out for cgi-script */
                         if (isCgiRequest(_pollfd, _clients[i - cltStart], i)) {
                             if (client.getCltCgiState() == CCS_FAILLED) {
                             CGI_errorResponse(_clients[i - cltStart], _clients[i - cltStart]._cgiProc._statusCode); /* send error response */
-                                client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout); /* waiting for new request */
+                                client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cgiTimeout); /* waiting for new request */
                                 client.setClientState(CS_NEW);
                                 _pollfd[i].events |= POLLIN;
                                 _pollfd[i].events &= ~POLLOUT;
@@ -292,7 +292,7 @@ void    SocketManager::runCoreLoop(void) {
                             client._alreadyExec = false;
                             client.setResponse(response);
                             // g_console.log(INFO, str("********* CGI Response Sent ***********"), BG_BLUE);
-                            client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cltBodyTimeout); /* reset time from cgi-time to header-time */
+                            client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_cgiTimeout); /* reset time from cgi-time to header-time */
                             continue;
                         }
                         size_t  toSend = std::min<size_t>(client._cgiOut._output.size(), CGI_SEND_BUFFER);
