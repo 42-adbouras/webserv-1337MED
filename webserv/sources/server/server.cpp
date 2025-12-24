@@ -172,11 +172,15 @@ Client& Server::getClientReqCGI(int pipeFd) {
     return _client[0];
 }
 
-void    CGI_errorResponse(Client& client, int statusCode) {
+Connection    CGI_errorResponse(Client& client, int statusCode) {
     /**/
     getSrvErrorPage(client.getResponse(), client.getRequest().getSrvEntry(), statusCode);
     /**/
     str buffer = client.getResponse().generate();
-    // std::cout << BG_BLUE << "(((((((((((((((())))))))))))))))" << RESET << std::endl;
-    send(client.getFd(), buffer.c_str(), buffer.size(), 0);
+    if (send(client.getFd(), buffer.c_str(), buffer.size(), 0) <= 0)
+    {
+        std::cerr << RED << "send() faill" << RESET << std::endl;
+        return CLOSED;
+    }
+    return NEW;
 }

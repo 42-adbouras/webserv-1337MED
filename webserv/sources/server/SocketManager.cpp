@@ -8,7 +8,7 @@
 bool    g_run = true;
 
 void    signalHandler(int sig) {
-    std::cout << "\nSignal is: " << sig  << std::endl;
+    std::cout << "\nClosing server..." << std::endl;
 	g_run = false;
     return;
 }
@@ -267,7 +267,11 @@ void    SocketManager::runCoreLoop(void) {
                         if (isCgiRequest(_pollfd, _clients[i - cltStart], i)) {
                             client.setStartTime(std::time(NULL));                           /* reset time-out */
                             if (client.getCltCgiState() == CCS_FAILLED) {
-                                CGI_errorResponse(_clients[i - cltStart], _clients[i - cltStart]._cgiProc._statusCode); /* send error response */
+                                if (CGI_errorResponse(_clients[i - cltStart], _clients[i - cltStart]._cgiProc._statusCode) == CLOSED) {
+                                    _server.handleDisconnect(i - cltStart, _pollfd);
+                                    i--;
+                                    continue;
+                                }
                                 client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_headerTimeout); /* waiting for new request */
                                 client.setClientState(CS_NEW);
                                 _pollfd[i].events |= POLLIN;

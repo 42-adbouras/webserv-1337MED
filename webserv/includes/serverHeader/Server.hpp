@@ -34,5 +34,5 @@ class Server
         ~Server();
 };
 
-void    CGI_errorResponse(Client& client, int statusCode);
-void    signalHandler(int sig);
+Connection  CGI_errorResponse(Client& client, int statusCode);
+void        signalHandler(int sig);
