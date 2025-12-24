@@ -6,12 +6,11 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 12:48:38 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 14:46:27 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/Config.hpp"
-#include <cstddef>
 
 ParsingError::ParsingError( const str& msg, const str& path, const Token& cur )
 	: _msg(msg)

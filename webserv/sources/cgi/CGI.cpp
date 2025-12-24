@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/07 21:19:38 by adbouras          #+#    #+#             */
-/*   Updated: 2025/11/23 15:48:49 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 14:52:23 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,13 +15,6 @@
 #include "../../includes/serverHeader/SocketManager.hpp"
 #include "../../includes/serverHeader/Client.hpp"
 #include "../../includes/serverHeader/ServerUtils.hpp"
-
-#include <cstddef>
-#include <cstring>
-#include <iostream>
-#include <ostream>
-#include <string>
-#include <vector>
 
 str		joinQuery( const QueryMap& query )
 {
@@ -67,10 +60,6 @@ char**	buildEnv( const CGIContext& req )
 		envVect.push_back("CONTENT_LENGTH=" + oss.str());
 	}
 
-	// HeadersMap::const_iterator it = req._headers.find("Content-Type");
-	// if (it != req._headers.end() && !it->second.empty())
-	// envVect.push_back("CONTENT_TYPE="+ req._contenType);
-
 	if (!req._query.empty())
 		envVect.push_back("QUERY_STRING=" + joinQuery(req._query));
 
@@ -100,7 +89,6 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 	int			inPipe[2];
 	int			outPipe[2];
 
-	// try access first
 	if (access(req._path.c_str(), R_OK | X_OK) < 0) {
 		std::cerr << "access() denied" << std::endl;
 		return (CGIProc(true, 403)); 
@@ -121,7 +109,6 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 		char**	env = buildEnv(req);
 
 		char* av[2];
-		// av[0] = const_cast<char*>(req._ntrp.c_str());
 		av[0] = const_cast<char*>(req._path.c_str());
 		av[1] = NULL;
 
@@ -132,25 +119,28 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 		close(inPipe[0]);  close(inPipe[1]);
 
 		execve(av[0], av, env);
-		
-		std::cerr << "execve() failed" << std::endl;
 
 		for (int i = 0; env[i]; ++i)
 			delete[] env[i];
 		delete[] env;
+
 		exit(EXIT_FAILURE);
 	}
+
 	*alreadyExec = true;
 	close(inPipe[0]);
 	close(outPipe[1]);
+
 	if(!req._body.empty()) {
-		write(inPipe[1], req._body.c_str(), req._body.size());
+		int ret = write(inPipe[1], req._body.c_str(), req._body.size());
+		if (ret <= 0) return (CGIProc(true, 500));
 	}
+
 	close(inPipe[1]);
 	return (CGIProc(pid, outPipe[0], 200));
 }
 
-void readChild(Client& client) 
+void	readChild( Client& client ) 
 {
     CGIOutput out;
     std::vector<char>   buff(CGI_R_BUFFER);
