@@ -304,8 +304,8 @@ void requestHandler( Client& client ) {
 				HeadersMap::const_iterator ct = headers.find("Content-Type");
 				if (ct->second.find("multipart/form-data;") == str::npos) {
 					// single file
-					client._uploadPath = generateUploadPath( client );
 					if (client._uploadFd == -1) {
+						client._uploadPath = generateUploadPath( client );
 						client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 						if (client._uploadFd == -1) {
 							client.getResponse().setStatus(INTERNAL_SERVER_ERROR);
@@ -358,8 +358,8 @@ void requestHandler( Client& client ) {
 				}
 				} else {
 					// chunked
-					client._uploadPath = generateUploadPath( client );
 					if (!client._chunkedParser.isActive()) {
+						client._uploadPath = generateUploadPath( client );
 						client._uploadFd = open(client._uploadPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 						if (client._uploadFd == -1) {
 							client.getResponse().setStatus(INTERNAL_SERVER_ERROR);

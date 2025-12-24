@@ -140,7 +140,7 @@ MultipartParser::Result MultipartParser::processPartHeaders( void ) {
 		_currentFile.generatedName = _curFilename;
 		_currentFile.fullPath = _uploadDir + _curFilename;
 	}
-
+	_uploadedFiles.push_back(_currentFile);
 	if (!openNewFile(_curFilename))
 		return ERROR;
 
