@@ -9,7 +9,7 @@
 
 Server::Server(CookiesSessionManager& sessionManager, int portOpen) : _sessionManager(sessionManager), _OpenPort(portOpen) {
     (void) _sessionManager;
-    g_console.log(SERVER, str("Server started — config=config.conf ..."), BG_CYAN);
+    g_console.log(SERVER, str("Server started ---"), BG_CYAN);
 }
 
 std::vector<Client>& Server::getListOfClients(void) {
@@ -116,7 +116,6 @@ void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd)
                 if (_client[index]._cgiProc._childPid != -1) {
                     _client[index]._cgiOut._code = GATEWAY_TIMEOUT;
                     CGI_errorResponse(_client[index], _client[index]._cgiOut._code);
-                    g_console.log(INFO, str("Child process killed with success."), BLUE);
                     kill(_client[index]._cgiProc._childPid, SIGKILL);
                     int status;
                     waitpid(_client[index]._cgiProc._childPid, &status, 0);
@@ -153,7 +152,7 @@ void    Server::closeClientConnection(void) {
 }
 
 Server::~Server() {
-    std::cout << WARNING << BG_RED << "Server Down" << RESET << std::endl;
+    std::cout << WARNING << BG_RED << "--- Server Down ---" << RESET << std::endl;
 }
 
 Client& Server::getClientReqCGI(int pipeFd) {
@@ -173,9 +172,8 @@ Client& Server::getClientReqCGI(int pipeFd) {
 }
 
 Connection    CGI_errorResponse(Client& client, int statusCode) {
-    /**/
     getSrvErrorPage(client.getResponse(), client.getRequest().getSrvEntry(), statusCode);
-    /**/
+
     str buffer = client.getResponse().generate();
     if (send(client.getFd(), buffer.c_str(), buffer.size(), 0) <= 0)
     {

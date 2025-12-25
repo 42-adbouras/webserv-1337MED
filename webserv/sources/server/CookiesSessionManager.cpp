@@ -35,7 +35,6 @@ size_t  CookiesSessionManager::getLogCounter( const str& id ) const{
             return it->second.logCounter;
         }
     }
-    std::cout << BG_RED << "Session Id u searching for it is invalid!" << RESET << std::endl;
     return 0;
 }
 
@@ -71,31 +70,26 @@ int CookiesSessionManager::findSessionIfExist( const std::string& id ) const { /
 }
 
 void    userLoginHandl(Client& client, CookiesSessionManager& sessionManager) { /* handle session & cookies */
-	// std::cout << BLUE << "path before: " << client.getRequest().getPath() << RESET << std::endl;
     size_t  pos;
     if ( (pos = client.getRequest().getPath().find(ROOT_LOGIN)) == std::string::npos )
     {
         return;
     }
-	// std::cout << BG_BLUE << "path alter: " << client.getRequest().getPath() << RESET << std::endl;
     sessionManager.displayAllSession();
     const HeadersMap::const_iterator    it = client.getRequest().getHeaders().find(str("Cookie")); /* check if browser set Cookie */
     if (it != client.getRequest().getHeaders().end()) /* browser send Cookie; so this User already have a Session */
     {
-        std::cout << "<<<<<<<<< Cookies exist >>>>>>>>>" << std::endl;
         int index;
         
         index = sessionManager.findSessionIfExist(sessionManager.getParamValue(it->second, str("id"))); /* get idndex of the current User in SessionTable{} */
         if (index != -1)
         {
-            std::cout << BG_BLUE << "Session ID exist in server DataBase: " << sessionManager.getParamValue(it->second, str("id")) << RESET << std::endl;
+            // std::cout << BG_BLUE << "Session ID exist in server DataBase: " << sessionManager.getParamValue(it->second, str("id")) << RESET << std::endl;
             sessionManager.getSessionTable()[index].second.logCounter += 1; /* increment LogCounter for that user */
             /* Update the cookies for that user (same ID, but logCounter updated by +1) */
             sessionManager.setCookies(client, sessionManager.getParamValue(it->second, str("id")), sessionManager.getSessionTable()[index].second.logCounter);
-            std::cout << GREEN << "Cookie i get: " << it->second << RESET << std::endl;
         }
         else { /* browser sent Cookie Header, but server restart so all Session removed */
-            std::cout << BG_RED << "Session ID dosen't exist in the server DB" << std::endl;
             sessionManager.createNewSession(sessionManager, client);
         }
     }

@@ -4,7 +4,6 @@
 #include "./Utils.hpp"
 #include "./TypeDefs.hpp"
 #include "./response.hpp"
-// #include "./serverHeader/CookiesSessionManager.hpp" /*---------*/
 #include <sys/socket.h>
 #include <deque>
 #include "./FilenameGenerator.hpp"

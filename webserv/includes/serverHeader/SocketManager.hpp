@@ -2,8 +2,6 @@
 
 #include <cstddef>
 #include <fcntl.h>
-
-// #include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <sys/poll.h>
@@ -14,9 +12,7 @@
 #include <cstring>
 #include <cerrno>
 #include <vector>
-// #include <signal.h>
 #include "../Config.hpp"
-// #include "Client.hpp"
 
 struct  TableOfListen;
 struct  ServerEntry;
@@ -30,7 +26,6 @@ class   SocketManager {
     private:
         Data                                            *_config;
         std::vector<TableOfListen>                      &_tableOfListen;
-        // std::vector<std::pair<int, struct sockaddr*> >    _listenSocks;
         void    bindSockets(size_t counter);
     public:
         SocketManager(Data& config, std::vector<TableOfListen>& tableOfListen);
@@ -42,26 +37,17 @@ class   SocketManager {
         void    setListenEvent(std::vector<struct pollfd>& _pollfd);
         void    checkForNewClients( std::vector<struct pollfd>& _pollfd, Server& _server );
         void    hanldVirtualHost( std::vector<TableOfListen>& tableOfListen );
-        // bool    checkIfAlreadyBinded(size_t index) const;
         void    closeListenSockets(void) const;
         void    closeClientsSockets(std::vector<Client>& clients);
-        serverBlockHint   detectServerBlock(int sockFd) const;
-        void    rmClientFromPoll(std::vector<struct pollfd>& _pollfd, size_t  cltSize);
-        // std::vector<ServerEntry>&    retrieveServerBlock(size_t index);
-        // ----- Utils -----
-        // static struct sockaddr_in  getSockaddr(void);
-        static int  setNonBlocking(int fd);
-        size_t      portCounter(void) const;
-        void        handlErrCloses( std::vector<struct pollfd>& _pollfd, Server& server );
+        serverBlockHint detectServerBlock(int sockFd) const;
+        // void            rmClientFromPoll(std::vector<struct pollfd>& _pollfd, size_t  cltSize);
+        static int      setNonBlocking(int fd);
+        size_t          portCounter(void) const;
+        void            handlErrCloses( std::vector<struct pollfd>& _pollfd, Server& server );
         // ---------------  CGI     ---------------------
-
         void    readFromCgi(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, Server& srvr, size_t* coreIndex);
         void    cgiEventsChecking(std::vector<Client>& clients, std::vector<struct pollfd>& pollFd, Server& srvr);
         bool    isCgiRequest(std::vector<struct pollfd>& pollFd, Client& client, size_t index);
-        // void    signalHandler(int sig) {
-        //     std::cout << "Signal is: " << sig  << std::endl;
-        //     exit(EXIT_SUCCESS);
-        // };
         ~SocketManager(){};
 };
 

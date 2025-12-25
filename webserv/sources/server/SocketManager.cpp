@@ -87,7 +87,6 @@ void    SocketManager::initSockets(void) {
             {
                 if (_tableOfListen[S]._interfaceState.alreadyBinded && _tableOfListen[S] == _tableOfListen[counter])
                 {
-                    _tableOfListen[S]._interfaceState.fd = fd;
                     _tableOfListen[S]._fd = fd;
                 }
             }
@@ -140,13 +139,6 @@ void    SocketManager::checkForNewClients( std::vector<struct pollfd>& _pollfd, 
     }
 }
 
-void    SocketManager::rmClientFromPoll(std::vector<struct pollfd>& _pollfd, size_t  cltSize) {
-    for (size_t i = 0; i < cltSize; i++)
-    {
-        _pollfd.erase(_pollfd.begin() + portCounter() + i);
-    }
-}
-
 Status  SocketManager::PollingForEvents(std::vector<struct pollfd>& pollFd, Server& server,size_t cltSize) {
     int 	        totalEvent;
     wsrv_timer_t    coreTimeOut;
@@ -189,7 +181,7 @@ void    SocketManager::runCoreLoop(void) {
     signal(SIGPIPE, SIG_IGN);
     while (g_run)
     {
-        sessionManager.displayAllSession();
+        // sessionManager.displayAllSession();  /* displaying All session saved in server */
         /*
          ** Main loop events:
          ** polling for incoming event (POLLIN & POLLOUT || ( POLLHUP | POLLERR | POLLNVAL ))
@@ -292,7 +284,6 @@ void    SocketManager::runCoreLoop(void) {
                             client.setClientState(CS_NEW);
                             client._alreadyExec = false;
                             client.setResponse(response);
-                            // g_console.log(INFO, str("********* CGI Response Sent ***********"), BG_BLUE);
                             client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_headerTimeout); /* reset time from cgi-time to header-time */
                             continue;
                         }
@@ -410,7 +401,6 @@ void    SocketManager::cgiEventsChecking(std::vector<Client>& clients, std::vect
                     {
                         if (clinet.getFd() == pollFd[i].fd)
                         {
-			                // std::cout << "Client with fd=" << clinet.getFd() << ", Switched to POLLOUT" << std::endl;
                             pollFd[i].events |= POLLOUT;
                             pollFd[i].events &= ~POLLIN;
                         }
@@ -425,10 +415,9 @@ void    SocketManager::cgiEventsChecking(std::vector<Client>& clients, std::vect
                 }
             }
             else
-                throw std::runtime_error("Can't found Client CGI");
+                continue;
         }
     }
-    // std::cout << "***********   Finish Reading  ******************" << std::endl;
 }
 
 serverBlockHint    SocketManager::detectServerBlock(int sockFd) const {
@@ -452,7 +441,6 @@ void    SocketManager::closeListenSockets(void) const {
     g_console.log(DISCONNECTION, "Listening Sockets Closed", RED);
 }
 
-//------ utils ------
 size_t SocketManager::portCounter(void) const {
     size_t count = 0;
     for (size_t i = 0; i < _tableOfListen.size(); i++)

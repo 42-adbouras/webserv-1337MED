@@ -2,8 +2,6 @@
 
 #include "../TypeDefs.hpp"
 
-/* macro for output messages */
-
 #define INFO "[ INFO ]"
 #define CONNECTION "[ CONNECTION ]"
 #define TIME_OUT    "[ TIME-OUT ]"
@@ -13,7 +11,6 @@
 #define SERVER "[ SERVER ]"
 #define SOCKET_MANAGER "[ SOCKET_MANAGER ]"
 #define WARNING "[ WARNING ]"
-#include <iostream>
 
 struct  CONSOLE {
     std::string message;
