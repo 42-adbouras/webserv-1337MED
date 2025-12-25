@@ -13,10 +13,10 @@ void    SocketManager::bindSockets(size_t counter) {
         std::cerr << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << ", " << counter;
         throw std::runtime_error(strerror(errno));
     }
-    else  if (status == 0) {
-        std::cout << GREEN << "IP:PORT->" << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << RESET << std::endl;
-        std::cout << "socket fd " << _tableOfListen[counter]._fd << ": binded successfull" << std::endl;
-    }
+    // else  if (status == 0) {
+    //     std::cout << GREEN << "IP:PORT->" << _tableOfListen[counter]._ip << ":" << _tableOfListen[counter]._port << RESET << std::endl;
+    //     std::cout << "socket fd " << _tableOfListen[counter]._fd << ": binded successfull" << std::endl;
+    // }
 }
 
 void    SocketManager::listenToPorts(void) {

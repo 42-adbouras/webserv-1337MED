@@ -3,12 +3,9 @@
 #include  "./Client.hpp"
 #include <netinet/in.h>
 #include <unistd.h>
-// #include <poll.h>
-#include <cstring>
-// #include <cerrno>
 #include <csignal>
 
-typedef    size_t    wsrv_timer_t;
+typedef size_t    wsrv_timer_t;
 
 #include "SocketManager.hpp"
 #include "CookiesSessionManager.hpp"
