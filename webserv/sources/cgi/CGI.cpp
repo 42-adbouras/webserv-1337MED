@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/07 21:19:38 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 14:52:23 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/25 11:39:27 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 #include "../../includes/response.hpp"
 #include "../../includes/serverHeader/SocketManager.hpp"
 #include "../../includes/serverHeader/Client.hpp"
-#include "../../includes/serverHeader/ServerUtils.hpp"
 
 str		joinQuery( const QueryMap& query )
 {
@@ -89,18 +88,15 @@ CGIProc	cgiHandle( CGIContext req, bool *alreadyExec )
 	int			inPipe[2];
 	int			outPipe[2];
 
-	if (access(req._path.c_str(), R_OK | X_OK) < 0) {
-		std::cerr << "access() denied" << std::endl;
+	if (access(req._path.c_str(), X_OK) < 0) {
 		return (CGIProc(true, 403)); 
 	}
 	(void) req;
 	if (pipe(inPipe) < 0 || pipe(outPipe) < 0) {
-		std::cerr << "pipe() failed" << std::endl;
 		return (CGIProc(true, 500));
 	}
 	pid_t	pid = fork();
 	if (pid < 0) {
-		std::cerr << "fork() failed" << std::endl;
 		close(outPipe[0]); close(outPipe[1]);
 		close(inPipe[0]); close(inPipe[1]);
 		return (CGIProc(true, 500));
@@ -148,7 +144,6 @@ void	readChild( Client& client )
     ssize_t readByte = read(client._cgiProc._readPipe, buff.data(), buff.size());
     if (readByte > 0)
     {
-		// std::cout << "readByte>0: Reading data success.." << std::endl;
 		std::string newBody = client.getResponse().getBody();
 		newBody.append(buff.data(), readByte);
 		client.getResponse().setBody(newBody);
@@ -156,10 +151,6 @@ void	readChild( Client& client )
     }
     if (readByte == 0)
     {
-        /**
-		 * Ensure no more data -> Pipe closed -> child has finished writing.
-		 **/
-		// std::cout << "readByte=0: no more data to read." << std::endl;
         if (client._cgiProc._readPipe != -1)
 		{
 			close(client._cgiProc._readPipe);

@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <fcntl.h>
 
-// #include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <sys/poll.h>

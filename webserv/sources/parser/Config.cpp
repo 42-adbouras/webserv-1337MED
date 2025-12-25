@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 18:58:05 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/25 11:35:15 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -170,7 +170,8 @@ Location	ConfigParser::parseLocationBlock( void )
 	return (loc);
 }
 
-bool	isTimeout( const str& token ) {
+bool	isTimeout( const str& token )
+{
 	return (token == "header_timeout" || token == "cgi_timeout");
 }
 

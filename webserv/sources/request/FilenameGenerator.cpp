@@ -6,9 +6,7 @@ str FilenameGenerator::extractExt( const str& filename ) {
 	str::size_type dotPos = filename.find('.');
 	if (dotPos != str::npos && dotPos < filename.length() - 1) {
 		str ext = filename.substr(dotPos);
-
-		if (ext.length() > 10)
-			ext = ext.substr(0, 10);
+		return ext;
 	}
 	return "";
 }
