@@ -187,8 +187,8 @@ void processClientRequest( Client& client ) {
 		str source = getSource(client.getRequest(), client.getRequest().getSrvEntry(), client.getResponse());
 		client.getResponse().setSrc(source);
 		checkMethod( client.getRequest().getSrvEntry(), client.getRequest(), client.getResponse(), source, client );
-		client.setResponse(client.getResponse());
 	}
+	client.setResponse(client.getResponse());
 }
 
 void handlerReturn( Client& client ) {
