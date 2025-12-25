@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/15 18:33:17 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/24 18:33:29 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/25 21:33:48 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,6 +89,7 @@ struct Location
 	std::map<int, str>		_errorPages;
 	size_t					_maxBodySize;
 	str						_uploadStore;
+	bool					_methodSet;
 	std::set<str>			_allowedMethods;
 
 	bool					_autoIndexSet;

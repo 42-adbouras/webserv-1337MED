@@ -6,7 +6,7 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 17:05:39 by adbouras          #+#    #+#             */
-/*   Updated: 2025/12/25 11:35:15 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/25 21:37:54 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,8 @@ ServerEntry::ServerEntry( void )
 }
 
 Location::Location( void )
-	: _autoIndexSet(false)
+	: _methodSet(false)
+	, _autoIndexSet(false)
 	, _autoIndex(false)
 	, _redirSet(false)
 	, _isCGI(false)
@@ -227,7 +228,7 @@ void	ConfigParser::parseLocationDir ( Location& loc )
 		fetchPath(loc._uploadStore);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else if (cur._token == "allowed_methods") {
-		fetchMethods(loc._allowedMethods);
+		fetchMethods(loc._allowedMethods, loc._methodSet);
 		expect(T_SEMI, EXPECT_SEMI_ERR);
 	} else if (cur._token == "autoindex") {
 		loc._autoIndex = fetchAutoIndex();
@@ -416,11 +417,14 @@ void	ConfigParser::fetchCGI( Location& loc )
 	loc._cgi.push_back(cur._token);
 }
 
-void	ConfigParser::fetchMethods( std::set<str>& methods )
+void	ConfigParser::fetchMethods( std::set<str>& methods, bool& set )
 {
 	const char* allowed[] = {"GET", "POST", "DELETE", NULL};
 	Token cur = current();
 
+	if (!set)
+		methods.clear();
+	set = true;
 	while (cur._type == T_STR) {
 		str   method = cur._token;
 		bool  ok     = false;
