@@ -139,7 +139,7 @@ void getHandler(ServerEntry *_srvEntry, Request& request, Response& response, st
 				return;
 			}
 			if (!location._index.empty()) {
-				str s = "." + location._root + "/" + *location._index.begin();
+				str s = "./" + location._root + "/" + *location._index.begin();
 				genResponse(response, s, _srvEntry);
 				return;
 			}
