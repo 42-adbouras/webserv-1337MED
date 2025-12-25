@@ -243,7 +243,7 @@ void sendResponse(Client& client, CookiesSessionManager& sessionManager) {
 			}
 		}
 
-		if (client._sendInfo.fd <= 0) {
+		if (client._sendInfo.fd == -1) {
 			client._sendInfo.fd = open(response._filePath.c_str(), O_RDONLY);
 			if (client._sendInfo.fd == -1) {
 				getSrvErrorPage(response, client.getRequest().getSrvEntry(), INTERNAL_SERVER_ERROR);
@@ -266,7 +266,19 @@ void sendResponse(Client& client, CookiesSessionManager& sessionManager) {
 		if (response._fileSize - offset < (off_t)CHUNK_SIZE)
 			toRead = response._fileSize - offset;
 
-		ssize_t bytesRead = pread(client._sendInfo.fd, buffer, toRead, offset);
+		if (lseek(client._sendInfo.fd, offset, SEEK_SET) == -1) {
+			close(client._sendInfo.fd);
+			client._sendInfo.fd = -1;
+			getSrvErrorPage(response, client.getRequest().getSrvEntry(), INTERNAL_SERVER_ERROR);
+			response._streamFile = false;
+			response.getHeaders().erase("Content-Length");
+			str errorResponse = response.generate();
+			client._sendInfo.buff.clear();
+			client._sendInfo.buff.assign(errorResponse.begin(), errorResponse.end());
+			client._sendInfo.resStatus = CS_WRITING_DONE;
+			return;
+		}
+		ssize_t bytesRead = read(client._sendInfo.fd, buffer, toRead);
 		if (bytesRead <= 0) {
 			if (bytesRead == 0) {
 				close(client._sendInfo.fd);
