@@ -6,105 +6,42 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 11:20:36 by adbouras          #+#    #+#             */
-/*   Updated: 2025/09/22 16:39:08 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/24 18:52:03 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/serverHeader/Server.hpp" // IWYU pragma: keep
-#include "../includes/Lexer.hpp"
-#include "../includes/TypeDefs.hpp"
-#include "../includes/Config.hpp"
-#include "../includes/serverHeader/SocketManager.hpp"
-#include <fstream>
-#include <sstream>
-#include <vector> // IWYU pragma: keep
+#include "../includes/webserv.hpp"
 
-#define PORT 8080
-#define ROOT "www"
+CONSOLE g_console;
 
-const char*	tokenTypeName( TokenType t )
-{
-	switch (t) {
-	case T_EOF:		return ("T_EOF");
-	case T_LBRACE:	return ("T_LBRACE");
-	case T_RBRACE:	return ("T_RBRACE");
-	case T_SEMI:	return ("T_SEMI");
-	case T_STR:		return ("T_STR");
-	case T_NUM:		return ("T_NUM");
-	default:		return ("T_UNK");
-	}
-}
-
-void	printTokens( const TokensVector& tokens )
-{
-	for (std::size_t i = 0; i < tokens.size(); ++i) {
-		const Token& t = tokens[i];
-		std::cout << "[" << t._line << ":" << t._col << "] "
-				  << tokenTypeName(t._type) << "  '"
-				  << t._token << "'" << std::endl;
-	}
-}
-
-bool	validFile( const str& path )
-{
-	if (path.size() < 5)
-		return (false);
-	const str	ext = path.substr(path.size() - 5);
-	return (ext == ".conf");
-}
-
-str		readConfig( const str& path )
-{
-	if (path.empty())
-		throw std::invalid_argument("[InvalidConfigPathException]");
-	if (!validFile(path))
-		throw std::invalid_argument("[InvalidConfigFileException]");
-
-	std::ifstream	in(path.c_str());
-	if (!in.is_open())
-		throw std::runtime_error("[FailedToOpenFileException]");
-
-	std::ostringstream	oss;
-	oss << in.rdbuf();
-
-	if (!in && in.eof())
-		throw std::runtime_error("[ErrorReadingFileExeption]");
-
-	return ( oss.str());
+void	leak() {
+	system("leaks webserv");
 }
 
 int	main( int ac, char** av )
 {
+	// atexit(leak);
 	if (ac < 2) {
-		std::cerr << "Usage: ./webserv <config.conf>" << std::endl;
+		std::cerr << USAGE_ERROR << std::endl;
 		return (1);
 	} try {
-		str				cfg = readConfig(av[1]);
-		Lexer			lex(cfg);
-		TokensVector	tokens = lex.tokenize();
-		// printTokens(tokens);
-		ConfigParser	p(tokens);
-		Data	config = p.parseTokens();
-		SocketManager	socketManager(config);
+		Data	config = getConfig(av[1]);
+		
+		std::vector<TableOfListen>	tableOfListen;
+		SocketManager	socketManager( config, tableOfListen );
+		// making a hash-table for all IP:PORT
+		socketManager.setTableOfListen( tableOfListen );
+		socketManager.hanldVirtualHost( tableOfListen );
+		// displayHashTable(tableOfListen);
 		socketManager.initSockets();
-		socketManager.listenPorts();
+		displayHashTable(tableOfListen);
+		socketManager.listenToPorts();
+		signal(SIGINT, signalHandler);
 		socketManager.runCoreLoop();
-		// Server	server(data);
-
 		
 	} catch (std::exception& e) {
-		// std::cerr << "Server " << std::endl;
-		std::cerr << e.what() << std::endl;
+		std::cerr << RED << e.what() << RESET << std::endl;
 		return (1);
 	}
-	// std::ifstream	confStream(av[1]);
-	// std::ostringstream out;
-	// out << confStream.rdbuf();
-
-	// Server	server(PORT, ROOT);
-
-	// if (!server.init())
-	// 	return (1);
-	// server.run();
 	return (0);
 }

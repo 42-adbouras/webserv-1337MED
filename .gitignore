@@ -1,3 +1,37 @@
 .vscode/
 *.o
 
+!*.cpp
+!*.hpp
+!*.tpp
+!*.html
+!*.conf
+!*.py
+!*.js
+!*.png
+!*.ico
+!*.jpg
+!*.css
+
+!server/
+!serverHeader/
+!webserv/
+!sources/
+!parser/
+!request/
+!response/
+!defaultErrorPages/
+!includes/
+!configs/
+!www/
+!css/
+!errors/
+!web/
+# !assets/
+!images/
+!cgi/
+!cgi-scripts/
+!login/
+!Makefile
+!README.md
+!.gitignore

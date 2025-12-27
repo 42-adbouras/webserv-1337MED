@@ -6,67 +6,24 @@
 /*   By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 16:44:54 by adbouras          #+#    #+#             */
-/*   Updated: 2025/10/02 11:39:26 by adbouras         ###   ########.fr       */
+/*   Updated: 2025/12/25 21:37:19 by adbouras         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "Lexer.hpp"
-#include "Server.hpp"
 #include "TypeDefs.hpp"
 #include <cstddef>
 #include <map>
-#include <sstream>
 #include <set>
 #include <exception>
-#include <cstdlib>
+#include <sstream>
 #include <limits>
+#include <iostream>
+#include <cstring>
+#include <cstdlib>
+#include "Lexer.hpp"
 
-
-struct CGIEntry
-{
-	str		_extention;
-	str		_interpreter;
-};
-
-struct Location
-{
-	str					_path;
-	std::vector<str>	_index;
-	std::map<int, str>	_errorPages;
-	size_t				_maxBodySize;
-	str					_uploadStore;
-	std::set<str>		_allowedMethods;
-
-	bool				_autoIndexSet;
-	bool				_autoIndex;
-	
-	bool				_redirSet;
-	int					_redirCode;
-	str					_redirTarget;
-	CGIEntry			_cgi;
-	Location( void );
-};
-
-struct ServerEntry
-{
-	str						_listen;
-	bool					_listenSet;
-	std::set<int>			_port;
-	std::set<str>			_portStr;
-	str						_serverName;
-	str						_root;
-	std::vector<str>		_index;
-	std::map<int, str>		_errorPages;
-	size_t					_maxBodySize;
-	str						_uploadStore;
-	// bool					_autoIndexSet;
-	// bool					_autoIndex;
-	CGIEntry				_cgi;
-	std::vector<Location>	_locations;
-	ServerEntry( void );
-};
 
 class ParsingError : public std::exception
 {
@@ -74,11 +31,12 @@ private:
 	str		_msg;
 	int		_line;
 	int		_col;
+	str		_path;
 	str		_what;
 
 public:
-	ParsingError( const str& msg, int line, int col );
-	virtual ~ParsingError() throw();
+	ParsingError( const str& msg, const str& path, const Token& cur );
+	virtual ~ParsingError( void ) throw();
 	const char*	what() const throw();
 };
 
@@ -90,11 +48,12 @@ struct Data
 class ConfigParser
 {
 private:
-	TokensVector	_tokens;
-	size_t			_index;
+	TokensVector				_tokens;
+	size_t						_index;
+	str							_path;
 
 public:
-	ConfigParser( const TokensVector& tokens );
+	ConfigParser( const TokensVector& tokens, const str& path );
 	Data			parseTokens( void );
 
 private:
@@ -109,19 +68,26 @@ private:
 	void			parseLocationDir (Location& loc );
 
 	void			fetchListen( ServerEntry& serv );
-	void			fetchPortList( ServerEntry& serv );
 	void			fetchServerName( ServerEntry& serv );
 	void			fetchPath( str& path );
 	void			fetchPathList( std::vector<str>& list );
 	bool			fetchAutoIndex( void );
 	void			fetchBodySize( size_t& size );
 	void			fetchErrorPages( std::map<int, str>& errors );
-	void			fetchCGI( CGIEntry& cgi );
-	void			fetchMethods( std::set<str>& methods );
+	void			fetchCGI( Location& loc );
+	void			fetchMethods( std::set<str>& methods, bool& set );
 	void			fetchRedirect( Location& loc );
+	void			fetchTimeout( ServerEntry& serv, const str& type );
+
+	void			mapLocationsRoot( ServerEntry& serv );
+	void			printWarning( const str& arg, int line, int col );
 };
 
-bool	startsWith( const str& path, const str& start );
-bool	validatePort( int port, int line, int col );
-bool	isNum( const str& s );
-bool	validHost( str& host );
+Data				getConfig( const char* arg );
+str					readConfig( const str& path );
+bool				validFile( const str& path );
+
+bool				startsWith( const str& path, const str& start );
+bool				validatePort( str& portStr, const Token& cur, const str& path );
+bool				isNum( const str& s );
+bool				validHost( str& host );

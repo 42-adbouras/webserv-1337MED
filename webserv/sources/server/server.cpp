@@ -1,71 +1,184 @@
-#include "../includes/serverHeader/Server.hpp"
+#include "../../includes/serverHeader/Server.hpp"
+#include "../../includes/serverHeader/Client.hpp"
+#include "../../includes/serverHeader/ServerUtils.hpp"
+#include <cstddef>
+#include <cstdlib>
+#include <iostream>
+#include <sys/wait.h>
+#include <vector>
 
-Server::Server(int portOpen) : _OpenPort(portOpen) {
-    std::cout << "server start ..." << std::endl;
+Server::Server(CookiesSessionManager& sessionManager, int portOpen) : _sessionManager(sessionManager), _OpenPort(portOpen) {
+    (void) _sessionManager;
+    g_console.log(SERVER, str("Server started ---"), BG_CYAN);
 }
 
 std::vector<Client>& Server::getListOfClients(void) {
     return _client;
 }
 
+void    Server::wsrv_timeout_closer(std::vector<struct pollfd>& pollFd) {
+    for (size_t i = 0; i < _client.size(); i++)
+    {
+        if (std::time(NULL) - _client[i].getStartTime() >= _client[i].getTimeOut())
+        {
+            std::cout << TIME_OUT << BG_RED << "User FD=" << _client[i].getFd() << " Hors-Ligne!" << RESET << std::endl;
+            handleDisconnect(i, pollFd);
+            i--;
+        }
+    }
+}
+
+wsrv_timer_t Server::wsrv_find_next_timeout(void) {
+    wsrv_timer_t now = std::time(NULL);
+    wsrv_timer_t lower;
+
+    for (size_t i = 0; i < _client.size(); ++i) {
+        wsrv_timer_t elapsed = (now - _client[i].getStartTime());
+        wsrv_timer_t timeout = _client[i].getTimeOut();
+        ssize_t remaining = timeout - elapsed;
+
+        if (remaining <= 0)
+            return 0; // already timed out
+        _client[i].setRemainingTime(remaining);
+    }
+    lower = _client[0].getRemainingTime();
+    for (size_t i = 1; i < _client.size(); i++)
+    {
+        if (_client[i].getRemainingTime() < lower)
+            lower = _client[i].getRemainingTime();
+    }
+    return (lower);
+}
+
 void    Server::addClients(Client client, std::vector<struct pollfd> &_pollfd) {
     struct pollfd   temp;
-    std::cout << "client fd ==>" << client.getFd() << std::endl;
+
+    client.setStartTime(std::time(NULL));
+    client.setTimeOut(getSrvBlock( client._serverBlockHint, client.getRequest())->_headerTimeout); /* timeOut to wait for the first request */
+    client.setClientState(CS_NEW);
+    client._alreadyExec = false;
+    client._cgiProc._readPipe = -1;
+    client._cgiProc._childPid = -1;
+    client._reqInfo.reqStatus = CS_NEW;
+    client._sendInfo.resStatus = CS_NEW;
     temp.fd = client.getFd();
     temp.events = POLLIN;
     temp.revents = 0;
     _client.push_back(client);
-    _pollfd.push_back(temp);
-    std::cout << "client with fd: " << client.getFd() << " connected" << std::endl;
+/**
+ *  My Pollfd Layout is [listen sockets] [clinets][Cgi Pipes];
+ *  So here i add new clinet after [listen sockets + clinet.size()-1]. (in the middle) 
+ */
+    _pollfd.insert(_pollfd.begin() + _OpenPort + (_client.size() - 1), temp);
 }
 
-void    Server::response(Client& _clt) {
-    ssize_t sendByte;
-    const char  *data = 
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: 48\r\n"
-        "\r\n"
-        "<html><body><h1>Hello from C Server!</h1></body></html>";
-    if ((sendByte = send(_clt.getFd(), data, std::strlen(data), 0)) == -1)
-    {
-        std::cerr << strerror(errno) << "-> can't send data to " << _clt.getFd() << std::endl;
-    }
-}
 
-void    Server::request(Client& _clt){
-    ssize_t readByte;
-    char    buffer[1024];
-
-    if ((readByte = recv(_clt.getFd(), buffer, sizeof(buffer), 0)) > 0)
-    {
-        buffer[readByte] = '\0';
-        std::cout << "request ->\n" << buffer << std::endl;
-        _clt.setStatus(KEEP_ALIVE);
+ClientState Server::readRequest(size_t cltIndx) {
+	std::vector<char>	buff(SRV_READ_BUFFER);
+    ssize_t rByte;
+    if (_client[cltIndx].getStatus() == CS_NEW) {
+		Request request;
+        _client[cltIndx].setRequest(request);
     }
-    if (readByte == 0) 
+    rByte = recv(_client[cltIndx].getFd(), buff.data(), SRV_READ_BUFFER, 0);
+    if (rByte > 0)
     {
-        _clt.setStatus(DISCONNECT);
-        std::cout << "connection is closed by the user ->" << _clt.getFd() << std::endl;
+        /**
+         * Read request chunks-chunks, every chunk past to parseRequest,
+         * the parse of request must detect if the request is finished by setting ReqInfo to `CS_READING_DONE`
+         * else `CS_READING`
+         * */
+        _client[cltIndx]._reqInfo.buffer.insert(_client[cltIndx]._reqInfo.buffer.end(), buff.data(), buff.data() + rByte);
+        requestHandler(_client[cltIndx]);
+        if (_client[cltIndx]._reqInfo.reqStatus == CS_READING_DONE) {
+            _client[cltIndx]._sendInfo.resStatus = CS_START_SEND; /* To track first try of send-response */
+            return CS_READING_DONE;
+        }
+        return CS_READING;
     }
-    else if (readByte < 0)
+    else if (rByte == 0)
     {
-        std::cerr << "recv set errno to: " << strerror(errno) << std::endl;
+        return CS_DISCONNECT;
     }
+    else
+    {
+        return CS_READING;
+    }
+    return CS_FATAL;
 }
 
 void    Server::handleDisconnect(int index, std::vector<struct pollfd>& _pollfd) {
-    
+    std::cout << SERVER << RED << "User FD=" << _client[index ].getFd() << " Disconnected" << RESET << std::endl;
+    if (_client[index]._cgiProc._readPipe != -1) {
+        /* Close the CGI Pipe If that client request it and remove it from poll() */
+        for (size_t i = _OpenPort + _client.size(); i < _pollfd.size(); i++) {
+            if (_pollfd[i].fd == _client[index]._cgiProc._readPipe) {
+                if (_client[index]._cgiProc._childPid != -1) {
+                    _client[index]._cgiOut._code = GATEWAY_TIMEOUT;
+                    CGI_errorResponse(_client[index], _client[index]._cgiOut._code);
+                    kill(_client[index]._cgiProc._childPid, SIGKILL);
+                    int status;
+                    waitpid(_client[index]._cgiProc._childPid, &status, 0);
+                }
+                close(_pollfd[i].fd);
+                _pollfd.erase(_pollfd.begin() + i); /* remove pipe fd from pollfd{} */
+                break;
+            }
+        }
+    }
+    if (_client[index]._sendInfo.fd != -1)
+        close(_client[index]._sendInfo.fd);
+    if (_client[index]._sendInfo.buff.size() != 0)
+        _client[index]._sendInfo.buff.clear();
+    if (_client[index]._uploadFd != -1) /* Close Upload Fd if exist */
+        close(_client[index]._uploadFd);
+    if (_client[index]._reqInfo.buffer.size() != 0)
+        _client[index]._reqInfo.buffer.clear();
     close(_client[index].getFd());
-    std::cout << "client fd " << _client[index].getFd() << " disconnect" << std::endl;
-    _pollfd.erase(_pollfd.begin() + index + _OpenPort);
-    _client.erase(_client.begin() + index);
+    _pollfd.erase(_pollfd.begin() + _OpenPort + index); /* remove user fd from pollfd{} */
+    _client.erase(_client.begin() + index); /* remove user fd from Client{} */
 }
 
-// status    Server::statOfUser(int clFd) const {
-//     return DISCONNECT
-// }
+void    Server::closeClientConnection(void) {
+    for (size_t i = 0; i < _client.size(); i++)
+    {
+        if (_client[i]._sendInfo.fd != -1)
+            close(_client[i]._sendInfo.fd);
+        if (_client[i]._uploadFd != -1)
+            close(_client[i]._uploadFd);
+        close(_client[i].getFd());
+    }
+    _client.clear();
+}
 
 Server::~Server() {
-    std::cout << "<<<<< Server Obj distroyed >>>>>" << std::endl;
+    std::cout << WARNING << BG_RED << "--- Server Down ---" << RESET << std::endl;
+}
+
+Client& Server::getClientReqCGI(int pipeFd) {
+    /**
+     * return Client that request the CGI-Script.
+     */
+    for (size_t i = 0; i < _client.size(); i++)
+    {
+        if (pipeFd == _client[i]._cgiProc._readPipe)
+            return _client[i];
+    }
+    /**
+     * in all cases it can't reach this line: return _client[0];
+     * so, it's just to silent errors!*/
+     g_console.log(WARNING, str("Can't find User That request for CGI"), BG_RED);
+    return _client[0];
+}
+
+Connection    CGI_errorResponse(Client& client, int statusCode) {
+    getSrvErrorPage(client.getResponse(), client.getRequest().getSrvEntry(), statusCode);
+
+    str buffer = client.getResponse().generate();
+    if (send(client.getFd(), buffer.c_str(), buffer.size(), 0) <= 0)
+    {
+        std::cerr << RED << "send() faill" << RESET << std::endl;
+        return CLOSED;
+    }
+    return NEW;
 }
