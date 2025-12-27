@@ -14,13 +14,8 @@
 
 CONSOLE g_console;
 
-void	leak() {
-	system("leaks webserv");
-}
-
 int	main( int ac, char** av )
 {
-	// atexit(leak);
 	if (ac < 2) {
 		std::cerr << USAGE_ERROR << std::endl;
 		return (1);

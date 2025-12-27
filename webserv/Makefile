@@ -6,7 +6,7 @@
 #    By: adbouras <adbouras@student.1337.ma>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/07/11 11:20:47 by adbouras          #+#    #+#              #
-#    Updated: 2025/07/21 15:07:39 by adbouras         ###   ########.fr        #
+#    Updated: 2025/12/24 13:12:24 by adbouras         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,7 +19,7 @@ CLN		=	\033[K\r\c
 
 CXX		=	c++
 
-CFLAGS	=	-Wall -Wextra -Werror -g -std=c++98 #-fsanitize=address -D_FILE_OFFSET_BITS=64
+CFLAGS	=	-Wall -Wextra -Werror -g -std=c++98
 
 NAME	=	webserv
 
